@@ -2,31 +2,31 @@
 
 PinqPonq shared Claude rules and project standards.
 
-## Usage
+## Integrating into a new project
 
-Add this repo as a git submodule inside your project under `.claude/rules/`:
+Do this once per project to wire up pinq-doq.
 
+**1. Inside your project repo, run:**
 ```bash
 git submodule add https://github.com/Deveng-Group/pinq-doq.git .claude/rules
 ```
 
-This command automatically creates a `.gitmodules` file at your project root:
-
+This clones pinq-doq into `.claude/rules/` and auto-creates a `.gitmodules` file:
 ```
 [submodule ".claude/rules"]
     path = .claude/rules
     url = https://github.com/Deveng-Group/pinq-doq.git
 ```
 
-Commit both `.gitmodules` and `.claude/rules` to your repo:
-
+**2. Commit both files to your project:**
 ```bash
 git add .gitmodules .claude/rules
 git commit -m "Add pinq-doq as shared Claude rules submodule"
 ```
 
-Then create a `CLAUDE.md` at the project root importing the relevant files:
+**3. Create a `CLAUDE.md` at your project root:**
 
+For Android / KMP projects:
 ```markdown
 @.claude/rules/common.md
 @.claude/rules/android-kotlin.md
