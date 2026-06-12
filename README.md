@@ -88,6 +88,15 @@ git submodule update --init
 
 Your project only records **which commit of pinq-doq to use**, not the files themselves. When pinq-doq is updated and you want to adopt the changes:
 
+**Option A: Let Claude do it**
+
+Say this to Claude inside your project:
+```
+update rules
+```
+
+**Option B: Manual**
+
 ```bash
 git submodule update --remote .claude/rules
 git add .claude/rules
