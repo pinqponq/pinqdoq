@@ -89,12 +89,6 @@ RabbitMQService(rabbitOptions)
 
 ---
 
-## DTO and Request Models
-
-- Do not create speculative DTOs. If there is no concrete transfer scenario, no DTO.
-
----
-
 ## Health & Connectivity
 
 - Services must expose connectivity state via `isConnected`.
