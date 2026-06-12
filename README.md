@@ -2,6 +2,31 @@
 
 PinqPonq shared Claude rules and project standards.
 
+## Claude prompt — first-time setup
+
+Copy this prompt and send it to Claude inside your project:
+
+```
+Integrate pinq-doq into this project as a shared Claude rules submodule.
+
+Steps:
+1. Run: git submodule add https://github.com/Deveng-Group/pinq-doq.git .claude/rules
+2. Commit .gitmodules and .claude/rules with message: "Add pinq-doq as shared Claude rules submodule"
+3. Create a CLAUDE.md at the project root with the appropriate imports:
+   - If this is an Android or KMP project:
+       @.claude/rules/common.md
+       @.claude/rules/android-kotlin.md
+       @.claude/rules/tasks/prepare-release.md
+       @.claude/rules/tasks/update-rules.md
+   - If this is a C# backend project:
+       @.claude/rules/common.md
+       @.claude/rules/csharp-dotnet.md
+       @.claude/rules/tasks/update-rules.md
+4. Commit CLAUDE.md.
+```
+
+---
+
 ## Integrating into a new project
 
 Do this once per project to wire up pinq-doq.
