@@ -119,3 +119,20 @@ Definitions must appear above their usage sites.
 ## Null Safety
 
 - When using `!!`, add an inline comment explaining why it is safe — or refactor to avoid it.
+
+---
+
+## Dependency Management — Internal Libraries
+
+`deveng-core-kmp` and `deveng-networking-kmp` are internal libraries that always exist locally. Never resolve them from Gradle's build cache — always reference them directly from the local file system.
+
+To see live changes from an internal library in a consumer project, include it as a composite build:
+
+```kotlin
+// settings.gradle.kts
+includeBuild("../deveng-core-kmp") {
+    dependencySubstitution {
+        substitute(module("global.deveng:core-kmp")).using(project(":deveng-core"))
+    }
+}
+```
