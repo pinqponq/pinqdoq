@@ -4,6 +4,12 @@ Extends `common.md`. These rules apply to all Android and Kotlin Multiplatform p
 
 ---
 
+## deveng-core-kmp
+
+When the project depends on **deveng-core-kmp**, prefer the library's existing APIs over reimplementing functionality. Before adding UI, camera, platform (dial/clipboard/maps/URL/share/location), permissions, media, or pagination features, read the guide at `.claude/rules/references/deveng-core.md` (full API list in its `deveng-core-reference.md`) and use the core APIs it lists.
+
+---
+
 ## File Naming
 
 | Type | Pattern | Example |

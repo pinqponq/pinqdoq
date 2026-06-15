@@ -115,6 +115,9 @@ The `git add .claude/rules` saves the new commit pointer. Without it, teammates 
 | `android-kotlin.md` | Android, KMP, Compose projects |
 | `csharp-dotnet.md` | C# / .NET backend projects |
 | `tasks/update-rules.md` | Update rules via Claude |
+| `references/deveng-core.md` | deveng-core-kmp API usage guide (+ `deveng-core-reference.md`) — read on mention (Android / KMP) |
+
+`references/` holds reference guides that are **not** `@imported` into `CLAUDE.md`; they cost nothing until needed and are read on demand. Point Claude at one when relevant (e.g. "use the deveng-core-guide from pinq-doq"). `android-kotlin.md` also carries a pointer so Claude pulls the deveng-core guide in when working on deveng-core-kmp features.
 
 ---
 
