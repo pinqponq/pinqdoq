@@ -1,3 +1,7 @@
+---
+paths: ['**/*.kt', '**/*.kts']
+---
+
 # Android / Kotlin / Compose Standards
 
 Extends `common.md`. These rules apply to all Android and Kotlin Multiplatform projects.
