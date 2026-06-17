@@ -1,3 +1,7 @@
+---
+paths: ['**/*.cs', '**/*.csproj', '**/*.sln']
+---
+
 # C# / .NET Standards
 
 Extends `common.md`. These rules apply to all C# backend projects.

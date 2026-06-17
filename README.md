@@ -1,3 +1,7 @@
+---
+paths: ['__readme-not-a-rule__/**']
+---
+
 # pinq-doq
 
 PinqPonq shared Claude rules and project standards.
@@ -115,6 +119,37 @@ The `git add .claude/rules` saves the new commit pointer. Without it, teammates 
 | `android-kotlin.md` | Android, KMP, Compose projects |
 | `csharp-dotnet.md` | C# / .NET backend projects |
 | `tasks/update-rules.md` | Update rules via Claude |
+| `references/deveng-core.md` | deveng-core-kmp API usage guide (+ `deveng-core-reference.md`) — read on mention (Android / KMP) |
+
+`references/` holds reference guides that are **not** `@imported` into `CLAUDE.md`; they cost nothing until needed and are read on demand. Point Claude at one when relevant (e.g. "use the deveng-core-guide from pinq-doq"). `android-kotlin.md` also carries a pointer so Claude pulls the deveng-core guide in when working on deveng-core-kmp features.
+
+---
+
+## How rules load
+
+This repo is mounted at each consumer's `.claude/rules/`, and Claude Code auto-loads **every** `.md` there into **every** session at startup — whether or not `CLAUDE.md` `@import`s it. Control loading per file with `paths:` YAML frontmatter:
+
+- **Universal rules** (`common.md`) — no frontmatter, so they always load.
+- **Stack-specific rules** (`android-kotlin.md`, `csharp-dotnet.md`) — scoped with `paths:` so they load only when Claude touches matching files (Kotlin rules stay out of a C# project, and vice versa):
+
+  ```yaml
+  ---
+  paths: ['**/*.kt', '**/*.kts']
+  ---
+  ```
+
+- **Reference docs / non-rules** (`references/*`, `README.md`, `CLAUDE.md`) — given a non-matching `paths:` glob so they never auto-load; they are read on demand instead:
+
+  ```yaml
+  ---
+  paths: ['__not-a-rule__/**']
+  ---
+  ```
+
+Two gotchas when adding files:
+
+- A new stack-specific rule **without** `paths:` loads into **every** consumer (including unrelated stacks) — scope it.
+- Do not `@import` a `paths`-scoped file from `CLAUDE.md`; `@import` force-loads it and defeats the scope.
 
 ---
 
