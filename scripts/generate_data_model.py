@@ -218,7 +218,7 @@ JSON file format:
     parser.add_argument('model_name', nargs='?', help='Name of the model class (PascalCase)')
     parser.add_argument('fields', nargs='*', help='Field definitions in format fieldName:Type')
     parser.add_argument('--json', dest='json_file', help='JSON file containing model definition')
-    parser.add_argument('--config', default=None, help='Path to config.json (default: Mobile/scripts/config.json)')
+    parser.add_argument('--config', default=None, help='Path to config.json (default: config.json)')
     parser.add_argument('--output-json', action='store_true', help='Output file contents as JSON instead of writing to disk')
     
     args = parser.parse_args()

@@ -17,13 +17,14 @@ pinq-doq/
     api-endpoint-integration/   scaffold a Clean-Architecture API endpoint via scripts/
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
-  scripts/        → NOT copied; run in place via CLI (KMP code generators)
+  scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
   references/     → NOT copied; read on demand by path
     kotlin/
       deveng-core-reference.md  full deveng-core-kmp API map
-      architecture.md, data-layer.md, mvi-pattern.md, naming.md, shared-module.md, … (deep dives)
+      deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
+      naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md
   tasks/          integrate.md (first-time setup), update.md (adopt newer standards)
-  meta/           authoring-guide.md (how to write a skill)
+  meta/           authoring-guide.md (write a skill), contributing.md (extend pinq-doq)
   README.md, CLAUDE.md   repo docs — never delivered into consumers
 ```
 
@@ -38,15 +39,11 @@ Why copy instead of mounting the rules straight at `.claude/rules`? Some teammat
 
 ## Setup
 
-**Option A — let Claude do it.** Open Claude inside your project and say:
+Tell Claude, inside your project:
 
-```
-integrate pinq-doq
-```
+> Install pinq-doq from https://github.com/pinqponq/pinqdoq — add it as a git submodule at `.pinq-doq`, then follow `.pinq-doq/tasks/integrate.md`.
 
-Claude runs [`tasks/integrate.md`](tasks/integrate.md): mounts pinq-doq at `.pinq-doq/`, copies `rules/`+`skills/` into `.claude/`, writes the version stamp, wires `CLAUDE.md`, and commits.
-
-**Option B — manual.** Follow the steps in [`tasks/integrate.md`](tasks/integrate.md).
+That one sentence is all a teammate needs — nothing to copy or hand over. Claude adds the submodule, then runs [`tasks/integrate.md`](tasks/integrate.md): copies `rules/`+`skills/` into `.claude/`, writes the `.claude/.pinq-doq-version` stamp, wires `CLAUDE.md`, and commits. (Prefer to do it by hand? The same steps are in that file.)
 
 ## Updating
 
@@ -56,7 +53,7 @@ When pinq-doq changes and you want the newer standards, say to Claude inside you
 update rules
 ```
 
-Claude runs [`tasks/update.md`](tasks/update.md): `git submodule update --remote .pinq-doq`, re-copies `rules/`+`skills/` (overwriting changed files and **pruning** stale/renamed ones), refreshes the version stamp, and commits. Manual steps are in the same file.
+Claude runs [`tasks/update.md`](tasks/update.md): pulls the latest pinq-doq, re-copies `rules/`+`skills/` via `.pinq-doq/scripts/deliver.py` (overwriting changed files and **pruning** stale/renamed ones), refreshes the version stamp, and commits. It also **auto-converts** a project still on the old layout (submodule mounted at `.claude/rules`) to the new copy model. Manual steps are in the same file.
 
 ## How rules load
 
@@ -78,19 +75,6 @@ Two gotchas when adding rules:
 - A new stack-specific rule **without** `paths:` loads into **every** consumer (including unrelated stacks) — scope it.
 - Do not `@import` a `paths`-scoped rule from a consumer's `CLAUDE.md`; `@import` force-loads it and defeats the scope. Let auto-load handle it.
 
-## Authoring — where things go
-
-| Put it in | When |
-|---|---|
-| `rules/common.md` | A rule for all projects and all languages |
-| `rules/<stack>-<topic>.md` | A terse, always-applicable rule for one stack (e.g. `kotlin-architecture.md`, `dotnet-conventions.md`); scope with `paths:` |
-| `references/<stack>/*.md` | A deep dive, recipe, or long example — read on demand, not auto-loaded |
-| `skills/<name>/SKILL.md` | A multi-step, intent-triggered capability |
-| `scripts/*.py` | A code generator invoked by a skill via CLI |
-| `meta/` | Authoring/process docs about pinq-doq itself |
-
-Keep rules terse and put depth in `references/`. Do not duplicate a rule that already lives in another file — check first.
-
 ## Contributing
 
-Changes here affect all projects. Open a PR and get team review before merging.
+Changes here affect all projects. See [`meta/contributing.md`](meta/contributing.md) for how to add a rule, reference, skill, script, or a whole new stack. Open a PR and get team review before merging.
