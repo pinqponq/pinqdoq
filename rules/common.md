@@ -4,6 +4,15 @@ These rules apply to all projects and all languages unless a language-specific f
 
 ---
 
+## Stack-specific rules
+
+This file always loads. Stack-specific rules load automatically only when you touch a matching file, so they may not be in context yet. Before writing stack code, make sure the relevant rule is loaded:
+
+- **Kotlin / KMP / Compose** (`*.kt`, `*.kts`) → `kotlin-architecture.md` (structure, MVI, shared module), `kotlin-naming.md`, `kotlin-conventions.md` (style), plus `kotlin-deveng-core.md` when the project depends on deveng-core-kmp. Deep references live in `.pinq-doq/references/kotlin/` (architecture, data-layer, mvi-pattern, naming, shared-module, …) and `.pinq-doq/references/kotlin/deveng-core-reference.md`, read on demand.
+- **C# / .NET** (`*.cs`, `*.csproj`, `*.sln`) → `dotnet-conventions.md`.
+
+---
+
 ## Naming Conventions
 
 - Use English strictly. No Turkish identifiers, comments, or abbreviations.

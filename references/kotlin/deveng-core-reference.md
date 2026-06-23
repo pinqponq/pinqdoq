@@ -1,7 +1,3 @@
----
-paths: ['__deveng-core-reference-read-on-demand__/**']
----
-
 # Deveng-Core: What Exists and When to Use It
 
 Use this as a quick map: **situation → use this from core**. No parameter details; see the library

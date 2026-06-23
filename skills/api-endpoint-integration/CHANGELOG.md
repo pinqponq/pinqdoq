@@ -1,0 +1,5 @@
+# Changelog
+
+## api-endpoint-integration
+
+- 2.0.0: Forked into pinq-doq; decoupled from MCP and Figma. Every step now runs a standalone script under `.pinq-doq/scripts/` (`generate_data_layer.py`, `generate_domain_layer.py`, `generate_presentation_layer.py`, `generate_data_model.py`, `generate_domain_model.py`, `generate_mapper.py`, `generate_use_case.py`, `add_service_method.py`, `add_repository_method.py`, `add_repository_impl.py`, `register_mapper.py`, `register_use_case.py`, `register_di_modules.py`) invoked as `python .pinq-doq/scripts/<script>.py --project-root <path> ...` (layer scaffolds use `--config <path-to-your-config.json>`). Removed all Figma input/annotation/interaction steps and the get_design_context / figma-* tooling. Replaced the MCP discovery (`list-scripts`) with `ls .pinq-doq/scripts/` + per-script `--help`, and the `check-coding-standards` MCP review with a manual review against `common.md`. Clean Architecture flow, naming conventions, and the shared-module rules (same concrete artifact used by 2+ features) are preserved.

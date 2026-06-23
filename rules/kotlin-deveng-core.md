@@ -1,6 +1,4 @@
 ---
-name: deveng-core-guide
-description: Use the deveng-core-kmp library's existing APIs instead of reimplementing functionality. Covers UI components (CustomButton, CustomTextField, CustomDialog, CustomHeader, CustomDatePicker, PaginatedListView, etc.), platform utilities (MultiPlatformUtils for dial/clipboard/maps/URL/share/location), camera stack (CameraController, CameraKScreen, PhotoSaveUtils), media (RemoteMediaExportManager, MediaViewer, MarkdownContentParser), swipeable cards (SwipeCards), permissions (PermissionsController), pagination (PaginatedFlowLoader), and utility extensions (StringFormatter, date/time formatting, modifier helpers). Trigger whenever working on a Kotlin Multiplatform / Compose Multiplatform project that depends on deveng-core-kmp — before writing any UI component, platform operation, camera flow, media/share, or permission request, consult this guide to find the existing core API and avoid reinventing what the library already provides.
 paths: ['**/*.kt', '**/*.kts']
 ---
 
@@ -92,7 +90,7 @@ This guide ensures that when building or vibecoding an app that depends on **dev
 
 ## Reference
 
-See **deveng-core-reference.md** in this folder for: what exists in the library and which API to use in which situation. Use it to decide “use this from core” before writing app code.
+See **`references/kotlin/deveng-core-reference.md`** (in the pinq-doq mount, e.g. `.pinq-doq/references/kotlin/deveng-core-reference.md`) for: what exists in the library and which API to use in which situation. Use it to decide “use this from core” before writing app code.
 
 ## Architecture note (core library)
 
