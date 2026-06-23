@@ -1,136 +1,69 @@
----
-paths: ['__readme-not-a-rule__/**']
----
-
 # pinq-doq
 
-PinqPonq shared Claude rules and project standards.
+PinqPonq's shared AI knowledge hub: coding **rules**, reusable **skills**, code-generation **scripts**, and deep **references** for every project (mobile + backend).
 
----
-
-## Setup — Option A: Let Claude do it
-
-Open Claude inside your project and send this prompt:
+## Layout
 
 ```
-Integrate pinq-doq into this project as a shared Claude rules submodule.
-
-1. Run: git submodule add https://github.com/Deveng-Group/pinq-doq.git .claude/rules
-2. Commit .gitmodules and .claude/rules with message: "Add pinq-doq as shared Claude rules submodule"
-3. Create a CLAUDE.md at the project root with the appropriate imports:
-   - Android or KMP project:
-       @.claude/rules/common.md
-       @.claude/rules/android-kotlin.md
-       @.claude/rules/tasks/update-rules.md
-   - C# backend project:
-       @.claude/rules/common.md
-       @.claude/rules/csharp-dotnet.md
-       @.claude/rules/tasks/update-rules.md
-4. Commit CLAUDE.md.
+pinq-doq/
+  rules/          → COPIED into a consumer's .claude/rules/   (auto-loaded, scoped by paths:)
+    common.md                 always-on; carries a stack pointer to the files below
+    kotlin-architecture.md    paths: ['**/*.kt','**/*.kts'] — Clean Arch, MVI, shared module
+    kotlin-naming.md          paths: ['**/*.kt','**/*.kts']
+    kotlin-conventions.md     paths: ['**/*.kt','**/*.kts'] — Compose, style, null-safety, DI
+    kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
+    dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
+  skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
+    api-endpoint-integration/   scaffold a Clean-Architecture API endpoint via scripts/
+    kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
+    code-review/                review a diff against rules/ (no external services)
+  scripts/        → NOT copied; run in place via CLI (KMP code generators)
+  references/     → NOT copied; read on demand by path
+    kotlin/
+      deveng-core-reference.md  full deveng-core-kmp API map
+      architecture.md, data-layer.md, mvi-pattern.md, naming.md, shared-module.md, … (deep dives)
+  tasks/          integrate.md (first-time setup), update.md (adopt newer standards)
+  meta/           authoring-guide.md (how to write a skill)
+  README.md, CLAUDE.md   repo docs — never delivered into consumers
 ```
 
----
+## Delivery model — copy, not live submodule
 
-## Setup — Option B: Manual
+The repo is mounted **once** in a consumer at a neutral path (`.pinq-doq/`). From there:
 
-**1. Add submodule**
-```bash
-git submodule add https://github.com/Deveng-Group/pinq-doq.git .claude/rules
+- `rules/` and `skills/` are **copied** into the consumer's `.claude/` and **committed** (plus a `.claude/.pinq-doq-version` stamp recording the source SHA).
+- `references/` and `scripts/` are used **in place** from the `.pinq-doq/` mount.
+
+Why copy instead of mounting the rules straight at `.claude/rules`? Some teammates are on Windows (no symlinks), and committing the copies means the rules travel with the repo on a fresh clone — no `submodule update --init` needed to get them. The version stamp makes copy-staleness detectable.
+
+## Setup
+
+**Option A — let Claude do it.** Open Claude inside your project and say:
+
+```
+integrate pinq-doq
 ```
 
-This clones pinq-doq into `.claude/rules/` and auto-creates `.gitmodules`:
-```
-[submodule ".claude/rules"]
-    path = .claude/rules
-    url = https://github.com/Deveng-Group/pinq-doq.git
-```
+Claude runs [`tasks/integrate.md`](tasks/integrate.md): mounts pinq-doq at `.pinq-doq/`, copies `rules/`+`skills/` into `.claude/`, writes the version stamp, wires `CLAUDE.md`, and commits.
 
-**2. Commit**
-```bash
-git add .gitmodules .claude/rules
-git commit -m "Add pinq-doq as shared Claude rules submodule"
-```
+**Option B — manual.** Follow the steps in [`tasks/integrate.md`](tasks/integrate.md).
 
-**3. Create `CLAUDE.md` at project root**
+## Updating
 
-Android / KMP:
-```
-@.claude/rules/common.md
-@.claude/rules/android-kotlin.md
-@.claude/rules/tasks/update-rules.md
-```
+When pinq-doq changes and you want the newer standards, say to Claude inside your project:
 
-C# backend:
-```
-@.claude/rules/common.md
-@.claude/rules/csharp-dotnet.md
-@.claude/rules/tasks/update-rules.md
-```
-
-**4. Commit CLAUDE.md**
-```bash
-git add CLAUDE.md
-git commit -m "Add CLAUDE.md"
-```
-
----
-
-## Cloning a project that already has pinq-doq
-
-```bash
-git clone --recurse-submodules <repo-url>
-```
-
-Already cloned without that flag?
-```bash
-git submodule update --init
-```
-
----
-
-## Updating rules
-
-Your project only records **which commit of pinq-doq to use**, not the files themselves. When pinq-doq is updated and you want to adopt the changes:
-
-**Option A: Let Claude do it**
-
-Say this to Claude inside your project:
 ```
 update rules
 ```
 
-**Option B: Manual**
-
-```bash
-git submodule update --remote .claude/rules
-git add .claude/rules
-git commit -m "Update Claude rules"
-```
-
-The `git add .claude/rules` saves the new commit pointer. Without it, teammates would still get the old version.
-
----
-
-## Files
-
-| File | Scope |
-|---|---|
-| `common.md` | All projects, all languages |
-| `android-kotlin.md` | Android, KMP, Compose projects |
-| `csharp-dotnet.md` | C# / .NET backend projects |
-| `tasks/update-rules.md` | Update rules via Claude |
-| `references/deveng-core.md` | deveng-core-kmp API usage guide (+ `deveng-core-reference.md`) — read on mention (Android / KMP) |
-
-`references/` holds reference guides that are **not** `@imported` into `CLAUDE.md`; they cost nothing until needed and are read on demand. Point Claude at one when relevant (e.g. "use the deveng-core-guide from pinq-doq"). `android-kotlin.md` also carries a pointer so Claude pulls the deveng-core guide in when working on deveng-core-kmp features.
-
----
+Claude runs [`tasks/update.md`](tasks/update.md): `git submodule update --remote .pinq-doq`, re-copies `rules/`+`skills/` (overwriting changed files and **pruning** stale/renamed ones), refreshes the version stamp, and commits. Manual steps are in the same file.
 
 ## How rules load
 
-This repo is mounted at each consumer's `.claude/rules/`, and Claude Code auto-loads **every** `.md` there into **every** session at startup — whether or not `CLAUDE.md` `@import`s it. Control loading per file with `paths:` YAML frontmatter:
+Claude Code auto-loads **every** `.md` directly under a project's `.claude/rules/` into every session at startup. Because `integrate`/`update` copy `pinq-doq/rules/` into `.claude/rules/`, those rule files — and only those — auto-load in consumers. Control loading per file with `paths:` YAML frontmatter:
 
-- **Universal rules** (`common.md`) — no frontmatter, so they always load.
-- **Stack-specific rules** (`android-kotlin.md`, `csharp-dotnet.md`) — scoped with `paths:` so they load only when Claude touches matching files (Kotlin rules stay out of a C# project, and vice versa):
+- **Universal rules** (`common.md`) — no frontmatter, so they always load. `common.md` also carries a short pointer to the stack-specific files so Claude knows they exist before one triggers.
+- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `dotnet-conventions.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
 
   ```yaml
   ---
@@ -138,20 +71,25 @@ This repo is mounted at each consumer's `.claude/rules/`, and Claude Code auto-l
   ---
   ```
 
-- **Reference docs / non-rules** (`references/*`, `README.md`, `CLAUDE.md`) — given a non-matching `paths:` glob so they never auto-load; they are read on demand instead:
+`skills/`, `scripts/`, `references/`, and the repo's own `README.md`/`CLAUDE.md` are **not** copied into `.claude/rules/`, so they never auto-load — skills are intent-discovered from `.claude/skills/`, and scripts/references are used on demand from the `.pinq-doq/` mount.
 
-  ```yaml
-  ---
-  paths: ['__not-a-rule__/**']
-  ---
-  ```
-
-Two gotchas when adding files:
+Two gotchas when adding rules:
 
 - A new stack-specific rule **without** `paths:` loads into **every** consumer (including unrelated stacks) — scope it.
-- Do not `@import` a `paths`-scoped file from `CLAUDE.md`; `@import` force-loads it and defeats the scope.
+- Do not `@import` a `paths`-scoped rule from a consumer's `CLAUDE.md`; `@import` force-loads it and defeats the scope. Let auto-load handle it.
 
----
+## Authoring — where things go
+
+| Put it in | When |
+|---|---|
+| `rules/common.md` | A rule for all projects and all languages |
+| `rules/<stack>-<topic>.md` | A terse, always-applicable rule for one stack (e.g. `kotlin-architecture.md`, `dotnet-conventions.md`); scope with `paths:` |
+| `references/<stack>/*.md` | A deep dive, recipe, or long example — read on demand, not auto-loaded |
+| `skills/<name>/SKILL.md` | A multi-step, intent-triggered capability |
+| `scripts/*.py` | A code generator invoked by a skill via CLI |
+| `meta/` | Authoring/process docs about pinq-doq itself |
+
+Keep rules terse and put depth in `references/`. Do not duplicate a rule that already lives in another file — check first.
 
 ## Contributing
 
