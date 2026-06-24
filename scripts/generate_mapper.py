@@ -301,7 +301,7 @@ JSON file format (simple mappings):
     parser.add_argument('domain_type', nargs='?', help='Domain model type name')
     parser.add_argument('field_mappings', nargs='*', help='Field mappings (field or domainField=responseField)')
     parser.add_argument('--json', dest='json_file', help='JSON file containing mapper definition')
-    parser.add_argument('--config', default=None, help='Path to config.json (default: Mobile/scripts/config.json)')
+    parser.add_argument('--config', default=None, help='Path to config.json (default: config.json)')
     parser.add_argument('--output-json', action='store_true', help='Output file contents as JSON instead of writing to disk')
     
     args = parser.parse_args()

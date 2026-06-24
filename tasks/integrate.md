@@ -9,43 +9,21 @@ pinq-doq is delivered by **copy**, not as a live submodule mounted at `.claude/r
 ## 1. Mount pinq-doq at the neutral path
 
 ```bash
-git submodule add https://github.com/pinqponq/pinq-doq.git .pinq-doq
+git submodule add https://github.com/pinqponq/pinqdoq.git .pinq-doq
 git -C .pinq-doq checkout main
 ```
 
 If the canonical remote/org differs, use the correct pinq-doq URL. `.pinq-doq/` is the mount; never edit files inside it from the consumer.
 
-## 2. Copy `rules/` + `skills/` into `.claude/` (idempotent: overwrite + prune)
+## 2. Copy `rules/` + `skills/` into `.claude/`
 
-Run this block verbatim from the **project root**. It is safe to re-run (that is exactly what `update` does).
+Run the delivery script from the **project root** (it is safe to re-run — that is exactly what `update` does):
 
 ```bash
-# --- rules: full mirror; .claude/rules is owned entirely by pinq-doq ---
-mkdir -p .claude/rules
-rsync -a --delete --exclude='.git' .pinq-doq/rules/ .claude/rules/
-
-# --- skills: merge into .claude/skills, preserving the project's own skills,
-#     pruning only pinq-doq-managed skills that no longer ship upstream ---
-mkdir -p .claude/skills
-if [ -f .claude/skills/.pinq-doq-skills ]; then
-  while IFS= read -r s; do
-    [ -n "$s" ] && [ ! -d ".pinq-doq/skills/$s" ] && rm -rf ".claude/skills/$s"
-  done < .claude/skills/.pinq-doq-skills
-fi
-: > .claude/skills/.pinq-doq-skills
-for d in .pinq-doq/skills/*/; do
-  name="$(basename "$d")"
-  rm -rf ".claude/skills/$name"
-  rsync -a --exclude='.git' "$d" ".claude/skills/$name/"
-  echo "$name" >> .claude/skills/.pinq-doq-skills
-done
-
-# --- version stamp (lives OUTSIDE .claude/rules so the mirror sync never deletes it) ---
-sha="$(git -C .pinq-doq rev-parse HEAD)"
-printf 'source_sha: %s\ndelivered_at: %s\n' "$sha" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .claude/.pinq-doq-version
+python .pinq-doq/scripts/deliver.py
 ```
 
-`--delete` on `rules/` keeps the copy idempotent: a rule renamed or removed upstream leaves no orphan. The skills loop prunes only what pinq-doq previously delivered (tracked in `.claude/skills/.pinq-doq-skills`), so the project's own skills are never touched.
+It mirrors `.pinq-doq/rules/` → `.claude/rules/` (overwrite + prune; this dir is owned entirely by pinq-doq, so don't hand-author files there), merges each `.pinq-doq/skills/<name>/` into `.claude/skills/` while **preserving the project's own skills** (it prunes only previously-delivered pinq-doq skills, tracked in `.claude/skills/.pinq-doq-skills`), and writes the `.claude/.pinq-doq-version` stamp. It is pure Python (stdlib), so it runs the same on macOS, Linux, and Windows — no `rsync` needed.
 
 ## 3. Wire `CLAUDE.md`
 

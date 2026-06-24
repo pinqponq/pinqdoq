@@ -3,7 +3,7 @@ Path and package helpers driven by config.json (Plan B).
 Single source of truth: path segment and package prefix come from config only.
 """
 
-DEFAULT_CONFIG_PATH = "Mobile/scripts/config.json"
+DEFAULT_CONFIG_PATH = "config.json"
 
 
 def is_shared(feature_name: str) -> bool:

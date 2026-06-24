@@ -6,7 +6,7 @@ Usage:
     python scripts/register_di_modules.py <feature_name> [--project-root <path>]
 
 Options:
-    --project-root <path>   Load config from <path>/Mobile/scripts/config.json (for correct initKoin_path when server runs from another directory)
+    --project-root <path>   Load config from <path>/config.json (for correct initKoin_path when server runs from another directory)
 
 Examples:
     # Register all 3 modules for a feature
