@@ -38,3 +38,13 @@ Most features are self-contained. Put code in a **shared** module when the same 
 - The shared module is **not** feature-packaged: no feature name in the path. It holds only `shared/data`, `shared/domain`, `shared/presentation` (packages `shared.data`, `shared.domain`, `shared.presentation`).
 - Name artifacts by concept (`AuthRepository`, `AuthService`, `ProductsRepository`) — never `SharedRepository` / `SharedService`. Only DI modules carry the `Shared` prefix (`SharedDataModule`, `SharedDomainModule`, `SharedPresentationModule`).
 - Decision checklist, package structure, and examples: `.pinq-doq/references/kotlin/shared-module.md`.
+
+---
+
+## Code-generation scripts
+
+A suite of standalone KMP code generators lives at `.pinq-doq/scripts/` — feature `data`/`domain`/`presentation` scaffolds, request/response and domain models, mappers, use cases, DI + navigation registration, and string resources. **Prefer them over hand-writing this boilerplate.**
+
+- **Catalog:** `.pinq-doq/scripts/README.md` lists every script with its purpose and how to invoke it (configuration, target-project flags, `--help`).
+- **Each runs individually — you do not need a workflow to use one.** Reach for a single script when you've built the rest by hand and just need one piece (e.g. `register_di_modules.py` to wire a feature you already wrote, or `add_string_resource.py` for a lone string).
+- The `api-endpoint-integration` skill orchestrates these scripts end-to-end for full endpoint integration; the catalog is for à-la-carte use outside that flow.
