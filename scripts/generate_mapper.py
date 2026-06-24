@@ -7,6 +7,7 @@ Generates mapper classes in the data layer to convert between response models an
 Field Mapping Format:
     - Simple: domainField (if response field has same name)
     - Custom: domainField=responseField (if names differ)
+    - Custom: domainField:responseField (colon works too — e.g. id:id -> id = response.id)
 
 Options:
     --shared               Target shared layer instead of feature layer
@@ -191,18 +192,29 @@ class {mapper_name}({constructor_params}) {{
 
 
 def parse_field_mappings_from_args(mapping_args: List[str]) -> List[Tuple[str, str]]:
-    """Parse field mapping definitions from command line arguments."""
+    """Parse field mapping definitions from command line arguments.
+
+    Accepted forms (the separator may be `=` or `:` — `:` is allowed so the
+    convention matches the other generators that use `field:Type`):
+        field                       -> domain `field`  = response.`field`
+        domainField=responseField   -> domain field    = response.responseField
+        domainField:responseField   -> domain field    = response.responseField
+    """
     mappings = []
     for mapping_arg in mapping_args:
         if '=' in mapping_arg:
             # Custom mapping: domainField=responseField
             domain_field, response_field = mapping_arg.split('=', 1)
             mappings.append((domain_field.strip(), response_field.strip()))
+        elif ':' in mapping_arg:
+            # Custom mapping with colon separator: domainField:responseField
+            domain_field, response_field = mapping_arg.split(':', 1)
+            mappings.append((domain_field.strip(), response_field.strip()))
         else:
             # Simple mapping: same name for both
             field_name = mapping_arg.strip()
             mappings.append((field_name, field_name))
-    
+
     return mappings
 
 

@@ -41,7 +41,6 @@ class DataLayerGenerator:
         """
         self.config = config
         self.base_path = Path(config.get('base_path', '.'))
-        self.base_package = config.get('base_package', 'com.example.app')
         self.feature_root = config.get('feature_root', 'feature')
         self.output_json = output_json
         self.files = []
@@ -130,12 +129,10 @@ class DataLayerGenerator:
         return folders
     
     def _build_package(self, suffix: str, feature_name: str = "") -> str:
-        """Build package name from config package_prefix."""
+        """Build package name: package_prefix (full, already includes base_package) + suffix tail."""
         rest = suffix.split(".", 1)[-1] if "." in suffix else suffix
         if suffix.startswith("shared."):
             rest = suffix[7:] if len(suffix) > 7 else ""
-        if self.base_package:
-            return f"{self.base_package}.{self.package_prefix}.{rest}" if rest else f"{self.base_package}.{self.package_prefix}"
         return f"{self.package_prefix}.{rest}" if rest else self.package_prefix
     
     def _generate_service_file(self, feature_name: str, feature_name_pascal: str, service_class: str = None) -> None:

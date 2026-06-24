@@ -21,8 +21,9 @@ Examples:
     python generate_data_model.py notifications request UpdateNotificationRequest isRead:Boolean notificationId:Int
     
     # Response model
-    python generate_data_model.py products response FetchProductsResponse products:List<Product> totalCount:Int
-    
+    # NOTE: quote any field whose type has generics — the shell eats unquoted < >.
+    python generate_data_model.py products response FetchProductsResponse 'products:List<Product>' totalCount:Int
+
     # From JSON
     python generate_data_model.py branchprofile request CreateBranchRequest --json branch_request.json
     
@@ -40,6 +41,7 @@ from typing import List, Tuple
 
 from path_utils import (
     DEFAULT_CONFIG_PATH,
+    check_field_type,
     get_package_prefix,
     get_path_segment,
     is_shared,
@@ -139,8 +141,9 @@ def parse_fields_from_args(field_args: List[str]) -> List[Tuple[str, str]]:
         field_name, field_type = field_arg.split(':', 1)
         # Decode HTML entities (e.g., &lt; -> <, &gt; -> >)
         field_type = html.unescape(field_type.strip())
+        check_field_type(field_name.strip(), field_type)
         fields.append((field_name.strip(), field_type))
-    
+
     return fields
 
 
@@ -194,9 +197,9 @@ Examples:
   # Generate request model
   python generate_data_model.py notifications request UpdateNotificationRequest isRead:Boolean
   
-  # Generate response model
-  python generate_data_model.py products response FetchProductsResponse products:List<Product> total:Int
-  
+  # Generate response model (quote generic types so the shell keeps the < >)
+  python generate_data_model.py products response FetchProductsResponse 'products:List<Product>' total:Int
+
   # Generate from JSON file
   python generate_data_model.py branchprofile request CreateBranchRequest --json request.json
 

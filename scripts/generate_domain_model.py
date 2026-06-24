@@ -17,6 +17,9 @@ Examples:
     python generate_domain_model.py notifications Notification id:Int title:String message:String? createdAt:Long
     python generate_domain_model.py products Product --json product_model.json
     python generate_domain_model.py shared Something id:Int name:String --shared
+
+    # Quote any field with a generic type — the shell eats unquoted < >:
+    python generate_domain_model.py collections Collection id:String 'coverUrls:List<String>'
 """
 
 import os
@@ -29,6 +32,7 @@ from typing import List, Tuple
 
 from path_utils import (
     DEFAULT_CONFIG_PATH,
+    check_field_type,
     get_package_prefix,
     get_path_segment,
 )
@@ -118,8 +122,9 @@ def parse_fields_from_args(field_args: List[str]) -> List[Tuple[str, str]]:
         field_name, field_type = field_arg.split(':', 1)
         # Decode HTML entities (e.g., &lt; -> <, &gt; -> >)
         field_type = html.unescape(field_type.strip())
+        check_field_type(field_name.strip(), field_type)
         fields.append((field_name.strip(), field_type))
-    
+
     return fields
 
 

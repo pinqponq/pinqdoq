@@ -174,35 +174,43 @@ def generate_repository_method(
     
     # Build method body
     body_lines = []
-    
-    # Build service call parameters
-    service_params = []
+
     domain_param_names = [name for name, _ in parameters]
     imports = []
-    
-    # When service has single param "request: XRequest", build request from domain params
-    if service_param_types and len(service_param_types) == 1:
-        sp_name, sp_type = service_param_types[0]
-        if sp_name == "request" and (sp_type.endswith("Request") or "Request" in sp_type):
-            # request = RequestType(param1 = param1, param2 = param2, ...)
-            domain_to_request = ", ".join(f"{name} = {name}" for name, _ in parameters)
-            service_params.append(f"request = {sp_type}({domain_to_request})")
-            imports.append(f"import feature.*.data.datasource.remote.model.request.{sp_type}")
-        else:
-            # Match by name as before
-            if service_params_signature:
-                for service_param in service_params_signature:
-                    if service_param in domain_param_names:
-                        service_params.append(f"{service_param} = {service_param}")
+
+    # Build the service-call arguments from the SERVICE signature (the source of truth
+    # for what the service expects). Path/query params map by name; a `request: XRequest`
+    # body is constructed from the domain params not already consumed by a name match —
+    # at ANY arity (not only when the service takes a single param), and de-duplicated so
+    # a malformed service signature can't produce `mediaId = mediaId, mediaId = mediaId`.
+    service_params = []
+    if service_param_types:
+        seen_service = set()
+        matched_domain = set()
+        request_slot = None  # (index into service_params, request_type)
+        for sp_name, sp_type in service_param_types:
+            if sp_name in seen_service:
+                continue  # drop duplicate params from a malformed service signature
+            seen_service.add(sp_name)
+            if sp_name in domain_param_names:
+                service_params.append(f"{sp_name} = {sp_name}")
+                matched_domain.add(sp_name)
+            elif sp_name == "request" and "Request" in sp_type:
+                request_slot = (len(service_params), sp_type)
+                service_params.append(None)  # filled below, once name matches are known
             else:
-                service_params = [name for name, _ in parameters]
-    elif service_params_signature:
-        # Match domain params to service params by name
-        for service_param in service_params_signature:
-            if service_param in domain_param_names:
-                service_params.append(f"{service_param} = {service_param}")
+                # No domain param with this name and not a request body — best-effort pass-through.
+                service_params.append(f"{sp_name} = {sp_name}")
+                matched_domain.add(sp_name)
+        if request_slot is not None:
+            slot_index, request_type = request_slot
+            body_fields = ", ".join(
+                f"{name} = {name}" for name in domain_param_names if name not in matched_domain
+            )
+            service_params[slot_index] = f"request = {request_type}({body_fields})"
+            imports.append(f"import feature.*.data.datasource.remote.model.request.{request_type}")
     else:
-        # Pass all domain parameters directly
+        # No service signature available — pass domain params positionally.
         service_params = [name for name, _ in parameters]
     
     # Mapper instance name (camelCase for constructor param; use pascal_to_camel when name is PascalCase like FinalTestMapper)
@@ -259,14 +267,23 @@ def generate_repository_method(
 
 
 def insert_imports_after_last(content: str, imports: List[str]) -> str:
-    """Insert import lines after the last existing import. Returns new content.
+    """Insert import lines after the last existing import (or after the package line
+    when the file has no imports yet). Returns new content.
     Each item in imports may be either a full 'import x.y.z' line or a package path."""
+    if not imports:
+        return content
     lines = content.splitlines(keepends=True)
     last_import_idx = -1
     for i, line in enumerate(lines):
         if line.strip().startswith("import "):
             last_import_idx = i
-    if last_import_idx < 0 or not imports:
+    if last_import_idx < 0:
+        # No imports yet — fall back to inserting right after the package line.
+        for i, line in enumerate(lines):
+            if line.strip().startswith("package "):
+                last_import_idx = i
+                break
+    if last_import_idx < 0:
         return content
     for imp in sorted(imports):
         imp_stripped = imp.strip()
@@ -353,6 +370,26 @@ def inject_mapper_in_constructor(content: str, mapper_name: str, feature_name_pa
     return content
 
 
+def print_repo_impl_instructions(target_path: str, imports_to_add: List[str], method_code: str) -> None:
+    """Fallback: print Target Path + Code when the impl file can't be edited in place."""
+    print(f"\n[+] Repository Implementation Method Addition Instructions")
+    print()
+    if imports_to_add:
+        print("Target Path:")
+        print(f"  {target_path}")
+        print()
+        print("Code:")
+        for imp in sorted(imports_to_add):
+            print(f"  {imp}")
+        print()
+    print("Target Path:")
+    print(f"  {target_path}")
+    print()
+    print("Code:")
+    for line in method_code.split('\n'):
+        print(f"  {line}")
+
+
 def add_repository_implementation(
     feature_name: str,
     domain_method: str,
@@ -416,13 +453,11 @@ def add_repository_implementation(
     
     # Read existing file if it exists
     content = ""
-    lines = []
     if repo_impl_exists:
         try:
             with open(repo_impl_file, 'r', encoding='utf-8') as f:
                 content = f.read()
-            lines = content.splitlines(keepends=True)
-        except Exception as e:
+        except Exception:
             repo_impl_exists = False
     
     # Generate method code
@@ -444,36 +479,7 @@ def add_repository_implementation(
     else:
         imports_to_add = new_imports
     
-    # Determine insertion location (for instructions)
-    insertion_location = "before the closing brace of the class"
-    constructor_update_needed = False
-    constructor_update = ""
-    
-    if repo_impl_exists and lines:
-        # Find insertion point (before closing brace of class)
-        brace_count = 0
-        in_class = False
-        
-        for i, line in enumerate(lines):
-            stripped = line.strip()
-
-            if 'class' in stripped and class_name_pascal + 'RepositoryImpl' in stripped:
-                in_class = True
-            
-            if in_class:
-                brace_count += stripped.count('{') - stripped.count('}')
-                
-                # Find the closing brace of the class
-                if brace_count == 0 and '}' in stripped:
-                    insertion_location = f"before the closing brace at line {i+1}"
-                    break
-        
-        # Check if mapper needs to be added to constructor
-        if mapper_name and repo_impl_exists:
-            # Check if mapper is already in constructor
-            constructor_content = inject_mapper_in_constructor(content, mapper_name, class_name_pascal, feature_name, package_prefix)
-            constructor_update_needed = constructor_content != content
-    # Target path: when project_root is set, include base_path so parser resolves to app's source root
+    # Target path (relative) — used for the instruction fallback only.
     path_segment = get_path_segment(config, feature_name)
     base_path_str = config.get("base_path", "composeApp/src/commonMain/kotlin")
     if project_root is not None:
@@ -481,37 +487,33 @@ def add_repository_implementation(
     else:
         target_path = f"{path_segment}/data/repository/{class_name_pascal}RepositoryImpl.kt"
 
-    # When constructor needs mapper and we have project_root, output full file as JSON so server can write it
-    if constructor_update_needed and project_root is not None and mapper_name:
-        full_content = insert_imports_after_last(constructor_content, new_imports)
-        full_content = insert_method_before_class_closing(full_content, class_name_pascal, method_code)
-        import json
-        payload = {
-            "message": "Repository implementation updated with mapper in constructor and method",
-            "files": [{"path": target_path.replace("\\", "/"), "content": full_content}]
-        }
-        print(json.dumps(payload, ensure_ascii=False))
+    if not repo_impl_exists:
+        # No implementation file on disk — print instructions to apply manually.
+        print(f"[!] Repository implementation not found at {repo_impl_file}", file=sys.stderr)
+        print(f"[!] Generate the data layer first, or apply these manually:", file=sys.stderr)
+        print_repo_impl_instructions(target_path, imports_to_add, method_code)
         return
 
-    # Output instructions instead of modifying file
-    print(f"\n[+] Repository Implementation Method Addition Instructions")
-    print()
-    
-    if imports_to_add:
-        print("Target Path:")
-        print(f"  {target_path}")
-        print()
-        print("Code:")
-        for imp in sorted(imports_to_add):
-            print(f"  {imp}")
-        print()
-    
-    print("Target Path:")
-    print(f"  {target_path}")
-    print()
-    print("Code:")
-    for line in method_code.split('\n'):
-        print(f"  {line}")
+    # Edit the implementation file in place: inject the mapper into the constructor (if any),
+    # add imports, then insert the method before the class's closing brace.
+    updated = content
+    if mapper_name:
+        updated = inject_mapper_in_constructor(updated, mapper_name, class_name_pascal, feature_name, package_prefix)
+    updated = insert_imports_after_last(updated, new_imports)
+    updated = insert_method_before_class_closing(updated, class_name_pascal, method_code)
+
+    if method_code.strip() not in updated:
+        # Couldn't find the class closing brace — fall back to instructions.
+        print(f"[!] Could not locate the {class_name_pascal}RepositoryImpl class body in {repo_impl_file}", file=sys.stderr)
+        print_repo_impl_instructions(target_path, imports_to_add, method_code)
+        return
+
+    if updated == content:
+        print(f"[*] {domain_method} already present in {repo_impl_file} (no change)")
+        return
+
+    repo_impl_file.write_text(updated, encoding='utf-8')
+    print(f"[+] Added {domain_method} to {repo_impl_file}")
 
 
 def main():
