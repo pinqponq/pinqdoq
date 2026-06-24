@@ -30,7 +30,9 @@ from path_utils import (
     DEFAULT_CONFIG_PATH,
     get_package_prefix,
     get_path_segment,
+    insert_import,
     is_shared,
+    register_in_koin_module,
 )
 
 
@@ -54,33 +56,64 @@ def to_pascal_case(text: str) -> str:
     return ''.join(word.capitalize() for word in text.split('_'))
 
 
-def register_use_case(feature_name: str, use_case_name: str, config: dict, project_root: Optional[Path] = None) -> bool:
-    """Register a use case in the domain DI module."""
-    feature_name_pascal = to_pascal_case(feature_name)
-    path_segment = get_path_segment(config, feature_name)
-    package_prefix = get_package_prefix(config, feature_name)
-    base_path_str = config.get("base_path", "composeApp/src/commonMain/kotlin")
-
-    use_case_package = f"{package_prefix}.domain.usecase"
-    if is_shared(feature_name):
-        rel_path = f"{path_segment}/domain/di/SharedDomainModule.kt"
-    else:
-        rel_path = f"{path_segment}/domain/di/{feature_name_pascal}DomainModule.kt"
-
-    target_path = f"{base_path_str}/{rel_path}" if project_root is not None else rel_path
-
-    import_line = f"import {use_case_package}.{use_case_name}"
-    registration_line = f"    singleOf(::{use_case_name})"
-
+def print_instructions(target_path: str, import_statement: str, registration_line: str) -> None:
+    """Fallback: print Target Path + Code when the file can't be edited in place."""
     print(f"\n[+] Use Case Registration Instructions")
     print()
     print("Target Path:")
     print(f"  {target_path}")
     print()
     print("Code:")
-    print(f"  {import_line}")
+    print(f"  import {import_statement}")
     print()
     print(f"  {registration_line}")
+
+
+def register_use_case(feature_name: str, use_case_name: str, config: dict, project_root: Optional[Path] = None) -> bool:
+    """Register a use case in the domain DI module by editing the module file in place.
+
+    Inserts `import …` and `singleOf(::UseCase)` idempotently, then writes the file.
+    Falls back to printing instructions when the module file (or its `module { }`
+    block) cannot be found.
+    """
+    feature_name_pascal = to_pascal_case(feature_name)
+    path_segment = get_path_segment(config, feature_name)
+    package_prefix = get_package_prefix(config, feature_name)
+    base_path_str = config.get("base_path", "composeApp/src/commonMain/kotlin")
+    use_case_package = f"{package_prefix}.domain.usecase"
+
+    if is_shared(feature_name):
+        rel_path = f"{path_segment}/domain/di/SharedDomainModule.kt"
+    else:
+        rel_path = f"{path_segment}/domain/di/{feature_name_pascal}DomainModule.kt"
+
+    base_dir = (project_root if project_root is not None else Path.cwd()) / base_path_str
+    target_file = base_dir / rel_path
+
+    import_statement = f"{use_case_package}.{use_case_name}"
+    registration_line = f"singleOf(::{use_case_name})"
+
+    if not target_file.exists():
+        print(f"[!] Domain DI module not found at {target_file}", file=sys.stderr)
+        print(f"[!] Generate the domain layer first, or apply these manually:", file=sys.stderr)
+        print_instructions(str(target_file), import_statement, registration_line)
+        return False
+
+    content = target_file.read_text(encoding='utf-8')
+    updated = insert_import(content, import_statement)
+    updated = register_in_koin_module(updated, registration_line)
+
+    if registration_line not in updated:
+        print(f"[!] Could not find a `module {{ }}` block in {target_file}", file=sys.stderr)
+        print_instructions(str(target_file), import_statement, registration_line)
+        return False
+
+    if updated == content:
+        print(f"[*] {use_case_name} already registered in {target_file} (no change)")
+        return True
+
+    target_file.write_text(updated, encoding='utf-8')
+    print(f"[+] Registered {use_case_name} in {target_file}")
     return True
 
 
@@ -121,13 +154,13 @@ def main():
     if feature_root_override:
         config["feature_root"] = feature_root_override
 
-    registered_count = 0
+    all_ok = True
     for use_case_name in use_case_names:
-        if register_use_case(feature_name, use_case_name, config, project_root):
-            registered_count += 1
-    
-    if registered_count > 0:
-        print(f"\n[+] Successfully registered {registered_count} use case(s)", file=sys.stderr)
+        if not register_use_case(feature_name, use_case_name, config, project_root):
+            all_ok = False
+
+    if not all_ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

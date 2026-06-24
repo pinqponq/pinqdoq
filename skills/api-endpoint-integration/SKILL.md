@@ -4,7 +4,7 @@ description: Integrates new API endpoints into existing Mobile features by runni
 ---
 # API Endpoint Integration
 
-Version: 2.0.0
+Version: 2.1.0
 Owner: pinq-doq
 Risk: Low
 
@@ -74,7 +74,7 @@ This skill produces a complete, Clean-Architecture–compliant integration of a 
 3. **Validate** — Confirm endpoint path, HTTP method, feature name, and request/response structures are present and clear.
 4. **Normalize** — Resolve feature name to the existing feature root (e.g. `feature/<feature_name>/`), or to **shared** when the shared-module rule applies (see `kotlin-architecture.md` / `.pinq-doq/references/kotlin/shared-module.md`). **Reuse before create: first check `shared/` (then the target feature) for an existing service / model / mapper / use case and reuse it instead of generating a duplicate.** Confirm naming (e.g. `{Entity}Request`, `{Entity}Response` for data; no "Dto" suffix).
 5. **Plan** — Decide which scripts to run and in which order (see Step-by-step integration below).
-6. **Execute** — **Run the corresponding pinq-doq script for each step** that has one. When running against a project other than where the scripts live, pass `--project-root` (absolute path to the target app project) to every script that supports it, and `--config <path-to-your-config.json>` to the layer scaffolds, so outputs land in the target workspace. File-generation scripts write files into the project and return a short summary; instruction-based scripts (`add_service_method.py`, `add_repository_method.py`, `register_*`, `register_di_modules.py`) output **Target Path + Code** that you apply in the workspace. If you must write code manually (no script covers the step, the script failed, or its input cannot be produced), state why.
+6. **Execute** — **Run the corresponding pinq-doq script for each step** that has one. When running against a project other than where the scripts live, pass `--project-root` (absolute path to the target app project) to every script that supports it, and `--config <path-to-your-config.json>` to the layer scaffolds, so outputs land in the target workspace. File-generation scripts write files into the project and return a short summary; the `register_*` scripts (`register_mapper.py`, `register_use_case.py`, `register_di_modules.py`) and `add_repository_impl.py` edit their target files in place and only print **Target Path + Code** as a fallback when the target file is missing; the remaining instruction-based scripts (`add_service_method.py`, `add_repository_method.py`) output **Target Path + Code** that you apply in the workspace. If you must write code manually (no script covers the step, the script failed, or its input cannot be produced), state why.
 7. **Verify** — Ensure every script output that implies a file change has been applied; check naming and that no manual edits contradict script instructions. Review the changed files against the repo's coding standards (see `common.md`) and report any violations before finishing.
 8. **Emit** — Provide a brief summary of what was integrated and where (files and layers); mention any violations found during review.
 
@@ -113,28 +113,28 @@ python .pinq-doq/scripts/generate_presentation_layer.py <feature_name> [--config
    python .pinq-doq/scripts/generate_domain_model.py <feature_name> <Entity> field:Type ... [--shared]
    ```
 
-5. **Mapper** — If a new response type is mapped, run `generate_mapper.py`; then register it with `register_mapper.py`. Apply DI registration instructions to the data module.
+5. **Mapper** — If a new response type is mapped, run `generate_mapper.py`; then register it with `register_mapper.py`, which edits the data DI module in place (no manual apply; it prints instructions only as a fallback when the module file is missing).
 
    ```bash
    python .pinq-doq/scripts/generate_mapper.py <feature_name> <Entity>Mapper <Entity>Response <Entity> [field_mapping ...] [--shared]
    python .pinq-doq/scripts/register_mapper.py <feature_name> <Entity>Mapper [--project-root <path>]
    ```
 
-6. **Repository implementation** — Run `add_repository_impl.py`. This script **reads the repository interface and service files from disk**, so pass `--project-root` (absolute path to the target app) when running against another project so it sees the same files as your workspace. Apply instructions to the repository implementation file.
+6. **Repository implementation** — Run `add_repository_impl.py`. This script **reads the repository interface and service files from disk** and edits the implementation file in place (injecting the mapper into the constructor, adding imports, and appending the method — idempotently), so pass `--project-root` (absolute path to the target app) when running against another project so it sees the same files as your workspace. It prints instructions only as a fallback when the impl file is missing.
 
    ```bash
    python .pinq-doq/scripts/add_repository_impl.py <feature_name> <repoMethod> <serviceMethod> [--mapper <mapperName>] [--map-list] [--shared] [--entity <Name>] --project-root <path>
    ```
 
-7. **Use case** — Run `generate_use_case.py` (parameters array, return type); then register it with `register_use_case.py`. Apply DI registration instructions to the domain module.
+7. **Use case** — Run `generate_use_case.py` (parameters array, return type); it writes the use case file. Then register it with `register_use_case.py`, which edits the domain DI module in place (no manual apply; instructions are a fallback only).
 
    ```bash
-   # generate_use_case.py takes neither --config nor --project-root: it reads the target root from $AI_SCRIPTS_PROJECT_ROOT (else the current directory). Set it when targeting another project.
+   # generate_use_case.py takes neither --config nor --project-root: it reads the target root from $AI_SCRIPTS_PROJECT_ROOT (else the current directory) and writes the file there. Pass --output-json to print contents instead of writing.
    AI_SCRIPTS_PROJECT_ROOT=<path> python .pinq-doq/scripts/generate_use_case.py <feature_name> <Action>UseCase <repositoryMethod> --parameters '[{"name":"id","type":"String"}]' --return-type '<DomainType>' [--shared]
    python .pinq-doq/scripts/register_use_case.py <feature_name> <Action>UseCase [--shared] [--project-root <path>]
    ```
 
-8. **DI modules** — Run `register_di_modules.py` for initKoin; apply all Target Path + Code blocks to `initKoin.kt` (or the path from config `initKoin_path`).
+8. **DI modules** — Run `register_di_modules.py` for initKoin; it edits `initKoin.kt` in place (path from config `initKoin_path`), inserting the feature's module imports and registrations. It prints instructions only as a fallback when the file is missing.
 
    ```bash
    python .pinq-doq/scripts/register_di_modules.py <feature_name> [--project-root <path>]
@@ -179,7 +179,8 @@ Operationally: when that rule says shared applies, run the scripts with `--share
 - **Available scripts** (under `.pinq-doq/scripts/`):
   - **Layer scaffolds** (take `--config`): `generate_data_layer.py`, `generate_domain_layer.py`, `generate_presentation_layer.py`.
   - **Models and code** (write files; take `--config` and/or `--project-root` per script): `generate_data_model.py`, `generate_domain_model.py`, `generate_mapper.py`, `add_service_method.py`, `add_repository_method.py`. `generate_use_case.py` is the exception — it takes neither flag; set `AI_SCRIPTS_PROJECT_ROOT` for the target root.
-  - **Registration / impl** (instruction-based or file-reading; take `--project-root`): `register_mapper.py`, `register_use_case.py`, `add_repository_impl.py`, `register_di_modules.py`.
+  - **Registration** (edit the DI file in place; take `--project-root`): `register_mapper.py`, `register_use_case.py`, `register_di_modules.py` — each inserts the import + registration into the target module file and prints instructions only as a fallback when that file is missing.
+  - **Repository impl** (file-reading; edits in place; takes `--project-root`): `add_repository_impl.py` reads the repository interface and service from disk, then inserts the method (and injects the mapper into the constructor) into the impl file idempotently; prints instructions only as a fallback when the impl file is missing.
   - **Project targeting**: scripts that support it accept `--project-root <absolute app path>`; the layer scaffolds accept `--config <path-to-your-config.json>`. Use the same target for the whole integration so all outputs land in one project.
 - **Gate**: Use these scripts when adding an endpoint (user provided endpoint info or asked to add an endpoint). Review changed files against `common.md` during Verify.
 - **Data minimization**: Pass only feature name, model names, method names, types, and field definitions required by each script.

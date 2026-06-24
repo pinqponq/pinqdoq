@@ -77,7 +77,7 @@ All path and package decisions come from a `config.json` (the consumer supplies 
 }
 ```
 
-> Missing keys fall back to built-in defaults (`base_package` → `com.example.app`, `feature_root` → `feature`, `shared_root` → `shared`, …). Provide a **complete** config so generated packages/paths are correct for your project — don't rely on the fallbacks.
+> Missing keys fall back to built-in defaults (`base_package` → `""` (no prefix), `feature_root` → `feature`, `shared_root` → `shared`, …). `base_package` is prepended consistently across every generator and scaffold, so set it (or leave it `""`) and all generated packages agree. Provide a **complete** config so generated packages/paths are correct for your project — don't rely on the fallbacks.
 
 ## How each script takes the target project
 

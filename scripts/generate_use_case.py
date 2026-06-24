@@ -113,6 +113,42 @@ def to_camel_case(text: str) -> str:
     return pascal[0].lower() + pascal[1:] if pascal else ""
 
 
+# Scalar Kotlin built-ins — never a domain model, in any position.
+_SCALAR_BUILTINS = {
+    "Unit", "Int", "Long", "Double", "Float", "Boolean", "String", "Char",
+    "Byte", "Short", "Any", "Nothing", "Number",
+}
+# Generic container built-ins — built-in only when used AS a container (`List<...>`).
+# As a bare type or a type argument the same name is treated as a domain model,
+# so a model named e.g. `Collection` (collides with kotlin.collections.Collection)
+# still gets imported.
+_CONTAINER_BUILTINS = {
+    "List", "MutableList", "Set", "MutableSet", "Map", "MutableMap",
+    "Collection", "Iterable", "Sequence", "Array", "Pair", "Triple",
+}
+
+
+def domain_model_types(type_str: str) -> List[str]:
+    """Return the non-builtin type names referenced by a return type, in order.
+
+    `List<Collection>` -> ['Collection']; `Collection` -> ['Collection'];
+    `Map<String, Collection>` -> ['Collection']; `List<String>` -> [].
+    Fully-qualified types (containing '.') are skipped — assumed already importable.
+    """
+    if '.' in type_str:
+        return []
+    seen = []
+    for match in re.finditer(r'([A-Za-z_][A-Za-z0-9_]*)\s*(<?)', type_str):
+        name, opens_generic = match.group(1), match.group(2)
+        if name in _SCALAR_BUILTINS:
+            continue
+        if name in _CONTAINER_BUILTINS and opens_generic == '<':
+            continue  # used as a container, e.g. List<...>
+        if name not in seen:
+            seen.append(name)
+    return seen
+
+
 def generate_use_case(
     feature_name: str,
     use_case_name: str,
@@ -142,9 +178,10 @@ def generate_use_case(
     imports = []
     imports.append(f"import {package_prefix}.domain.repository.{feature_name_pascal}Repository")
     
-    # Add import for return type if not Unit
-    if return_type != "Unit" and '<' not in return_type and '.' not in return_type:
-        imports.append(f"import {package_prefix}.domain.model.{return_type}")
+    # Add import(s) for the return type's domain model(s), incl. generics like List<Collection>
+    if return_type != "Unit":
+        for domain_type in domain_model_types(return_type):
+            imports.append(f"import {package_prefix}.domain.model.{domain_type}")
     
     # Add imports for parameter types that are request models (data layer)
     for _param_name, param_type in parameters:
@@ -224,9 +261,11 @@ def create_use_case(
         parameters, return_type, package_prefix
     )
     
-    relative_path = str(usecase_file.relative_to(project_root))
-    
-    # Always output JSON (no file writing)
+    try:
+        relative_path = str(usecase_file.relative_to(project_root))
+    except ValueError:
+        relative_path = str(usecase_file)
+
     result = {
         "files": [{
             "path": relative_path,
@@ -234,7 +273,16 @@ def create_use_case(
         }],
         "message": f"Use case {use_case_name} generated successfully for feature: {to_pascal_case(feature_name)}"
     }
-    print(json.dumps(result))
+
+    if output_json:
+        # Opt-in: print file contents as JSON instead of writing to disk.
+        print(json.dumps(result))
+        return result
+
+    # Default: write the use case file to disk (mirrors generate_data_model.py).
+    usecase_dir.mkdir(parents=True, exist_ok=True)
+    usecase_file.write_text(use_case_code, encoding='utf-8')
+    print(f"[+] Generated: {usecase_file}")
     return result
 
 

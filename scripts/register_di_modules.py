@@ -227,6 +227,25 @@ def add_modules_to_registration(lines: List[str], modules: List[str]) -> List[st
 
 
 
+def print_instructions(target_path: str, import_statements: List[str], module_names: List[str]) -> None:
+    """Fallback: print Target Path + Code when initKoin.kt can't be edited in place."""
+    if import_statements:
+        print("Target Path:")
+        print(f"  {target_path}")
+        print()
+        print("Code:")
+        for imp in sorted(import_statements):
+            print(f"  import {imp}")
+        print()
+    if module_names:
+        print("Target Path:")
+        print(f"  {target_path}")
+        print()
+        print("Code:")
+        for module in sorted(module_names):
+            print(f"  {module},")
+
+
 def register_di_modules(feature_name: str, config: dict, project_root: Optional[Path] = None) -> None:
     """Register DI modules for a feature in initKoin.kt."""
     try:
@@ -253,32 +272,31 @@ def register_di_modules(feature_name: str, config: dict, project_root: Optional[
                 modules_info = existing
         module_names = [name for name, _ in modules_info]
         import_statements = [imp for _, imp in modules_info]
-        
-        # Always output all instructions (don't check if files exist or what's already registered)
-        imports_to_add = import_statements
-        modules_to_add = module_names
-        
-        # Calculate target path (use config if available, otherwise default)
-        init_koin_path = config.get("initKoin_path", "core/data/di/initKoin.kt")
-        target_path = init_koin_path
-        
-        # Output instructions (no comment lines so parser inserts only actual code)
-        if imports_to_add:
-            print("Target Path:")
-            print(f"  {target_path}")
-            print()
-            print("Code:")
-            for imp in sorted(imports_to_add):
-                print(f"  import {imp}")
-            print()
-        
-        if modules_to_add:
-            print("Target Path:")
-            print(f"  {target_path}")
-            print()
-            print("Code:")
-            for module in sorted(modules_to_add):
-                print(f"  {module},")
+
+        # Resolve the initKoin.kt path: (project_root or cwd) / base_path / initKoin_path.
+        # initKoin_path in config is relative to base_path (see README config sample).
+        base_path_str = config.get("base_path", "composeApp/src/commonMain/kotlin")
+        init_koin_rel = config.get("initKoin_path") or "core/data/di/initKoin.kt"
+        base_dir = (project_root if project_root is not None else Path.cwd()) / base_path_str
+        target_file = base_dir / init_koin_rel
+
+        if not target_file.exists():
+            print(f"[!] initKoin file not found at {target_file}", file=sys.stderr)
+            print(f"[!] Set initKoin_path in config.json, or apply these manually:", file=sys.stderr)
+            print_instructions(str(target_file), import_statements, module_names)
+            return
+
+        lines = target_file.read_text(encoding='utf-8').splitlines(keepends=True)
+        original = "".join(lines)
+        lines = add_imports(lines, import_statements)
+        lines = add_modules_to_registration(lines, module_names)
+        updated = "".join(lines)
+
+        if updated == original:
+            print(f"[*] All modules already registered in {target_file} (no change)")
+        else:
+            target_file.write_text(updated, encoding='utf-8')
+            print(f"[+] Updated {target_file}")
     except Exception as e:
         import traceback
         error_msg = f"[!] Error in register_di_modules: {str(e)}\n"
@@ -311,12 +329,6 @@ def main():
         if project_root is not None and not os.path.isfile(config_path):
             config_path = DEFAULT_CONFIG_PATH
         config = load_config(config_path)
-        # When applying to another project, target path must be relative to project root (base_path + initKoin_path)
-        if project_root is not None:
-            base = config.get("base_path", "composeApp/src/commonMain/kotlin")
-            init_koin = config.get("initKoin_path") or "core/data/di/initKoin.kt"
-            config = dict(config)
-            config["initKoin_path"] = f"{base}/{init_koin}"
 
         # Register DI modules
         register_di_modules(feature_name, config, project_root)

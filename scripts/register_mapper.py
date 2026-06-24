@@ -23,7 +23,9 @@ from path_utils import (
     DEFAULT_CONFIG_PATH,
     get_package_prefix,
     get_path_segment,
+    insert_import,
     is_shared,
+    register_in_koin_module,
 )
 
 
@@ -47,34 +49,65 @@ def to_pascal_case(text: str) -> str:
     return ''.join(word.capitalize() for word in text.split('_'))
 
 
-def register_mapper(feature_name: str, mapper_name: str, config: dict, project_root: Optional[Path] = None) -> bool:
-    """Register a mapper in the data DI module."""
-    feature_name_pascal = to_pascal_case(feature_name)
-    path_segment = get_path_segment(config, feature_name)
-    package_prefix = get_package_prefix(config, feature_name)
-    base_path_str = config.get("base_path", "composeApp/src/commonMain/kotlin")
-
-    if is_shared(feature_name):
-        rel_path = f"{path_segment}/data/di/SharedDataModule.kt"
-        mapper_package = f"{package_prefix}.data.datasource.remote.model.mapper"
-    else:
-        rel_path = f"{path_segment}/data/di/{feature_name_pascal}DataModule.kt"
-        mapper_package = f"{package_prefix}.data.datasource.remote.model.mapper"
-
-    target_path = f"{base_path_str}/{rel_path}" if project_root is not None else rel_path
-
-    import_line = f"import {mapper_package}.{mapper_name}"
-    registration_line = f"    singleOf(::{mapper_name})"
-
+def print_instructions(target_path: str, import_statement: str, registration_line: str) -> None:
+    """Fallback: print Target Path + Code when the file can't be edited in place."""
     print(f"\n[+] Mapper Registration Instructions")
     print()
     print("Target Path:")
     print(f"  {target_path}")
     print()
     print("Code:")
-    print(f"  {import_line}")
+    print(f"  import {import_statement}")
     print()
     print(f"  {registration_line}")
+
+
+def register_mapper(feature_name: str, mapper_name: str, config: dict, project_root: Optional[Path] = None) -> bool:
+    """Register a mapper in the data DI module by editing the module file in place.
+
+    Inserts `import …` and `singleOf(::Mapper)` idempotently, then writes the file.
+    Falls back to printing instructions when the module file (or its `module { }`
+    block) cannot be found.
+    """
+    feature_name_pascal = to_pascal_case(feature_name)
+    path_segment = get_path_segment(config, feature_name)
+    package_prefix = get_package_prefix(config, feature_name)
+    base_path_str = config.get("base_path", "composeApp/src/commonMain/kotlin")
+    mapper_package = f"{package_prefix}.data.datasource.remote.model.mapper"
+
+    if is_shared(feature_name):
+        rel_path = f"{path_segment}/data/di/SharedDataModule.kt"
+    else:
+        rel_path = f"{path_segment}/data/di/{feature_name_pascal}DataModule.kt"
+
+    base_dir = (project_root if project_root is not None else Path.cwd()) / base_path_str
+    target_file = base_dir / rel_path
+
+    import_statement = f"{mapper_package}.{mapper_name}"
+    registration_line = f"singleOf(::{mapper_name})"
+
+    if not target_file.exists():
+        print(f"[!] Data DI module not found at {target_file}", file=sys.stderr)
+        print(f"[!] Generate the data layer first, or apply these manually:", file=sys.stderr)
+        print_instructions(str(target_file), import_statement, registration_line)
+        return False
+
+    content = target_file.read_text(encoding='utf-8')
+    updated = insert_import(content, import_statement)
+    updated = register_in_koin_module(updated, registration_line)
+
+    if registration_line not in updated:
+        # No `module { }` block found — can't register reliably.
+        print(f"[!] Could not find a `module {{ }}` block in {target_file}", file=sys.stderr)
+        print_instructions(str(target_file), import_statement, registration_line)
+        return False
+
+    if updated == content:
+        print(f"[*] {mapper_name} already registered in {target_file} (no change)")
+        return True
+
+    target_file.write_text(updated, encoding='utf-8')
+    print(f"[+] Registered {mapper_name} in {target_file}")
     return True
 
 
@@ -96,13 +129,13 @@ def main():
             i += 1
     
     config = load_config()
-    registered_count = 0
+    all_ok = True
     for mapper_name in mapper_names:
-        if register_mapper(feature_name, mapper_name, config, project_root):
-            registered_count += 1
-    
-    if registered_count > 0:
-        print(f"\n[+] Successfully registered {registered_count} mapper(s)", file=sys.stderr)
+        if not register_mapper(feature_name, mapper_name, config, project_root):
+            all_ok = False
+
+    if not all_ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
