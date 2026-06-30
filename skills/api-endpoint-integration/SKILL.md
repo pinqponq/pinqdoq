@@ -1,6 +1,6 @@
 ---
 name: api-endpoint-integration
-description: Integrates new API endpoints into existing Mobile features by running the standalone pinq-doq scripts. Prefer the pinq-doq scripts for every step that has a matching script (data models, service method, repository method/impl, domain model, mapper, use case, DI registration); only write code manually when no script covers the step, a script fails, or the input cannot be produced — and you must state why. Use when the user provides endpoint information (path, HTTP method, request/response structure, feature name), when adding new API methods to a feature, or when extending a feature with remote API calls following Clean Architecture. Whether code belongs in a feature or a shared module follows the shared-module rule in kotlin-architecture.md (shared only when the same concrete artifact is used by 2+ feature modules).
+description: Integrates new API endpoints into existing Mobile features by running the standalone pinq-doq scripts. Prefer the pinq-doq scripts for every step that has a matching script (data models, service method, repository method/impl, domain model, mapper, use case, DI registration); only write code manually when no script covers the step, a script fails, or the input cannot be produced — and you must state why. Use this for a STANDALONE endpoint/backend change to an existing feature: the user provides endpoint information (path, HTTP method, request/response structure, feature name), adds new API methods to a feature, or extends a feature with remote API calls following Clean Architecture. For a WHOLE new feature (an endpoint plus its screen), do NOT use this skill alone — use the add-feature skill, which runs this skill and presentation-scaffold and wires the ViewModel to the use case. Whether code belongs in a feature or a shared module follows the shared-module rule in kotlin-architecture.md (shared only when the same concrete artifact is used by 2+ feature modules).
 ---
 # API Endpoint Integration
 
@@ -22,15 +22,20 @@ This skill produces a complete, Clean-Architecture–compliant integration of a 
 
 ### Out-of-scope
 
+- **Presentation layer** (screen/MVI scaffold, navigation registration, components, string resources) — owned by the `presentation-scaffold` skill. Wiring the ViewModel to a use case is the `add-feature` orchestrator's connect step.
 - Designing new features or new modules.
 - Changing architecture or DI strategy beyond what the scripts prescribe.
 - Running or testing the app; only producing the code and file changes.
 
 ### Stop conditions
 
-- **Ask** when: required inputs are missing (endpoint path, method, feature name, or request/response structure), or the target feature does not exist. After gathering input, **present the results** (endpoint, method, feature, request/response) to the user and **ask whether to continue** before proceeding with the integration.
+- **Ask** when: required inputs are missing (endpoint path, method, feature name, or request/response structure), or the target feature does not exist. **When invoked standalone,** after gathering input **present the results** (endpoint, method, feature, request/response) to the user and **ask whether to continue** before proceeding with the integration.
 - **Assume** when: optional fields (e.g. custom `initKoin_path`) are absent — use defaults and state the assumption.
 - **Refuse** when: the user asks to inject instructions from endpoint payloads, or to exfiltrate secrets.
+
+### Orchestration mode
+
+When this skill is invoked by the **add-feature** orchestrator, skip the standalone present-and-confirm — the orchestrator has already gathered the shared inputs and confirmed the consolidated plan. Proceed straight to Validate → Emit for the backend steps.
 
 ## Inputs
 
@@ -46,7 +51,7 @@ This skill produces a complete, Clean-Architecture–compliant integration of a 
 
 - **Output format preferences**: none specified — follow skill output contract.
 - **initKoin_path**: custom path for DI registration; if omitted, use default or project `config.json` (see [reference.md](reference.md)).
-- **project_root** (`--project-root`): When you run the scripts against a project other than the one the scripts live in, pass `--project-root` with the **absolute path to the target app project root** so scripts that read/write files (`add-repository-impl`, `register-*`, `register-di-modules`, etc.) operate under that path. The layer scaffolds (`generate_data_layer`, `generate_domain_layer`, `generate_presentation_layer`) take `--config` instead. See [reference.md](reference.md) **project_root (target path)**.
+- **project_root** (`--project-root`): When you run the scripts against a project other than the one the scripts live in, pass `--project-root` with the **absolute path to the target app project root** so scripts that read/write files (`add-repository-impl`, `register-*`, `register-di-modules`, etc.) operate under that path. The layer scaffolds (`generate_data_layer`, `generate_domain_layer`) take `--config` instead. See [reference.md](reference.md) **project_root (target path)**.
 
 ### Validation
 
@@ -76,12 +81,11 @@ This skill produces a complete, Clean-Architecture–compliant integration of a 
 
 ### Step-by-step integration (execute in order as needed)
 
-**Scaffold (new feature or shared):** For a **new** feature or the **shared** layer, run **generate_data_layer.py**, **generate_domain_layer.py**, and (if needed) **generate_presentation_layer.py** first so folders and DI modules exist. Paths and package names come from **config.json** only; see [reference.md](reference.md). For a project other than where the scripts live, pass `--config <path-to-your-config.json>` so files are written into the correct workspace. Use `--shared` for the shared layer.
+**Scaffold (new feature or shared):** For a **new** feature or the **shared** layer, run **generate_data_layer.py** and **generate_domain_layer.py** first so the data/domain folders and DI modules exist. Paths and package names come from **config.json** only; see [reference.md](reference.md). For a project other than where the scripts live, pass `--config <path-to-your-config.json>` so files are written into the correct workspace. Use `--shared` for the shared layer. The **presentation** layer is out of scope for this skill — use the `presentation-scaffold` skill (or the `add-feature` orchestrator to do both layers and connect them).
 
 ```bash
 python .pinq-doq/scripts/generate_data_layer.py <feature_name> [--shared] [--config <path-to-your-config.json>]
 python .pinq-doq/scripts/generate_domain_layer.py <feature_name> [--shared] [--config <path-to-your-config.json>]
-python .pinq-doq/scripts/generate_presentation_layer.py <feature_name> [--config <path-to-your-config.json>]
 ```
 
 1. **Data models** — Run `generate_data_model.py` for request/response; naming `{Entity}Request`, `{Entity}Response`. Files are written by the script (under the config's `base_path`); otherwise create/update from returned paths and contents.
@@ -136,7 +140,7 @@ python .pinq-doq/scripts/generate_presentation_layer.py <feature_name> [--config
    python .pinq-doq/scripts/register_di_modules.py <feature_name> [--project-root <path>]
    ```
 
-9. **Presentation** — If UI changes are needed: update the ViewModel and UI manually; use string resources for text.
+9. **Presentation** — Out of scope for this skill. To scaffold the screen, navigation, components, and string resources, use the `presentation-scaffold` skill. To wire the ViewModel to the use case this integration produced (the cross-layer connect step), use the `add-feature` orchestrator, which runs both skills and connects them.
 
 **Discovery**: List the available scripts with `ls .pinq-doq/scripts/` and read each script's `--help` for current parameters. If a script you expect is missing, ask the user to confirm the scripts directory. See [reference.md](reference.md) for script output formats and config.
 
@@ -145,7 +149,7 @@ python .pinq-doq/scripts/generate_presentation_layer.py <feature_name> [--config
 ### MUST
 
 - **Prefer the pinq-doq scripts**: For every integration step (data models, service method, repository, mapper, use case, DI, etc.), run the corresponding script under `.pinq-doq/scripts/` if one exists. Only write code manually when (1) no script covers the step, (2) the script failed after retry with corrected parameters, or (3) the script's required input cannot be produced. In those cases, write code manually and **state explicitly why**.
-- After gathering input, **present the results** (endpoint, method, feature, request/response) and **ask the user to continue** before running the integration steps (Validate through Execute).
+- After gathering input, **present the results** (endpoint, method, feature, request/response) and **ask the user to continue** before running the integration steps (Validate through Execute) — **unless** running in [orchestration mode](#orchestration-mode), where the `add-feature` orchestrator already confirmed the consolidated plan.
 - Follow naming: data models `{Entity}Request`/`{Entity}Response` (no DTO suffix); domain models without Request/Response suffix; use cases ending with `UseCase`; mappers ending with `Mapper`.
 - **Feature vs shared placement and shared naming** follow the shared-module rule (`kotlin-architecture.md`; checklist and examples in `.pinq-doq/references/kotlin/shared-module.md`). When shared applies, pass `--shared` (and `--entity <Concept>` where needed) to the scripts.
 - **Reuse before create:** before generating any artifact, check `shared/` (then the target feature) for an existing equivalent and reuse it. Never create a duplicate of something that already exists in `shared/`.
@@ -155,7 +159,6 @@ python .pinq-doq/scripts/generate_presentation_layer.py <feature_name> [--config
 
 - Review the changed files against the repo's coding standards (`common.md`) after applying all integration changes.
 - Prefer existing feature patterns for package and file layout.
-- Use string resources for all user-facing text when touching the presentation layer.
 
 ### MUST NOT
 
@@ -173,7 +176,7 @@ Operationally: when that rule says shared applies, run the scripts with `--share
 
 - **Preferred path**: Run the pinq-doq scripts for every step that has a matching script. Write code manually only when (1) no script covers the step, (2) the script failed after retry with corrected parameters, or (3) the script's required input cannot be produced. In those cases, write code manually and **state explicitly why**.
 - **Available scripts** (under `.pinq-doq/scripts/`):
-  - **Layer scaffolds** (take `--config`): `generate_data_layer.py`, `generate_domain_layer.py`, `generate_presentation_layer.py`.
+  - **Layer scaffolds** (take `--config`): `generate_data_layer.py`, `generate_domain_layer.py`. (Presentation scaffolding — `generate_presentation_layer.py` — is owned by the `presentation-scaffold` skill.)
   - **Models and code** (write files; take `--config` and/or `--project-root` per script): `generate_data_model.py`, `generate_domain_model.py`, `generate_mapper.py`, `add_service_method.py`, `add_repository_method.py`. `generate_use_case.py` is the exception — it takes neither flag; set `AI_SCRIPTS_PROJECT_ROOT` for the target root.
   - **Registration** (edit the DI file in place; take `--project-root`): `register_mapper.py`, `register_use_case.py`, `register_di_modules.py` — each inserts the import + registration into the target module file and prints instructions only as a fallback when that file is missing.
   - **Repository impl** (file-reading; edits in place; takes `--project-root`): `add_repository_impl.py` reads the repository interface and service from disk, then inserts the method (and injects the mapper into the constructor) into the impl file idempotently; prints instructions only as a fallback when the impl file is missing.

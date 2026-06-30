@@ -47,4 +47,4 @@ A suite of standalone KMP code generators lives at `.pinq-doq/scripts/` — feat
 
 - **Catalog:** `.pinq-doq/scripts/README.md` lists every script with its purpose and how to invoke it (configuration, target-project flags, `--help`).
 - **Each runs individually — you do not need a workflow to use one.** Reach for a single script when you've built the rest by hand and just need one piece (e.g. `register_di_modules.py` to wire a feature you already wrote, or `add_string_resource.py` for a lone string).
-- The `api-endpoint-integration` skill orchestrates these scripts end-to-end for full endpoint integration; the catalog is for à-la-carte use outside that flow.
+- Three skills orchestrate these scripts end-to-end: `api-endpoint-integration` (backend — data → domain → use case → DI), `presentation-scaffold` (presentation — screen/MVI, navigation, components, strings), and `add-feature` (runs both and wires the ViewModel to the use case). Reach for `add-feature` when building a whole feature; the catalog is for à-la-carte use outside those flows.

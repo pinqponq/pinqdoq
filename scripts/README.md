@@ -1,6 +1,6 @@
 # scripts
 
-KMP Clean-Architecture code generators. These are plain Python 3 CLI programs (stdlib only) — **no MCP server, no Figma, no network**. The `api-endpoint-integration` skill drives them, but you can run any of them by hand.
+KMP Clean-Architecture code generators. These are plain Python 3 CLI programs (stdlib only) — **no MCP server, no Figma, no network**. The pinq-doq skills drive them — `api-endpoint-integration` (backend: data → domain → use case → DI), `presentation-scaffold` (presentation: screen/MVI, navigation, components, strings), and `add-feature` (orchestrates both) — but you can run any of them by hand.
 
 They are **not** copied into a consumer; they run in place from the pinq-doq mount, e.g. `python .pinq-doq/scripts/<script>.py …`.
 
@@ -44,7 +44,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 | `register_di_modules.py` | Register a feature's three DI modules in `initKoin.kt`. |
 | `register_navigation.py` | Register a screen in the navigation graph + `Screen.kt`. |
 
-**Standalone UI** — not part of the endpoint flow (see [The three standalone UI scripts](#the-three-standalone-ui-scripts)):
+**Standalone UI** — presentation-layer scripts, wrapped by the `presentation-scaffold` skill (see [Presentation and UI scripts](#presentation-and-ui-scripts)):
 
 | Script | Purpose |
 |---|---|
@@ -90,13 +90,14 @@ The interface is not uniform (these are copied verbatim from their origin; see t
 
 Run any script with `--help` (or read its header) for exact parameters. Use `--output-json` on the generators to print file contents as JSON instead of writing to disk.
 
-## The three standalone UI scripts
+## Presentation and UI scripts
 
-These are not wired to the `api-endpoint-integration` flow; they are callable directly and a future "screen-scaffold" skill could wrap them:
+These build the presentation layer. The `presentation-scaffold` skill wraps them (and the `add-feature` orchestrator runs that skill alongside `api-endpoint-integration`), but each is callable directly:
 
-- `add_string_resource.py` — add/update a Compose `strings.xml` resource (tr/en).
+- `generate_presentation_layer.py` — scaffold a feature's `presentation/` (MVI) boilerplate. Also listed under **Feature layer scaffolds** above.
+- `register_navigation.py` — register a screen in the navigation graph + `Screen.kt`. Also listed under **Registration** above.
 - `generate_component_composable.py` — scaffold a `@Composable` + `@Preview` under `presentation/component/`.
-- `register_navigation.py` — register a screen into the navigation graph + `Screen.kt` sealed class.
+- `add_string_resource.py` — add/update a Compose `strings.xml` resource (tr/en).
 
 ## `path_utils.py`
 
