@@ -17,6 +17,7 @@ pinq-doq/
     api-endpoint-integration/   scaffold a Clean-Architecture API endpoint via scripts/
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
+    handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
   scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
   references/     → NOT copied; read on demand by path
     kotlin/
@@ -27,6 +28,19 @@ pinq-doq/
   meta/           authoring-guide.md (write a skill), contributing.md (extend pinq-doq)
   README.md, CLAUDE.md   repo docs — never delivered into consumers
 ```
+
+## Using the skills
+
+You don't run a command to use a skill. After `integrate`/`update` copies them into `.claude/skills/`, Claude **discovers them by intent**: describe what you want in plain language and Claude matches it to a skill's `description`. You can also force one with `/<skill-name>` (e.g. `/code-review`).
+
+| Say something like… | Triggers |
+|---|---|
+| "review my changes", "check against standards", "review before PR" | `code-review` |
+| "integrate this endpoint", "add this API to the feature" | `api-endpoint-integration` |
+| "set up theming / colors / typography" | `kmp-theme-setup` |
+| "create a handoff", "park this", "checkpoint before /clear" | `handoff` |
+
+The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
 ## Delivery model — copy, not live submodule
 

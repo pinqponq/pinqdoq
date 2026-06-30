@@ -4,10 +4,6 @@ paths: ['**/*.kt', '**/*.kts']
 
 # Deveng-Core Library Guide (Vibecoding)
 
-Version: 1.0.3  
-Owner: deveng-core-kmp  
-Risk: Low
-
 ## Purpose
 
 This guide ensures that when building or vibecoding an app that depends on **deveng-core-kmp**, the agent uses the library’s existing APIs instead of reimplementing or duplicating functionality. The agent should know what the core provides and choose the right API for each situation.
@@ -97,10 +93,3 @@ See **`references/kotlin/deveng-core-reference.md`** (in the pinq-doq mount, e.g
 Core uses a **domain + data** split for camera temp storage: repository interface in **core.domain.camera.temp** (`CameraTempPhotoRepository`, `TempPhotoItem`), implementation and file/dir abstractions in **core.data.camera.temp** (`CameraTempPhotoRepositoryImpl`, `CameraTempDirProvider`, `CameraTempFileOps`). Apps depend on the interface and register platform-specific `CameraTempDirProvider` in DI.
 
 **Sample app:** The `sample:composeApp` **ThemingDemo** screen includes a **SwipeCards** example at the top of the main lazy column for manual testing.
-
-## Changelog
-
-- 1.0.3: **RemoteMediaExportManager** / **RemoteMediaFile** (`core.util.media`); **MarkdownContentParser** (`textColor`); **MediaViewer** (`core.presentation.component.mediaviewer`); sample `App.kt` demo touch-up.
-- 1.0.2: SwipeCards + SwipeCardsTheme (highlight colors); KDoc convention when editing core; sample SwipeCards location.
-- 1.0.1: Camera temp storage (CameraTempPhotoRepository, TempPhotoItem); architecture note for domain/data split.
-- 1.0.0: Initial guide; scope, procedure, rules, and reference pointer.
