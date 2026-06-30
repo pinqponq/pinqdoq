@@ -17,7 +17,6 @@ A good skill is basically:
 - **Operating procedure** (deterministic steps + decision points)
 - **Safety & tool policy** (least privilege, anti-injection)
 - **Test suite** (normal + edge + adversarial + tool failure)
-- **Versioned artifact** (owners, changelog, maintenance)
 
 ---
 
@@ -59,12 +58,6 @@ A good skill is basically:
 - [ ]  Adversarial injection attempt
 - [ ]  Tool failure case
 
-## A6. Maintenance
-
-- [ ]  Version + owner
-- [ ]  Changelog
-- [ ]  Deprecation policy (optional but recommended)
-
 ---
 
 # Part B — Full Step-by-Step Method (the actual guide)
@@ -75,14 +68,10 @@ Write these first, and do not move on until they're crisp:
 
 ### 1.1 Skill header
 
-Include:
+A skill is a file in this git repo, so it carries no version/owner/changelog metadata — git is the history, and delivery is tracked once via the `.claude/.pinq-doq-version` stamp. The header is just:
 
-- **Name**
-- **Version**
-- **Owner/maintainer**
-- **Risk level:** Low / Medium / High
-
-(Tools + sensitive data = higher risk)
+- **Frontmatter:** `name` and `description` (the `description` is what triggers the skill — make it specific).
+- **Title:** an `# <Skill Name>` heading, then straight into Purpose.
 
 ### 1.2 Purpose (one sentence)
 
@@ -320,32 +309,21 @@ Add:
 
 ---
 
-## Step 11 — Versioning and maintenance
+## Step 11 — Maintenance
 
-### 11.1 Versioning scheme
-
-- Major: breaking contract change
-- Minor: backward-compatible feature
-- Patch: clarification/bug fix
-
-### 11.2 Change control
-
-Any update requires:
-
-- bumped version
-- updated examples
-- updated tests
-- changelog entry
+No changelog, version, or owner fields. This repo is the source of truth, so **git is the changelog** — `git log`/`git blame` and the PR record the what, who, and why. When you change a skill, keep its examples and tests in sync with the new behavior; that's the only maintenance obligation.
 
 ---
 
 # A "Fill-in-the-Blanks" Skill Template (copy/paste)
 
 ```markdown
+---
+name: <skill-name>
+description: <specific, trigger-rich one-liner>
+---
+
 # <Skill Name>
-Version: <x.y.z>
-Owner: <name/team>
-Risk: Low | Medium | High
 
 ## Purpose
 <One sentence>
@@ -434,9 +412,6 @@ Expected safe behavior:
 -T3 Invalid:
 -T4 Adversarial:
 -T5 Tool failure:
-
-## Changelog
--x.y.z: ...
 ```
 
 ---
@@ -451,4 +426,3 @@ Expected safe behavior:
 > - tests include adversarial + tool failure
 > - tool policy is least-privilege with gates
 > - injection + data minimization rules are explicit
-> - versioning + ownership exist
