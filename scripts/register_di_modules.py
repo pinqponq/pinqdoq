@@ -257,16 +257,24 @@ def register_di_modules(feature_name: str, config: dict, project_root: Optional[
             base = Path(project_root)
             for part in base_path_str.split("/"):
                 base = base / part
-            feature_camel = to_camel_case(feature_name)
             existing = []
             for name, import_path in modules_info:
                 if "Domain" in name:
-                    p = base / path_segment / "domain" / "di" / f"{feature_camel}DomainModule.kt"
+                    di_dir = base / path_segment / "domain" / "di"
                 elif "Data" in name:
-                    p = base / path_segment / "data" / "di" / f"{feature_camel}DataModule.kt"
+                    di_dir = base / path_segment / "data" / "di"
                 else:
-                    p = base / path_segment / "presentation" / "di" / f"{feature_camel}PresentationModule.kt"
-                if p.exists():
+                    di_dir = base / path_segment / "presentation" / "di"
+                # The module val name is camelCase (e.g. ordersDataModule) but the
+                # generated file is PascalCase (OrdersDataModule.kt). Match the file
+                # case-insensitively so the check also holds on case-sensitive
+                # filesystems (Linux/CI), where the old camelCase guess never matched
+                # and every module — including a non-existent presentation one — got
+                # registered.
+                expected = f"{name}.kt".lower()
+                if di_dir.is_dir() and any(
+                    child.name.lower() == expected for child in di_dir.iterdir()
+                ):
                     existing.append((name, import_path))
             if existing:
                 modules_info = existing
