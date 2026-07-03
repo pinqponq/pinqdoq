@@ -6,7 +6,7 @@ Use this when you need details on script outputs, config, or naming. The main wo
 
 List the scripts with `ls .pinq-doq/scripts/` and read each script's `--help` for current parameters. The integration scripts are:
 
-- **Layer scaffolds:** `generate_data_layer.py`, `generate_domain_layer.py`, `generate_presentation_layer.py`
+- **Layer scaffolds:** `generate_data_layer.py`, `generate_domain_layer.py` (presentation scaffolding lives in the `presentation-scaffold` skill)
 - **Models and code:** `generate_data_model.py`, `generate_domain_model.py`, `generate_mapper.py`, `generate_use_case.py`, `add_service_method.py`, `add_repository_method.py`
 - **Registration / impl:** `register_mapper.py`, `register_use_case.py`, `add_repository_impl.py`, `register_di_modules.py`
 
@@ -20,7 +20,7 @@ When you run the scripts against a project **other than** the one the scripts li
 
 - **Scripts that accept `--project-root`** (absolute path to the target project root): `add_repository_method.py`, `add_repository_impl.py`, `register_mapper.py`, `register_use_case.py`, `register_di_modules.py`. Example: `--project-root /Users/you/StudioProjects/my-app`.
 - **`generate_use_case.py`** takes neither `--config` nor `--project-root`: it reads the target root from the `AI_SCRIPTS_PROJECT_ROOT` env var (falling back to the current directory) and its config from `config.json` relative to that root. Set `AI_SCRIPTS_PROJECT_ROOT=<path>` to target another project.
-- **Layer scaffolds** (`generate_data_layer.py`, `generate_domain_layer.py`, `generate_presentation_layer.py`) and the model/mapper generators accept **`--config`**: point them at the target project's config with `--config <path-to-your-config.json>` so `base_path` resolves under that project.
+- **Layer scaffolds** (`generate_data_layer.py`, `generate_domain_layer.py`) and the model/mapper generators accept **`--config`**: point them at the target project's config with `--config <path-to-your-config.json>` so `base_path` resolves under that project.
 - **Behaviour:** Output paths (e.g. `composeApp/src/commonMain/kotlin/...`) are resolved relative to the resolved root. `add_repository_impl.py` reads the repository interface and service files from disk, so the resolved root must be the target app or it will report "file not found" / "method not found".
 - **Usage:** Use the same target for the whole integration so all generated files and patches land in one project.
 
@@ -30,7 +30,6 @@ When you run the scripts against a project **other than** the one the scripts li
 |--------|-------------|
 | `generate_data_layer.py` | Creates data layer scaffold (folders + `{Feature}DataModule`, or `SharedDataModule` with `--shared`). For shared, creates only `shared/data/...` and empty DI module. |
 | `generate_domain_layer.py` | Creates domain layer scaffold (folders + `{Feature}DomainModule`, or `SharedDomainModule` with `--shared`). |
-| `generate_presentation_layer.py` | Creates presentation layer scaffold (Contract, ViewModel, Screen, ScreenContent, DI module). |
 | `generate_data_model.py` | Creates request/response data class in `.../model/request/` or `.../model/response/`. Naming: `{Entity}Request`, `{Entity}Response`. |
 | `generate_domain_model.py` | Creates domain model data class in `.../domain/model/`. No Request/Response suffix. |
 | `generate_mapper.py` | Creates mapper (e.g. `toDomain()`) in `.../model/mapper/`. Naming: `{Entity}Mapper`. |
@@ -160,7 +159,7 @@ Apply both blocks to the same file at the given path.
 
 The decision rule (when to use shared), package structure, and naming live in `.pinq-doq/references/kotlin/shared-module.md` and the `kotlin-architecture.md` rule — they are project-wide, not API-specific.
 
-Operationally for this skill: when shared applies, run the scripts with `--shared` (and `--entity <Concept>` where needed) so script outputs (Target Path + Code) use `shared/data/...`, `shared/domain/...` paths. Register the shared DI modules (`SharedDataModule`, `SharedDomainModule`, `SharedPresentationModule`) in `initKoin.kt` if not already present.
+Operationally for this skill: when shared applies, run the scripts with `--shared` (and `--entity <Concept>` where needed) so script outputs (Target Path + Code) use `shared/data/...`, `shared/domain/...` paths. Register the shared DI modules (`SharedDataModule`, `SharedDomainModule`) in `initKoin.kt` if not already present. (`SharedPresentationModule` is the `presentation-scaffold` skill's concern, not this one.)
 
 ## Naming conventions
 
@@ -181,7 +180,6 @@ Operationally for this skill: when shared applies, run the scripts with `--share
 |--------|------|---------|
 | `generate_data_layer.py` | File | Data layer scaffold (folders + DI module). New feature or `--shared`. Paths from config. |
 | `generate_domain_layer.py` | File | Domain layer scaffold (folders + DI module). New feature or `--shared`. |
-| `generate_presentation_layer.py` | File | Presentation layer scaffold (Contract, ViewModel, Screen, DI). |
 | `generate_data_model.py` | File | Request/response data classes. Naming: `{Entity}Request`, `{Entity}Response`. |
 | `generate_domain_model.py` | File | Domain entities. No Request/Response suffix. |
 | `generate_mapper.py` | File | API → domain mapper in `.../model/mapper/`. |

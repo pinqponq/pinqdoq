@@ -14,7 +14,9 @@ pinq-doq/
     kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
     dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
   skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
-    api-endpoint-integration/   scaffold a Clean-Architecture API endpoint via scripts/
+    add-feature/                orchestrates a whole feature: presentation + API, then connects them
+    presentation-scaffold/      presentation layer via scripts/ (screen/MVI, nav, components, strings)
+    api-endpoint-integration/   backend of an endpoint via scripts/ (data → domain → use case → DI)
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
@@ -36,7 +38,9 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | Say something like… | Triggers |
 |---|---|
 | "review my changes", "check against standards", "review before PR" | `code-review` |
-| "integrate this endpoint", "add this API to the feature" | `api-endpoint-integration` |
+| "add a new feature", "build a screen and its endpoint" | `add-feature` |
+| "scaffold a screen", "add a screen / component / strings" | `presentation-scaffold` |
+| "integrate a standalone endpoint", "add this API to a feature" | `api-endpoint-integration` |
 | "set up theming / colors / typography" | `kmp-theme-setup` |
 | "create a handoff", "park this", "checkpoint before /clear" | `handoff` |
 
