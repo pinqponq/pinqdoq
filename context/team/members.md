@@ -8,9 +8,14 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Role:** Team Lead
 - **Seniority:** Senior
 - **Primary stack:** Compose Multiplatform (KMP), mobile
-- **Scope:** Generalist — active across mobile architecture, backend integrations, product decisions, and cross-cutting concerns
-- **Capabilities:** Mobile architecture, real-time/chat systems, KMP/CMP core module setup, MCP tooling, test infrastructure, cross-layer API integration
-- **Assign when:** task requires cross-project coordination, touches multiple layers at once, involves mobile architecture, chat systems, MCP/tooling, or no other specialist has clear ownership.
+- **Scope:** Generalist — mobile architecture, cross-layer integration, product decisions
+- **Capabilities:**
+  - KMP/CMP architecture and core module setup
+  - Real-time and chat system design
+  - MCP server development and tooling
+  - Test infrastructure for KMP projects
+  - Mobile-side backend integration
+- **Assign when:** task requires cross-project coordination, mobile architecture decisions, chat/real-time systems, MCP tooling, or has no clear specialist owner.
 
 ---
 
@@ -18,9 +23,15 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Role:** Team Lead
 - **Seniority:** Senior
 - **Primary stack:** Backend (.NET), DevOps
-- **Secondary:** Vibe coding — can build and ship dashboards, admin panels; can contribute to Compose Multiplatform mobile projects
-- **Capabilities:** Backend architecture and refactoring, auth/JWT systems, third-party integrations, database design, API Gateway, DevOps and server setup
-- **Assign when:** task involves backend architecture decisions, complex third-party integrations, JWT/auth systems, stored procedures, or DevOps and deployment.
+- **Secondary:** Vibe coding — dashboards and admin panels; can contribute to KMP mobile
+- **Capabilities:**
+  - Backend architecture design and refactoring
+  - Auth and JWT systems
+  - Complex third-party integrations (payment providers, government APIs, hardware systems)
+  - Database and stored procedure design
+  - API Gateway configuration
+  - Server setup and deployment
+- **Assign when:** task involves backend architecture, complex integrations, auth systems, stored procedures, or infrastructure setup.
 
 ---
 
@@ -28,9 +39,14 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Role:** Mid-level developer
 - **Seniority:** Mid
 - **Primary stack:** Compose Multiplatform (KMP), mobile
-- **Secondary:** Active in Rindle backend feature work (current project context)
-- **Capabilities:** KMP mobile screen development, UI components, API connection layer, bug fixing, refactoring, admin panel UI (KMP)
-- **Assign when:** task is a mobile screen, UI component, feature screen, API connection on the client, bug fix in the mobile layer, or admin panel UI work in KMP.
+- **Secondary:** Backend feature contributions on current Rindle work
+- **Capabilities:**
+  - Full mobile screen implementation (feature screens, settings, onboarding, reservations)
+  - Custom UI components and composables
+  - Client-side API connection layer
+  - Bug fixing and UI polish
+  - KMP admin panel screens
+- **Assign when:** task is a mobile screen, UI component, client API connection, mobile bug fix, or admin panel UI.
 
 ---
 
@@ -38,9 +54,16 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Role:** Mid-level developer
 - **Seniority:** Mid (output and scope are effectively senior-level)
 - **Primary stack:** Backend (.NET), DevOps, Infrastructure
-- **Secondary:** Vibe coding — can build dashboards and panels with AI assistance; can contribute to Compose Multiplatform mobile projects with pinq-doq guidance
-- **Capabilities:** Message brokers (RabbitMQ), caching (Redis), real-time (WebSocket), observability (ElasticSearch, Kibana, Grafana, MongoDB logging), Docker/CI/CD, payment integrations, microservice tooling, .NET SDK/NuGet packaging, high-volume backend feature delivery
-- **Assign when:** task involves any infrastructure layer (Redis, RabbitMQ, Docker, CI/CD, ElasticSearch, MongoDB logging), payment integration, microservice tooling, Pinqloq .NET SDK/NuGet, or high-volume backend feature work.
+- **Secondary:** Vibe coding — dashboards and panels; can contribute to KMP mobile with pinq-doq guidance
+- **Capabilities:**
+  - Message brokers (RabbitMQ) and caching (Redis)
+  - Observability stack (ElasticSearch, Kibana, Grafana, MongoDB logging)
+  - Containerization and CI/CD (Docker, GitHub Actions)
+  - Payment integrations
+  - Microservice and shared tooling libraries
+  - .NET SDK and NuGet packaging
+  - High-volume backend feature delivery
+- **Assign when:** task involves infrastructure (Redis, RabbitMQ, Docker, CI/CD, logging), payment integration, SDK/NuGet work, or large backend feature scope.
 
 ---
 
@@ -48,8 +71,8 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Role:** Intern
 - **Seniority:** Intern (joined 2026-07-10 — very early stage)
 - **Primary stack:** TBD — onboarding in progress
-- **Proven capabilities:** None on record yet.
-- **Assign when:** suitable for well-scoped, low-risk, clearly defined tasks with explicit acceptance criteria and a mentor reviewer. Do not assign tasks that are blocking, cross-cutting, or architecturally sensitive.
+- **Capabilities:** None on record yet
+- **Assign when:** task is well-scoped, low-risk, and has a mentor reviewer. Avoid blocking, cross-cutting, or architecturally sensitive work.
 
 ---
 
@@ -57,16 +80,14 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 
 | Area | First choice | Second choice |
 |---|---|---|
-| Rindle mobile / KMP UI screens | Berk | Furkan |
+| KMP mobile screens / UI | Berk | Furkan |
 | Mobile architecture / chat / MCP | Furkan | — |
-| Backend architecture / JWT / integrations | Atakan | Emir |
+| Backend architecture / auth / integrations | Atakan | Emir |
 | Redis / RabbitMQ / Docker / CI/CD | Emir | Atakan |
-| ElasticSearch / MongoDB logging / Grafana | Emir | — |
-| Payment integrations (Ziraat Bank, etc.) | Emir | — |
-| Pinqloq .NET SDK / NuGet | Emir | Atakan |
-| GIB / e-Fatura / e-Arsiv / PTS / HGS | Atakan | — |
-| Microservice tooling / sekompos-tools | Emir | — |
+| Observability (ElasticSearch, Grafana, logging) | Emir | — |
+| Payment integrations | Emir | — |
+| .NET SDK / NuGet | Emir | Atakan |
+| Complex third-party / gov APIs | Atakan | — |
 | Dashboard / admin panel (vibe coding) | Atakan | Emir |
 | Cross-project / multi-layer | Furkan | — |
-| Pinqponq mobile / KMP | Furkan | Berk |
 | Well-scoped intern task | Yiğit | — |
