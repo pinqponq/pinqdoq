@@ -1,6 +1,6 @@
 # Pinqponq Team Members
 
-Reference for task assignment suggestions. Each entry covers role, seniority, active projects, proven capabilities from work history, and assignment guidance.
+Reference for task assignment suggestions. Each entry covers role, seniority, proven capabilities from work history, and assignment guidance.
 
 ---
 
@@ -9,7 +9,6 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ac
 - **Seniority:** Senior
 - **Primary stack:** Compose Multiplatform (KMP), mobile
 - **Scope:** Generalist — active across mobile architecture, backend integrations, product decisions, and cross-cutting concerns
-- **Active projects:** Rindle, Pinqloq, Pinqponq (web panel), NacEvent
 - **Proven capabilities (from work history):**
   - Chat system architecture and implementation (MVP-level, real-time)
   - KMP/CMP core module setup and upgrades (e.g. CMP 1.8.0 on Turan)
@@ -27,7 +26,6 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ac
 - **Seniority:** Senior
 - **Primary stack:** Backend (.NET), DevOps
 - **Secondary:** Vibe coding — can build and ship dashboards, admin panels; can contribute to Compose Multiplatform mobile projects
-- **Active projects:** Pinqloq (backend, infra), Pinqponq (backend), Rindle (backend), DevOps for all products
 - **Proven capabilities (from work history):**
   - Backend architecture and refactoring (file upload service entity refactor, nullable ID support, parameter and model cleanup)
   - JWT authentication and authorization systems
@@ -49,7 +47,6 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ac
 - **Seniority:** Mid
 - **Primary stack:** Compose Multiplatform (KMP), mobile
 - **Secondary:** Active in Rindle backend feature work (current project context)
-- **Active projects:** Rindle (mobile + backend contributions), Pinqponq
 - **Proven capabilities (from work history):**
   - Full mobile screen development: login, register, onboarding, favorites, notifications, profile, settings, reservation creation/detail, section entries, branch profile, call center, notes, campaigns
   - UI component work: custom date pickers, dropdowns, lazy list dialogs, image compression, photo handling
@@ -68,7 +65,6 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ac
 - **Seniority:** Mid (output and scope are effectively senior-level)
 - **Primary stack:** Backend (.NET), DevOps, Infrastructure
 - **Secondary:** Vibe coding — can build dashboards and panels with AI assistance; can contribute to Compose Multiplatform mobile projects with pinq-doq guidance
-- **Active projects:** Pinqloq (.NET SDK, NuGet, backend), Pinqponq (backend), all shared infra
 - **Proven capabilities (from work history — 242 backend tasks across multiple products):**
   - **Message brokers:** RabbitMQ (DLL creation, producer/consumer service, AMQP fixes, Docker containerization, scoped lifetime refactor)
   - **Caching:** Redis (DLL, cache reads/writes, cache invalidation, symbol subscribe, scoped lifetime, config key backup, external domain exposure)
@@ -90,7 +86,6 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ac
 - **Role:** Intern
 - **Seniority:** Intern (joined 2026-07-10 — very early stage)
 - **Primary stack:** TBD — onboarding in progress
-- **Active projects:** Not yet assigned to a project
 - **Proven capabilities:** None on record yet.
 - **Assign when:** suitable for well-scoped, low-risk, clearly defined tasks with explicit acceptance criteria and a mentor reviewer. Do not assign tasks that are blocking, cross-cutting, or architecturally sensitive.
 
