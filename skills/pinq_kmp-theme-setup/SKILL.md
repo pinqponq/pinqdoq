@@ -1,11 +1,11 @@
----
-name: kmp-theme-setup
+﻿---
+name: pinq_kmp-theme-setup
 description: Project-agnostic pattern for setting up colors, typography, and the AppTheme composable in a KMP / Compose Multiplatform project that depends on deveng-core-kmp. Covers Color.kt token definitions, Typography.kt with four TextStyle helpers (RegularTextStyle, MediumTextStyle, SemiBoldTextStyle, BoldTextStyle) wired to a project FontFamily, and Theme.kt with ComponentTheme wiring for every deveng-core sub-theme (ButtonTheme, CustomTextFieldTheme, AlertDialogTheme, HeaderTheme, DatePickerTheme, etc.). Trigger when starting a new KMP project, creating Color.kt / Typography.kt / Theme.kt, wiring ComponentTheme, configuring deveng-core component defaults, deciding how to structure design tokens, or when anyone mentions setting up theming, colors, fonts, or typography in a Compose Multiplatform app that uses deveng-core-kmp.
 ---
 
 # KMP Theme Setup
 
-General pattern for colors, typography, and theming in a KMP/Compose project that depends on `deveng-core-kmp`. **Project-agnostic** — the *values* (specific palette, type scale, design philosophy) live in each project's own docs; this skill is about the *wiring*.
+General pattern for colors, typography, and theming in a KMP/Compose project that depends on `deveng-core-kmp`. **Project-agnostic** â€” the *values* (specific palette, type scale, design philosophy) live in each project's own docs; this skill is about the *wiring*.
 
 For reference on what deveng-core provides (components, utilities, camera, etc.), see the `deveng-core` rule (`kotlin-deveng-core.md`) and its API map (`references/kotlin/deveng-core-reference.md`).
 
@@ -38,12 +38,12 @@ Every project keeps its theme under one package:
 
 ```
 core/presentation/theme/
-├── Color.kt          ← all Color tokens
-├── Typography.kt     ← FontFamily + TextStyle helpers + FontWeight constants
-└── Theme.kt          ← AppTheme composable with ComponentTheme wiring
+â”œâ”€â”€ Color.kt          â† all Color tokens
+â”œâ”€â”€ Typography.kt     â† FontFamily + TextStyle helpers + FontWeight constants
+â””â”€â”€ Theme.kt          â† AppTheme composable with ComponentTheme wiring
 ```
 
-`AppTheme` is **defined locally in each project** — it is NOT imported from `deveng-core-kmp`. The core library provides the `ComponentTheme` data classes and `LocalComponentTheme` composition local; the project wires them. This separation is intentional: each project picks its own palette, font, and component defaults without fighting the library.
+`AppTheme` is **defined locally in each project** â€” it is NOT imported from `deveng-core-kmp`. The core library provides the `ComponentTheme` data classes and `LocalComponentTheme` composition local; the project wires them. This separation is intentional: each project picks its own palette, font, and component defaults without fighting the library.
 
 ---
 
@@ -80,7 +80,7 @@ val CustomLightGray = Color(0xFFF3F4F6)
 - One token per semantic purpose.
 - Material-aligned slots (`Primary`, `OnPrimary`, `Secondary`, `Surface`, `Background`, `Error`) come first.
 - Additional project tokens prefixed with `Custom` (`CustomGrayHintColor`, `CustomDividerColor`, etc.).
-- All tokens live in a single `Color.kt` file — no splitting by feature.
+- All tokens live in a single `Color.kt` file â€” no splitting by feature.
 
 ---
 
@@ -131,7 +131,7 @@ fun BoldTextStyle(): TextStyle = TextStyle(
 
 - One font family per project. Name the `FontFamily` composable after the font (`UrbanistTextFont`, `ManropeTextFont`, etc.).
 - Font weight constants: `REGULAR_FONT_WEIGHT`, `MEDIUM_FONT_WEIGHT`, `SEMI_BOLD_FONT_WEIGHT`, `BOLD_FONT_WEIGHT`.
-- `TextStyle` helpers are `@Composable` functions named `RegularTextStyle()`, `MediumTextStyle()`, `SemiBoldTextStyle()`, `BoldTextStyle()` — no project prefix.
+- `TextStyle` helpers are `@Composable` functions named `RegularTextStyle()`, `MediumTextStyle()`, `SemiBoldTextStyle()`, `BoldTextStyle()` â€” no project prefix.
 - `fontSize`, `color`, `textAlign`, `textDecoration`, etc. are applied at the call site via `.copy(...)`:
 
   ```kotlin
@@ -142,7 +142,7 @@ fun BoldTextStyle(): TextStyle = TextStyle(
   ```
 
 - **Never** use `MaterialTheme.typography.*`.
-- **Never** import `CoreRegularTextStyle` / `CoreMediumTextStyle` / etc. from `deveng-core-kmp` — those bypass the project's font family.
+- **Never** import `CoreRegularTextStyle` / `CoreMediumTextStyle` / etc. from `deveng-core-kmp` â€” those bypass the project's font family.
 
 ---
 
@@ -154,7 +154,7 @@ fun BoldTextStyle(): TextStyle = TextStyle(
 2. Builds a `ComponentTheme` configuring every deveng-core component (`CustomButton`, `CustomTextField`, `CustomHeader`, dialogs, pickers, etc.).
 3. Wraps content in `MaterialTheme { CompositionLocalProvider(LocalComponentTheme provides customTheme) { content() } }`.
 
-Every core component reads its defaults from the current `LocalComponentTheme`, so all component configuration lives in one place. If a sub-theme is missing, that core component falls back to library defaults and the project's styling is silently lost — so every core component the project uses must have its sub-theme configured here.
+Every core component reads its defaults from the current `LocalComponentTheme`, so all component configuration lives in one place. If a sub-theme is missing, that core component falls back to library defaults and the project's styling is silently lost â€” so every core component the project uses must have its sub-theme configured here.
 
 ```kotlin
 package core.presentation.theme
@@ -248,7 +248,7 @@ fun AppTheme(
 **Rules**
 
 - Must build `colorScheme` from tokens in `Color.kt`, not hard-coded hex.
-- Must provide a `ComponentTheme` via `LocalComponentTheme` — otherwise core components fall back to library defaults and the project's styling is lost.
+- Must provide a `ComponentTheme` via `LocalComponentTheme` â€” otherwise core components fall back to library defaults and the project's styling is lost.
 - `MaterialTheme` wraps `CompositionLocalProvider`, not the other way around.
 - Every core component used in the project must have its corresponding sub-theme configured.
 - The root entry (e.g., `MainScreen.kt`, `App.kt`) wraps everything in `AppTheme { ... }`.
@@ -302,8 +302,8 @@ Only include sub-themes for components the project actually uses. If a new core 
 ### Don't
 
 - Don't use `MaterialTheme.typography.*`.
-- Don't import `CoreRegularTextStyle` / `CoreMediumTextStyle` / `CoreSemiBoldTextStyle` / `CoreBoldTextStyle` from `deveng-core-kmp` — they do not apply the project's font.
+- Don't import `CoreRegularTextStyle` / `CoreMediumTextStyle` / `CoreSemiBoldTextStyle` / `CoreBoldTextStyle` from `deveng-core-kmp` â€” they do not apply the project's font.
 - Don't hard-code `Color(0xFF...)` in composables.
 - Don't define a second `AppTheme` or wrap content in `MaterialTheme` without going through `AppTheme`.
-- Don't rely on core component defaults — always configure the sub-theme in `ComponentTheme`.
+- Don't rely on core component defaults â€” always configure the sub-theme in `ComponentTheme`.
 - Don't create per-feature `TextStyle` constants; always compose via `.copy(...)` on the four helpers.

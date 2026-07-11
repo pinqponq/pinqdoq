@@ -1,10 +1,10 @@
-# Deveng Group Proje Portföyü
+# Pinqponq Proje Portföyü
 
-Bu dökümanı okuyan kişi Deveng Group'un mevcut proje portföyünü, her projenin durumunu, iş modelini ve projeler arasındaki stratejik ilişkiyi öğrenecektir.
+Bu dökümanı okuyan kişi Pinqponq'un mevcut proje portföyünü, her projenin durumunu, iş modelini ve projeler arasındaki stratejik ilişkiyi öğrenecektir.
 
 ## Genel Bakış
 
-Deveng Group şu anda 7 aktif proje üzerinde çalışmaktadır. Bu projeler üç ana kategoriye ayrılabilir:
+Pinqponq şu anda 7 aktif proje üzerinde çalışmaktadır. Bu projeler üç ana kategoriye ayrılabilir:
 
 - **Müşteri projeleri:** Turan
 - **Ürünleştirilmiş / satılabilir hale getirilen projeler:** Rindle, Pinqponq, Pinqloq, NacEvent
