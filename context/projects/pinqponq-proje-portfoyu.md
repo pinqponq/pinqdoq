@@ -36,7 +36,10 @@ Aşağıdaki bölümlerde her proje ayrı ayrı ele alınmış, ardından projel
 
 - NacEvent, Pinqponq ve Rindle projeleriyle birbirine bağlı çalışan bir altyapı (infrastructure) bileşenidir.
 - Amacı, tüm client projelerinin ve bu projelere ait backend'lerin loglanabilmesi, kullanıcı alışkanlıklarının tespit edilebilmesi ve sahada karşılaşılan bugların daha hızlı çözülebilmesidir.
-- Satılabilir bir ürüne dönüştürülmüştür: kullanıcıların kayıt olup kendilerine ait bir secret key oluşturarak istedikleri projelerde loglama yapabilmelerini sağlayan bir panel geliştirilmiştir.
+- Satılabilir bir ürüne dönüştürülmüştür ve iki ayrı web bileşeni içermektedir:
+  - **Dashboard** (`pinqloq.pinqponq.io`): Kullanıcıların kayıt olup proje oluşturduğu ve API key / secret key yönetimini yaptığı web uygulaması.
+  - **WASM Panel** (`pinqloq-panel.pinqponq.io`): Müşterilerin kendi projelerine ait logları sorguladığı ve görüntülediği WebAssembly sitesi.
+- Her iki bileşen de **vibe coding** yaklaşımıyla geliştiriliyor; backend ile client aynı kişi tarafından yapılıyor.
 - Simpra şirketine ücretsiz pilot olarak sunulması planlanmaktadır.
 
 ### Rindle
@@ -47,8 +50,13 @@ Aşağıdaki bölümlerde her proje ayrı ayrı ele alınmış, ardından projel
 ### Pinqponq
 
 - Rindle'a entegre edilecek chat özelliğini sağlamak amacıyla geliştirilen bir chat SDK'sıdır.
-- Dışarıya da satılabilmesi için ayrı bir panel geliştirilmiştir; bu panel sayesinde kullanıcılar kendi uygulamalarına kolayca chat entegrasyonu yapabilmektedir.
-- Şu anda Kotlin/Compose Multiplatform first olarak tasarlanmıştır.
+- Dışarıya da satılabilmesi için ayrı web bileşenleri geliştirilmiştir:
+  - **Dashboard**: Kullanıcıların workspace oluşturup SDK entegrasyonu yaptığı yönetim paneli.
+  - **WASM Panel**: Kullanıcıların chat özelliklerini yapılandırdığı WebAssembly sitesi.
+- **Compose Multiplatform (CMP) / Kotlin Multiplatform (KMP) first** olarak tasarlanmıştır.
+- Dashboard ve WASM panel **vibe coding** ile geliştiriliyor; Pinqloq'dakiyle aynı kural geçerli: backend yapan client tarafını da yapar.
+- Mobile SDK tarafı vibe coding ile geliştirilebilir; ancak atama her zaman mobile takım üyelerine (Berk, Furkan) yapılır.
+- Backend tarafına kesinlikle backend geliştiriciler (Atakan, Emir) atanır.
 - İleriki aşamada Kotlin Multiplatform kullanılarak platformlara özel native SDK'ların çıkarılması hedeflenmektedir.
 
 ### NacEvent

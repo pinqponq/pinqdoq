@@ -46,7 +46,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Client-side API connection layer
   - Bug fixing and UI polish
   - KMP admin panel screens
-- **Assign when:** task is a mobile screen, UI component, client API connection, mobile bug fix, or admin panel UI.
+- **Assign when:** task is a KMP/CMP mobile screen, UI component, client API connection, or mobile bug fix. For Pinqponq SDK mobile side, Berk is the primary. **Do not assign Pinqloq dashboard or WASM panel tasks** — those go to whoever owns the Pinqloq backend (see project-specific rules below).
 
 ---
 
@@ -89,5 +89,25 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | .NET SDK / NuGet | Emir | Atakan |
 | Complex third-party / gov APIs | Atakan | — |
 | Dashboard / admin panel (vibe coding) | Atakan | Emir |
+| Pinqloq dashboard + WASM panel (vibe coding) | backend owner of that task | — |
+| Pinqponq dashboard + WASM panel (vibe coding) | backend owner of that task | — |
+| Pinqponq SDK — mobile (CMP/KMP) | Berk | Furkan |
+| Pinqponq SDK — backend | Atakan | Emir |
 | Cross-project / multi-layer | Furkan | — |
 | Well-scoped intern task | Yiğit | — |
+
+---
+
+## Project-Specific Assignment Rules
+
+### Pinqloq
+Pinqloq has two components:
+- **Dashboard** — API key and project management (web app)
+- **WASM panel** — log viewing interface used by customers (WebAssembly site)
+
+Both are developed with **vibe coding**. The rule: whoever owns the backend task for a given Pinqloq feature also owns the client (dashboard/panel) side. Do not assign Pinqloq panel tasks to KMP mobile developers (Berk) by default — they go to the backend developer handling that feature (typically Emir or Atakan).
+
+### Pinqponq SDK
+- **Mobile side (CMP/KMP):** vibe coding is allowed, but always assign to mobile team members — Berk (primary) or Furkan.
+- **Backend side:** strictly backend developers — Atakan or Emir. No exceptions.
+- **Dashboard + WASM panel:** same rule as Pinqloq — vibe coding, backend developer owns both backend and client. Do not assign to KMP mobile developers.
