@@ -32,6 +32,7 @@ This skill turns a plain-language task idea into a well-formed Linear issue â�
 ### Stop conditions
 - **Ask when:** team is ambiguous and cannot be inferred from the task or members doc.
 - **Ask when:** assignee is ambiguous between two equally matched members.
+- **Ask when:** the description is clear enough to proceed but key details are missing that would meaningfully improve the title, acceptance criteria, or assignee choice â€” e.g. which screen is affected, which platform (iOS/Android/web), whether it is a bug or a new feature, what the expected vs. actual behavior is. Ask only for details that are genuinely needed; do not ask for details you can reasonably infer.
 - **Assume when:** only one team exists in the workspace â€” use it without asking.
 - **Assume when:** the best assignee is clear from the members doc â€” assign without asking, but state the choice in the output.
 - **Refuse when:** the task description is too vague to produce a meaningful title or acceptance criteria â€” ask for more detail instead.
@@ -75,6 +76,7 @@ Always derive and apply two label categories before creating the issue:
 ## Procedure
 1. **Validate** â€” if description is too vague, ask for more detail and stop.
 2. **Read members doc** â€” load `.pinq-doq/context/team/members.md`.
+   **Probe for missing details** â€” if the description is clear but key context is missing (affected screen, platform, bug vs. feature, expected vs. actual behavior), ask in a single message before proceeding. Batch all questions into one ask; do not ask one-by-one. Skip if you can reasonably infer the answers.
 3. **Draft title** â€” action-verb-led, â‰¤80 chars, no filler words.
 4. **Draft description** â€” three paragraphs: (1) context/why, (2) what needs to be done, (3) acceptance criteria as a checklist.
 5. **Pick assignee** â€” match the task domain to the members doc `Assign when` and `Capabilities` fields. If the user provided a hint, use it.
@@ -170,3 +172,5 @@ how_to_fix: Describe what the task should accomplish.
 - T5 Linear create fails â†’ LINEAR_CREATE_FAILED error, no retry
 - T6 User provides milestone/status in message â†’ skill skips asking, uses provided values
 - T7 Issue created without project="org" â†’ MUST NOT happen; treat as skill failure
+- T8 Description clear but platform missing â†’ skill asks "iOS / Android / web?" before drafting
+- T9 All details inferable â†’ skill does not ask unnecessary questions, proceeds directly
