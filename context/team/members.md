@@ -71,8 +71,9 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Role:** Intern
 - **Seniority:** Intern (joined 2026-07-10 — very early stage)
 - **Primary stack:** TBD — onboarding in progress
-- **Capabilities:** None on record yet
-- **Assign when:** task is well-scoped, low-risk, and has a mentor reviewer. Avoid blocking, cross-cutting, or architecturally sensitive work.
+- **Capabilities:**
+  - Frontend/web UI tasks (HTML, CSS, responsive layout, vibe coding)
+- **Assign when:** task is well-scoped, low-risk, and has a mentor reviewer. Dashboard/panel tasks that require no backend knowledge (CSS fixes, layout, responsive design) are also suitable. Avoid blocking, cross-cutting, or architecturally sensitive work.
 
 ---
 
@@ -95,6 +96,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | Pinqponq SDK — backend | Atakan | Emir |
 | Cross-project / multi-layer | Furkan | — |
 | Well-scoped intern task | Yiğit | — |
+| Pinqloq/Pinqponq dashboard UI-only (responsive, layout, CSS) | Yiğit | Atakan |
 
 ---
 
@@ -106,6 +108,8 @@ Pinqloq has two components:
 - **WASM panel** — log viewing interface used by customers (WebAssembly site)
 
 Both are developed with **vibe coding**. The rule: whoever owns the backend task for a given Pinqloq feature also owns the client (dashboard/panel) side. Do not assign Pinqloq panel tasks to KMP mobile developers (Berk) by default — they go to the backend developer handling that feature (typically Emir or Atakan).
+
+**Exception:** Scoped UI-only tasks on the dashboard (responsive fixes, layout polish, CSS changes, copy/UX improvements) that require no backend knowledge should be assigned to **Yiğit**.
 
 ### Pinqponq SDK
 - **Mobile side (CMP/KMP):** vibe coding is allowed, but always assign to mobile team members — Berk (primary) or Furkan.
