@@ -31,7 +31,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Database and stored procedure design
   - API Gateway configuration
   - Server setup and deployment
-- **Assign when:** task involves backend architecture, complex integrations, auth systems, stored procedures, or infrastructure setup.
+- **Assign when:** task involves backend architecture, complex integrations, auth systems, stored procedures, or infrastructure setup. For Rindle specifically, assign Atakan only for advanced architectural tasks — routine Rindle backend work goes to Berk.
 
 ---
 
@@ -46,7 +46,8 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Client-side API connection layer
   - Bug fixing and UI polish
   - KMP admin panel screens
-- **Assign when:** task is a KMP/CMP mobile screen, UI component, client API connection, or mobile bug fix. For Pinqponq SDK mobile side, Berk is the primary. **Do not assign Pinqloq dashboard or WASM panel tasks** — those go to whoever owns the Pinqloq backend (see project-specific rules below).
+  - Rindle backend feature development (active role on both backend and mobile sides)
+- **Assign when:** task is a KMP/CMP mobile screen, UI component, client API connection, or mobile bug fix. For Pinqponq SDK mobile side, Berk is the primary. For Rindle, Berk is the primary for both mobile and backend tasks — Atakan only steps in for advanced architectural work on Rindle. **Do not assign Pinqloq dashboard or WASM panel tasks** — those go to whoever owns the Pinqloq backend (see project-specific rules below).
 
 ---
 
@@ -97,10 +98,19 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | Cross-project / multi-layer | Furkan | — |
 | Well-scoped intern task | Yiğit | — |
 | Pinqloq/Pinqponq dashboard UI-only (responsive, layout, CSS) | Yiğit | Atakan |
+| Rindle — mobile | Berk | Furkan |
+| Rindle — backend (routine) | Berk | — |
+| Rindle — backend (advanced/architectural) | Atakan | — |
 
 ---
 
 ## Project-Specific Assignment Rules
+
+### Rindle
+Rindle has both a mobile (KMP/CMP) side and a backend side. Berk is the primary developer for both:
+- **Mobile:** Berk. Second choice: Furkan.
+- **Backend (routine features, bug fixes, config changes):** Berk.
+- **Backend (advanced architectural work only):** Atakan. Do not assign Atakan routine Rindle backend tasks.
 
 ### Pinqloq
 Pinqloq has two components:
