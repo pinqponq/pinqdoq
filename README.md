@@ -26,6 +26,8 @@ pinq-doq/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
       naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md
+    android/
+      cli-tooling.md            Android CLI research: SDK tools, Gradle build/test, headless emulator, adb
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
