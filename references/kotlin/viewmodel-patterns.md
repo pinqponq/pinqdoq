@@ -106,6 +106,10 @@ is Event.SelectOption -> {
 }
 ```
 
+## Internal Tracking State (Non-UI)
+
+Values the ViewModel needs only for its own bookkeeping — never rendered, never read by ScreenContent (e.g. `message.id`, `trackId`) — are **not** Contract State. Hold them as a `private var` on the ViewModel instead of adding them to `State`. See the "Non-Displayed State Stays in the ViewModel" section in `mvi-pattern.md` for the rule and an example.
+
 ## Private Helper Functions
 
 Extract anything non-trivial out of `handleEvents` into well-named private functions. Common shapes:

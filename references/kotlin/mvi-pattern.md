@@ -8,6 +8,10 @@ This file covers the presentation-layer structure. For the feature package skele
 
 This is the invariant that keeps features testable and makes recomposition predictable. Once ScreenContent starts holding domain state locally, state drifts out of sync with the ViewModel and bugs become unreproducible.
 
+## Non-Displayed State Stays in the ViewModel
+
+Values not shown on screen (e.g. `message.id`, `trackId`) are not UI state. They must not go into Contract `State`, and must not be held in the composable either. Keep them as a `private var` in the ViewModel.
+
 ## Contract Structure
 
 Every feature has exactly one Contract file containing three sealed/data types:
