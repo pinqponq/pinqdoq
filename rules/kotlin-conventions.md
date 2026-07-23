@@ -38,6 +38,13 @@ if (state.uiState.isProductListEmpty) { ... }
 if (state.uiState.isProductListVisible) { ... }
 ```
 
+### Confirmation Dialogs
+
+- Show a confirmation dialog before every destructive or irreversible action (delete, clear, reset, etc.).
+- The question must reference the specific action — not a generic prompt.
+- Confirm button label: the action verb ("Delete", "Clear", "Reset"). Cancel button label: always "Cancel" — never "Yes / No".
+- Style the confirm button as a destructive/error button when the action deletes or permanently removes data.
+
 ### Preview Standards
 - Always wrap previews in `AppTheme`.
 - Use preview parameter providers for dynamic data.
