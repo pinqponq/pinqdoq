@@ -79,12 +79,18 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 ---
 
 ## Yunuscan Bartık
-- **Role:** Developer
-- **Seniority:** TBD
-- **Primary stack:** Backend (.NET)
+- **Role:** Backend Developer
+- **Seniority:** Junior–Mid
+- **Primary stack:** Backend (.NET Core, ASP.NET Web API, ADO.NET, Entity Framework Core)
+- **Secondary:** Vibe coding — dashboards and panels; can contribute to KMP mobile with pinq-doq guidance
 - **Capabilities:**
-  - TBD — profile to be filled in
-- **Assign when:** TBD — capabilities not yet documented
+  - RESTful API design and development (.NET Core, ADO.NET, Entity Framework Core)
+  - MSSQL Server (T-SQL) — stored procedures, triggers, complex CRUD operations
+  - PostgreSQL
+  - Message queues (RabbitMQ) for high-volume data processing pipelines
+  - Redis caching for real-time system performance optimization
+  - Cloud & integrations: AWS (S3), Firebase, SMTP
+- **Assign when:** task involves .NET backend API development, RabbitMQ/Redis infrastructure work, or MSSQL/PostgreSQL database design. For architecturally advanced or high-stakes backend work, pair with or defer to Atakan/Emir given current seniority level.
 
 ---
 
