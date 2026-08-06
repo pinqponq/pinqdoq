@@ -90,7 +90,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Message queues (RabbitMQ) for high-volume data processing pipelines
   - Redis caching for real-time system performance optimization
   - Cloud & integrations: AWS (S3), Firebase, SMTP
-- **Assign when:** task involves .NET backend API development, RabbitMQ/Redis infrastructure work, or MSSQL/PostgreSQL database design. For architecturally advanced or high-stakes backend work, pair with or defer to Atakan/Emir given current seniority level.
+- **Assign when:** task involves .NET backend API development, RabbitMQ/Redis infrastructure work, or MSSQL/PostgreSQL database design.
 
 ---
 
