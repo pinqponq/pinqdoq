@@ -78,6 +78,16 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 
 ---
 
+## Yunuscan Bartık
+- **Role:** Developer
+- **Seniority:** TBD
+- **Primary stack:** Backend (.NET)
+- **Capabilities:**
+  - TBD — profile to be filled in
+- **Assign when:** TBD — capabilities not yet documented
+
+---
+
 ## Assignment Quick Reference
 
 | Area | First choice | Second choice |
