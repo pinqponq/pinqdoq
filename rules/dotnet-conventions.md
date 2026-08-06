@@ -12,6 +12,7 @@ Extends `common.md`. These rules apply to all C# backend projects.
 
 - Follow standard C# formatting rules. No Python-like or non-C# styling.
 - Attributes must be on a separate line above the target member, never inline.
+- Interfaces are named with the `I` prefix (`IUserRepository`), following .NET convention. This overrides `common.md`'s general "no `I` prefix" default, which targets Kotlin/Swift-style codebases.
 
 ---
 
