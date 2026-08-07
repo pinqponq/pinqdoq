@@ -1,6 +1,6 @@
 ﻿---
 name: pinq_code-review
-description: Reviews the current code diff against the pinq-doq rule files by reading those rules live at review time (no Notion, no MCP, no external services) and reporting violations grouped by severity. Detects which rules apply from the changed file extensions and loads only those (always common.md; the Kotlin rules kotlin-architecture.md, kotlin-naming.md, kotlin-conventions.md and, when the project depends on deveng-core-kmp, kotlin-deveng-core.md for *.kt/*.kts; dotnet-conventions.md for *.cs/*.csproj/*.sln), consulting deep references on demand. Use when the user says "review my changes", "review this diff", "check against standards", "do a coding-standards review", "review before PR", or asks whether changed code follows the pinq-doq / team conventions. Read-and-report only â€” does not modify code unless the user explicitly asks.
+description: Reviews the current code diff against the pinq-doq rule files by reading those rules live at review time (no Notion, no MCP, no external services) and reporting violations grouped by severity. Detects which rules apply from the changed file extensions and loads only those (always common.md; the Kotlin rules kotlin-architecture.md, kotlin-naming.md, kotlin-conventions.md and, when the project depends on deveng-core-kmp, kotlin-deveng-core.md for *.kt/*.kts; dotnet-conventions.md and, when the project references Pinqponq.* / pinqnugets packages, dotnet-pinqnugets.md for *.cs/*.csproj/*.sln), consulting deep references on demand. Use when the user says "review my changes", "review this diff", "check against standards", "do a coding-standards review", "review before PR", or asks whether changed code follows the pinq-doq / team conventions. Read-and-report only — does not modify code unless the user explicitly asks.
 ---
 
 # Code Review
@@ -102,7 +102,7 @@ This skill **replaces** an older MCP `check-coding-standards` tool that pulled s
    - If empty â†’ emit `EMPTY_DIFF`. (See [Tool Policy](#tool-policy).)
 2. **Detect applicable rules** â€” From the set of changed file paths, map extensions to rule files (see [Rule detection](#rule-detection)).
 3. **Load the rules live** â€” **Read** each applicable rule file from disk now (see [Locating the rule files](#locating-the-rule-files)). Do not rely on memory or an embedded copy. If none found â†’ emit `NO_RULES_FOUND`.
-4. **Pull deep references only as needed** â€” When a loaded rule points to a reference (e.g. `references/kotlin/deveng-core-reference.md`, `references/kotlin/architecture.md`, `references/kotlin/data-layer.md`, `references/kotlin/fake-data.md`) and a changed hunk plausibly touches that area, read that reference to check the detail. Do not bulk-load references that no hunk touches.
+4. **Pull deep references only as needed** — When a loaded rule points to a reference (e.g. `references/kotlin/deveng-core-reference.md`, `references/dotnet/pinqnugets-reference.md`, `references/kotlin/architecture.md`, `references/kotlin/data-layer.md`, `references/kotlin/fake-data.md`) and a changed hunk plausibly touches that area, read that reference to check the detail. Do not bulk-load references that no hunk touches.
 5. **Review each hunk** â€” For every added/modified line in the diff, check it against the loaded rules. Tie each violation to the new-file `file:line`.
 6. **Verify the report against this contract** â€” Sections present and ordered; every finding has a real `file:line` and a citation to a loaded rule; no fabricated lines; no external services consulted; no code modified.
 7. **Emit** â€” Output the Markdown report and nothing else.
@@ -115,18 +115,20 @@ Map the changed files to rule files. Always include `common.md`.
 |---|---|
 | any file | `common.md` (always) |
 | `*.kt`, `*.kts` | `kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`; **and** `kotlin-deveng-core.md` **if** the project depends on `deveng-core-kmp` |
-| `*.cs`, `*.csproj`, `*.sln` | `dotnet-conventions.md` |
+| `*.cs`, `*.csproj`, `*.sln` | `dotnet-conventions.md`; **and** `dotnet-pinqnugets.md` **if** the project references Pinqponq.* / pinqnugets packages **or** the change is clearly adding infrastructure that those packages cover |
 
 - **deveng-core-kmp dependency check**: treat the project as depending on deveng-core-kmp when its build/dependency files reference `deveng-core-kmp` (e.g. a `deveng-core` / `deveng-core-kmp` entry in `*.gradle.kts`, `*.toml` version catalog, or settings). If unsure and Kotlin files changed, you MAY still load `kotlin-deveng-core.md` but only raise deveng-core findings when the dependency is actually present.
-- For Kotlin, the deep references in `references/kotlin/*.md` and `references/kotlin/deveng-core-reference.md` are consulted **on demand** per step 4 â€” not auto-loaded.
+- **pinqnugets / Pinqponq.* dependency check**: treat the project as in scope for `dotnet-pinqnugets.md` when `*.csproj` / `Directory.Packages.props` / `packages.lock.json` reference `Pinqponq.`*, or when the diff invents JWT/OTP/TOTP/SSO/Redis/SMS/SMTP/DB-connection/RabbitMQ-transport/global-exception stacks that the pinqnugets reference covers. If unsure and C# files changed, you MAY load `dotnet-pinqnugets.md` but only raise pinqnugets findings when a package fits or a Pinqponq reference is present.
+- For Kotlin, the deep references in `references/kotlin/*.md` and `references/kotlin/deveng-core-reference.md` are consulted **on demand** per step 4 — not auto-loaded.
+- For .NET pinqnugets findings, consult `references/dotnet/pinqnugets-reference.md` **on demand** per step 4 — not auto-loaded.
 - If a changed extension maps to no rule file, review it against `common.md` only.
 
 ### Locating the rule files
 
 Rule files may live at different roots depending on where the skill runs. Resolve in this order and use the first that exists (or honor `rules_root` if given):
 
-1. **Consumer project (most common):** rules copied to `.claude/rules/` â€” i.e. `.claude/rules/common.md`, `.claude/rules/kotlin-architecture.md`, `.claude/rules/kotlin-naming.md`, `.claude/rules/kotlin-conventions.md`, `.claude/rules/kotlin-deveng-core.md`, `.claude/rules/dotnet-conventions.md`. Deep references live at `.pinq-doq/references/` â€” e.g. `.pinq-doq/references/kotlin/deveng-core-reference.md`, `.pinq-doq/references/kotlin/architecture.md`.
-2. **The pinq-doq repo itself:** `rules/common.md`, `rules/kotlin-*.md`, `rules/dotnet-conventions.md`, with references at `references/...`.
+1. **Consumer project (most common):** rules copied to `.claude/rules/` — i.e. `.claude/rules/common.md`, `.claude/rules/kotlin-architecture.md`, `.claude/rules/kotlin-naming.md`, `.claude/rules/kotlin-conventions.md`, `.claude/rules/kotlin-deveng-core.md`, `.claude/rules/dotnet-conventions.md`, `.claude/rules/dotnet-pinqnugets.md`. Deep references live at `.pinq-doq/references/` — e.g. `.pinq-doq/references/kotlin/deveng-core-reference.md`, `.pinq-doq/references/dotnet/pinqnugets-reference.md`, `.pinq-doq/references/kotlin/architecture.md`.
+2. **The pinq-doq repo itself:** `rules/common.md`, `rules/kotlin-*.md`, `rules/dotnet-conventions.md`, `rules/dotnet-pinqnugets.md`, with references at `references/...`.
 
 Read the files with the file-read tool. Do not reconstruct rule content from memory.
 

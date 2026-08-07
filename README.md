@@ -13,11 +13,13 @@ pinq-doq/
     kotlin-conventions.md     paths: ['**/*.kt','**/*.kts'] — Compose, style, null-safety, DI
     kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
     dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
+    dotnet-pinqnugets.md      paths: ['**/*.cs','**/*.csproj','**/*.sln'] — prefer Pinqponq.* packages; cites references/dotnet/pinqnugets-reference.md
   skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
     add-feature/                orchestrates a whole feature: presentation + API, then connects them
     presentation-scaffold/      presentation layer via scripts/ (screen/MVI, nav, components, strings)
     api-endpoint-integration/   backend of an endpoint via scripts/ (data → domain → use case → DI)
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
+    pinqnugets-integration/     add or migrate a .NET infra mechanism via Pinqponq.* packages, then update pinq-doq
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
   scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
@@ -26,6 +28,8 @@ pinq-doq/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
       naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md
+    dotnet/
+      pinqnugets-reference.md   Pinqponq.* NuGet situation → package map
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
@@ -47,6 +51,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "scaffold a screen", "add a screen / component / strings" | `presentation-scaffold` |
 | "integrate a standalone endpoint", "add this API to a feature" | `api-endpoint-integration` |
 | "set up theming / colors / typography" | `kmp-theme-setup` |
+| "pinqnugets ile X ekle", "migrate refresh token / cache / SMS to Pinqponq", "use pinqnugets instead of our stack" | `pinqnugets-integration` |
 | "create a handoff", "park this", "checkpoint before /clear" | `handoff` |
 | "create a Linear task", "draft a task for", "help me write this ticket", "kime atasam" | `linear-task` |
 
@@ -84,7 +89,7 @@ Claude runs [`tasks/update.md`](tasks/update.md): pulls the latest pinq-doq, re-
 Claude Code auto-loads **every** `.md` directly under a project's `.claude/rules/` into every session at startup. Because `integrate`/`update` copy `pinq-doq/rules/` into `.claude/rules/`, those rule files — and only those — auto-load in consumers. Control loading per file with `paths:` YAML frontmatter:
 
 - **Universal rules** (`common.md`) — no frontmatter, so they always load. `common.md` also carries a short pointer to the stack-specific files so Claude knows they exist before one triggers.
-- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `dotnet-conventions.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
+- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `dotnet-conventions.md`, `dotnet-pinqnugets.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
 
   ```yaml
   ---

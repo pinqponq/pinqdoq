@@ -27,7 +27,7 @@ It mirrors `.pinq-doq/rules/` → `.claude/rules/` (overwrite + prune; this dir 
 
 ## 3. Wire `CLAUDE.md`
 
-The copied rules under `.claude/rules/` **auto-load** — `common.md` always, and the stack rules (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `dotnet-conventions.md`) only when you touch a matching file, via their `paths:` frontmatter. So you do **not** need to `@import` them.
+The copied rules under `.claude/rules/` **auto-load** — `common.md` always, and the stack rules (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `dotnet-conventions.md`, `dotnet-pinqnugets.md`) only when you touch a matching file, via their `paths:` frontmatter. So you do **not** need to `@import` them.
 
 Create or update the project-root `CLAUDE.md` with a short pointer (do not `@import` the scoped rule files — `@import` force-loads them and defeats the scoping):
 
