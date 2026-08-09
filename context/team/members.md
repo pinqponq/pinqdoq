@@ -79,18 +79,22 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 ---
 
 ## Yunuscan Bartık
-- **Role:** Backend Developer
+- **Role:** Developer Advocate (title assigned 2026-08-09); also backend developer
 - **Seniority:** Junior–Mid
+- **Primary focus:** Developer relations — content, community, product advocacy
 - **Primary stack:** Backend (.NET Core, ASP.NET Web API, ADO.NET, Entity Framework Core)
 - **Secondary:** Vibe coding — dashboards and panels; can contribute to KMP mobile with pinq-doq guidance
 - **Capabilities:**
+  - Developer-facing content: feature announcements, use-case walkthroughs, technical storytelling
+  - Community presence and engagement (X, developer groups and communities)
+  - Research on developer advocacy practices and competitor devrel activity
   - RESTful API design and development (.NET Core, ADO.NET, Entity Framework Core)
   - MSSQL Server (T-SQL) — stored procedures, triggers, complex CRUD operations
   - PostgreSQL
   - Message queues (RabbitMQ) for high-volume data processing pipelines
   - Redis caching for real-time system performance optimization
   - Cloud & integrations: AWS (S3), Firebase, SMTP
-- **Assign when:** task involves .NET backend API development, RabbitMQ/Redis infrastructure work, or MSSQL/PostgreSQL database design.
+- **Assign when:** task involves developer-facing content, product announcement strategy, community building, or devrel research. Also available for .NET backend API development, RabbitMQ/Redis infrastructure work, or MSSQL/PostgreSQL database design.
 
 ---
 
@@ -112,6 +116,8 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | Pinqponq SDK — mobile (CMP/KMP) | Berk | Furkan |
 | Pinqponq SDK — backend | Atakan | Emir |
 | Cross-project / multi-layer | Furkan | — |
+| Developer relations / content / community | Yunuscan | — |
+| Product announcement strategy | Yunuscan | — |
 | Well-scoped intern task | Yiğit | — |
 | Pinqloq/Pinqponq dashboard UI-only (responsive, layout, CSS) | Yiğit | Atakan |
 | Rindle — mobile | Berk | Furkan |
