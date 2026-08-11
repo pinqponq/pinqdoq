@@ -28,7 +28,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 | Packages | lowercase, dot-separated | `com.protein.android.domain.user.usecase` |
 | Lambda / Callback Parameters | camelCase, contextual prefix | `onRegistrationItemClick` |
 
-- Do not prefix interfaces with `I`.
+- Do not prefix interfaces with 'I' in Kotlin.
 - Do not add an `Async` suffix to async methods — the return type already signals it.
 - If a method only checks → use `validate`, `check`. If it creates or saves → use action verbs.
 
