@@ -20,6 +20,8 @@ pinq-doq/
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
+    article-writer/             write a Medium-style article (EN+TR) grounded in repo context → docs/articles/
+    social-post/                derive a LinkedIn/X/Instagram post (EN+TR) from an existing article
   scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
   references/     → NOT copied; read on demand by path
     kotlin/
@@ -31,6 +33,8 @@ pinq-doq/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
     team/           (add members.md here for assignee suggestions)
     tools/          (add linear-workflow.md here for Linear conventions)
+    content/
+      voice-guide.md  tone, language, and per-platform rules for article-writer/social-post
   tasks/          integrate.md (first-time setup), update.md (adopt newer standards)
   meta/           authoring-guide.md (write a skill), contributing.md (extend pinq-doq)
   README.md, CLAUDE.md   repo docs — never delivered into consumers
@@ -49,6 +53,8 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "set up theming / colors / typography" | `kmp-theme-setup` |
 | "create a handoff", "park this", "checkpoint before /clear" | `handoff` |
 | "create a Linear task", "draft a task for", "help me write this ticket", "kime atasam" | `linear-task` |
+| "write an article about", "makale yaz", "medium yazısı" | `article-writer` |
+| "linkedin postu yaz", "write a LinkedIn/X/Instagram post for this article" | `social-post` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
