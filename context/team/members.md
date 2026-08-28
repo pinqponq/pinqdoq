@@ -5,6 +5,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 ---
 
 ## Furkan Türkan
+- **GitHub:** furkanturkn
 - **Role:** Team Lead
 - **Seniority:** Senior
 - **Primary stack:** Compose Multiplatform (KMP), mobile
@@ -20,6 +21,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 ---
 
 ## Atakan
+- **GitHub:** atakancelik
 - **Role:** Team Lead
 - **Seniority:** Senior
 - **Primary stack:** Backend (.NET), DevOps
@@ -36,6 +38,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 ---
 
 ## Berk Çelik
+- **GitHub:** berkcelik99
 - **Role:** Mid-level developer
 - **Seniority:** Mid
 - **Primary stack:** Compose Multiplatform (KMP), mobile
@@ -52,6 +55,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 ---
 
 ## Emir Şenler
+- **GitHub:** emirsenler
 - **Role:** Mid-level developer
 - **Seniority:** Mid (output and scope are effectively senior-level)
 - **Primary stack:** Backend (.NET), DevOps, Infrastructure
@@ -68,17 +72,8 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 
 ---
 
-## Yiğit Ünal
-- **Role:** Intern
-- **Seniority:** Intern (joined 2026-07-10 — very early stage)
-- **Primary stack:** TBD — onboarding in progress
-- **Capabilities:**
-  - Frontend/web UI tasks (HTML, CSS, responsive layout, vibe coding)
-- **Assign when:** task is well-scoped, low-risk, and has a mentor reviewer. Dashboard/panel tasks that require no backend knowledge (CSS fixes, layout, responsive design) are also suitable. Avoid blocking, cross-cutting, or architecturally sensitive work.
-
----
-
 ## Yunuscan Bartık
+- **GitHub:** yunuscanbartik
 - **Role:** Developer Advocate (title assigned 2026-08-09); also backend developer
 - **Seniority:** Junior–Mid
 - **Primary focus:** Developer relations — content, community, product advocacy
@@ -118,8 +113,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | Cross-project / multi-layer | Furkan | — |
 | Developer relations / content / community | Yunuscan | — |
 | Product announcement strategy | Yunuscan | — |
-| Well-scoped intern task | Yiğit | — |
-| Pinqloq/Pinqponq dashboard UI-only (responsive, layout, CSS) | Yiğit | Atakan |
+| Pinqloq/Pinqponq dashboard UI-only (responsive, layout, CSS) | Atakan | Emir |
 | Rindle — mobile | Berk | Furkan |
 | Rindle — backend (routine) | Berk | — |
 | Rindle — backend (advanced/architectural) | Atakan | — |
@@ -139,9 +133,7 @@ Pinqloq has two components:
 - **Dashboard** — API key and project management (web app)
 - **WASM panel** — log viewing interface used by customers (WebAssembly site)
 
-Both are developed with **vibe coding**. The rule: whoever owns the backend task for a given Pinqloq feature also owns the client (dashboard/panel) side. Do not assign Pinqloq panel tasks to KMP mobile developers (Berk) by default — they go to the backend developer handling that feature (typically Emir or Atakan).
-
-**Exception:** Scoped UI-only tasks on the dashboard (responsive fixes, layout polish, CSS changes, copy/UX improvements) that require no backend knowledge should be assigned to **Yiğit**.
+Both are developed with **vibe coding**. The rule: whoever owns the backend task for a given Pinqloq feature also owns the client (dashboard/panel) side. Do not assign Pinqloq panel tasks to KMP mobile developers (Berk) by default — they go to the backend developer handling that feature (typically Emir or Atakan). Scoped UI-only tasks on the dashboard (responsive fixes, layout polish, CSS changes, copy/UX improvements) that require no backend knowledge go to Atakan or Emir.
 
 ### Pinqponq SDK
 - **Mobile side (CMP/KMP):** vibe coding is allowed, but always assign to mobile team members — Berk (primary) or Furkan.

@@ -30,7 +30,7 @@ pinq-doq/
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
     team/           (add members.md here for assignee suggestions)
-    tools/          (add linear-workflow.md here for Linear conventions)
+    tools/          (add github-workflow.md here for GitHub Projects conventions)
   tasks/          integrate.md (first-time setup), update.md (adopt newer standards)
   meta/           authoring-guide.md (write a skill), contributing.md (extend pinq-doq)
   README.md, CLAUDE.md   repo docs — never delivered into consumers
@@ -48,7 +48,8 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "integrate a standalone endpoint", "add this API to a feature" | `api-endpoint-integration` |
 | "set up theming / colors / typography" | `kmp-theme-setup` |
 | "create a handoff", "park this", "checkpoint before /clear" | `handoff` |
-| "create a Linear task", "draft a task for", "help me write this ticket", "kime atasam" | `linear-task` |
+| "create a task", "add this to GitHub", "task aç", "open a task on the board" | `create-task` |
+| "draft a task for", "help me write this ticket", "kime atasam" (draft only, no create) | `draft-task` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
