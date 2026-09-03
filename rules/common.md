@@ -84,29 +84,6 @@ This file always loads. Stack-specific rules load automatically only when you to
 
 ---
 
-## Comment Standards
-
-- Do not add comments by default. Prefer readable code, meaningful naming, and small functions.
-- Do not write comments that only restate what the code already does in different words.
-- Only comment information that cannot be inferred from the code and can be verified from the existing context:
-  - business rules and deliberate exceptions,
-  - technical constraints and temporary workarounds,
-  - security or performance trade-offs,
-  - unexpected behavior of external systems,
-  - deliberate implementations that look like a mistake at first glance.
-- Do not guess a decision's rationale if it was not given by the user or is not explicit in the project. Ask the user for clarification when it is needed.
-- If the need for a comment can be resolved with better naming or a refactor, improve the code first instead.
-- When changing code, also check the comments tied to it; update or remove any that are no longer valid.
-- Do not delete existing comments without understanding the context and rationale they carry.
-- For public APIs, add docstrings or JSDoc only when the project standard requires it.
-- In `TODO` comments, state the rationale, a tracking reference, and the removal condition where possible.
-- Keep comments short, concrete, and in the language used in the codebase.
-- Do not auto-generate line-by-line comments just to explain generated code.
-
-**Core test:** if removing a comment would not lose an important, verifiable rationale or warning, the comment was unnecessary.
-
----
-
 ## Constructor & Dependency Naming
 
 Constructor parameters must clearly express what they configure, not just repeat the type name.
