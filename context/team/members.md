@@ -33,7 +33,9 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Database and stored procedure design
   - API Gateway configuration
   - Server setup and deployment
-- **Assign when:** task involves backend architecture, complex integrations, auth systems, stored procedures, or infrastructure setup. For Rindle specifically, assign Atakan only for advanced architectural tasks — routine Rindle backend work goes to Berk.
+  - CI/CD auto-deploy pipelines
+  - Shared infrastructure NuGet packages (PinqNugets)
+- **Assign when:** task involves backend architecture, complex integrations, auth systems, stored procedures, infrastructure setup, CI/CD auto-deploy, or shared NuGet package work. For Rindle specifically, assign Atakan only for advanced architectural tasks — routine Rindle backend work goes to Berk.
 
 ---
 
@@ -62,13 +64,17 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 - **Secondary:** Vibe coding — dashboards and panels; can contribute to KMP mobile with pinq-doq guidance
 - **Capabilities:**
   - Message brokers (RabbitMQ) and caching (Redis)
-  - Observability stack (ElasticSearch, Kibana, Grafana, MongoDB logging)
+  - Observability and monitoring stack (ElasticSearch, Kibana, Grafana, Prometheus, MongoDB logging, alerting)
   - Containerization and CI/CD (Docker, GitHub Actions)
+  - Server platform migration and hardening (secrets management, VPN, TLS, service isolation)
+  - Distributed tracing
+  - MCP server development
+  - Token-based authentication flows
   - Payment integrations
   - Microservice and shared tooling libraries
   - .NET SDK and NuGet packaging
   - High-volume backend feature delivery
-- **Assign when:** task involves infrastructure (Redis, RabbitMQ, Docker, CI/CD, logging), payment integration, SDK/NuGet work, or large backend feature scope.
+- **Assign when:** task involves infrastructure (Redis, RabbitMQ, Docker, CI/CD, logging, monitoring, secrets/networking, server migration), distributed tracing, MCP server work, payment integration, SDK/NuGet work, or large backend feature scope.
 
 ---
 
@@ -89,7 +95,10 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Message queues (RabbitMQ) for high-volume data processing pipelines
   - Redis caching for real-time system performance optimization
   - Cloud & integrations: AWS (S3), Firebase, SMTP
-- **Assign when:** task involves developer-facing content, product announcement strategy, community building, or devrel research. Also available for .NET backend API development, RabbitMQ/Redis infrastructure work, or MSSQL/PostgreSQL database design.
+  - Billing, subscription, and payment systems
+  - Usage metering and quota enforcement
+  - Dashboard client feature development (vibe coding)
+- **Assign when:** task involves developer-facing content, product announcement strategy, community building, or devrel research. Also available for .NET backend API development, RabbitMQ/Redis infrastructure work, MSSQL/PostgreSQL database design, billing/subscription/payment systems, usage metering, or dashboard client features (vibe coding).
 
 ---
 
@@ -101,9 +110,15 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | Mobile architecture / chat / MCP | Furkan | — |
 | Backend architecture / auth / integrations | Atakan | Emir |
 | Redis / RabbitMQ / Docker / CI/CD | Emir | Atakan |
-| Observability (ElasticSearch, Grafana, logging) | Emir | — |
-| Payment integrations | Emir | — |
+| CI/CD auto-deploy | Atakan | Emir |
+| Observability / monitoring / alerting (Grafana, Prometheus) | Emir | — |
+| Server migration / secrets / networking | Emir | — |
+| Distributed tracing | Emir | — |
+| MCP server development | Furkan | Emir |
+| Payment integrations | Emir | Yunuscan |
+| Billing / subscriptions / usage metering (backend) | Yunuscan | Emir |
 | .NET SDK / NuGet | Emir | Atakan |
+| PinqNugets shared packages | Atakan | Emir |
 | Complex third-party / gov APIs | Atakan | — |
 | Dashboard / admin panel (vibe coding) | Atakan | Emir |
 | Pinqloq dashboard + WASM panel (vibe coding) | backend owner of that task | — |
