@@ -49,6 +49,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Full mobile screen implementation (feature screens, settings, onboarding, reservations)
   - Custom UI components and composables
   - Client-side API connection layer
+  - Analytics and ad-platform integration (Google Ads)
   - Bug fixing and UI polish
   - KMP admin panel screens
   - Rindle backend feature development (active role on both backend and mobile sides)
@@ -130,6 +131,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 | Product announcement strategy | Yunuscan | — |
 | Pinqloq/Pinqponq dashboard UI-only (responsive, layout, CSS) | Atakan | Emir |
 | Rindle — mobile | Berk | Furkan |
+| Analytics / ad-platform integration | Berk | Furkan |
 | Rindle — backend (routine) | Berk | — |
 | Rindle — backend (advanced/architectural) | Atakan | — |
 
