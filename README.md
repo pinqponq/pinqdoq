@@ -20,6 +20,7 @@ pinq-doq/
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
+    release-notes/              App Store + Play release notes from the commits since the last release
   scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
   references/     → NOT copied; read on demand by path
     kotlin/
