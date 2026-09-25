@@ -69,9 +69,10 @@ These are the email-specific checks on top of the guide.
 | E6 | **Executive tone:** confident and professional. Flag hedging ("sanırım", "belki", "I just wanted to", "sorry to bother"), over-apology, emotional or accusatory wording, blame, sarcasm, slang, emoji, repeated exclamation marks, and all-caps. | Major; Critical for accusatory or offensive wording |
 | E7 | **Address consistency:** greeting fits the recipient; in Turkish, "siz" / "sen" is not mixed within the email. | Major |
 | E8 | **Closing and signature:** a closing line and a signature with full name and role are present. | Suggestion |
-| E9 | **Confidentiality:** no passwords, tokens, personal data (TC kimlik no, IBAN, health data), or internal-only figures sent to an external recipient. | Critical |
+| E9 | **Confidentiality:** no passwords, tokens, personal data (TC kimlik no, IBAN, health data), or internal-only figures sent to an external recipient. Personal compensation, insurance, health, or psychological information sent internally is also flagged: keep the recipient list to the people who need it, with no group address or wide CC. | Critical for an external recipient; Major for an internal one |
 | E10 | **Attachments and links:** if the text says "ekte" / "attached" / "linkte", remind the sender to confirm the attachment or link is actually there. | Suggestion |
 | E11 | **One topic:** unrelated topics are split into separate emails. | Major |
+| E12 | **Channel fit:** when the email raises a personal matter (own pay or benefits, health, well-being, a conflict with a named colleague, resignation), suggest discussing it one-on-one first and using the email to record what was agreed. | Suggestion |
 
 ## Inputs
 ### Required
@@ -103,7 +104,7 @@ These are the email-specific checks on top of the guide.
      | # | Önem / Severity | Kural / Rule | Nerede / Where | Hata / Issue | Aksiyon önerisi / Suggested action |
      |---|---|---|---|---|---|
 
-     - **Kural / Rule:** the check ID (E1–E11) or the guide section (for example `Kılavuz 6 – Yazım`).
+     - **Kural / Rule:** the check ID (E1–E12) or the guide section (for example `Kılavuz 6 – Yazım`).
      - **Nerede / Where:** a short verbatim quote (at most about 12 words) or a location such as "Konu satırı" / "Subject line", "2. paragraf" / "Paragraph 2".
      - **Hata / Issue:** what is wrong, in one sentence.
      - **Aksiyon önerisi / Suggested action:** what the sender should do, in one sentence. A word-level fix is allowed for spelling (`yanlız → yalnız`), and a grouped spelling row lists every word-level fix separated by commas; a rewritten sentence or paragraph is not.
@@ -121,9 +122,10 @@ These are the email-specific checks on top of the guide.
 1. **Validate** — apply the input validation; on failure, emit the error format and stop.
 2. **Load rules** — read the writing guide from the Rule Source path.
 3. **Normalize** — separate the new message from quoted thread history, signatures of earlier messages, and disclaimers; detect the email's language.
-4. **Check** — go through the email once for each group: E9 confidentiality → Guide 6 spelling and grammar → E1–E4 structure and ask → E6–E7 tone and address → Guide 1–5, 7 clarity, conciseness, accuracy, attribution, terms → E5, E8, E10, E11.
+4. **Check** — go through the email once for each group: E9 confidentiality → Guide 6 spelling and grammar → E1–E4 structure and ask → E6–E7 tone and address → Guide 1–5, 7 clarity, conciseness, accuracy, attribution, terms → E5, E8, E10, E11, E12.
 5. **Grade** — assign severity using the defaults above, then group:
    - Spelling errors (Guide 6 – Yazım) go into a single Critical row, quoting each wrong word under Where and listing each word-level fix under Suggested action.
+   - When a spelling pattern runs through the whole text (for example Turkish characters missing everywhere, or colloquial verb endings throughout), name the pattern and give 3–5 examples instead of listing every occurrence ("Türkçe karakterler metnin tamamında eksik, örneğin `aticaz → atacağız`, …").
    - Grammar and punctuation errors (Guide 6 – Dilbilgisi) stay one row per sentence, since each needs its own fix.
    - Any other check that fails in several places is one row listing its occurrences.
 6. **Verify** — before emitting, check:
@@ -221,3 +223,4 @@ how_to_fix: Göndermeyi planladığınız mailin konu satırını ve tam metnini
 - T5 Tool failure: guide file missing → review completes with the Rule Source table, and "Not checked / Assumptions" states that the guide could not be read.
 - T6 Confidentiality: external recipient and an IBAN in the body → E9 Critical finding with the IBAN masked in the quote.
 - T7 Informal input: a two-sentence chat-style message with no subject, greeting, or signature → reviewed as an email, not rejected; E1 (missing subject), E7 (missing greeting), and E8 (missing signature) are reported as findings, and "Not checked / Assumptions" notes it was reviewed as an email draft.
+- T8 Personal matter: an internal email about unpaid allowance and the sender's motivation → E9 Major (keep the recipient list narrow) and E12 Suggestion (discuss one-on-one first); pervasive missing Turkish characters appear as one pattern row with 3–5 examples.
