@@ -20,6 +20,7 @@ pinq-doq/
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
+    executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
   scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
   references/     → NOT copied; read on demand by path
     kotlin/
@@ -50,6 +51,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "create a handoff", "park this", "checkpoint before /clear" | `handoff` |
 | "create a task", "add this to GitHub", "task aç", "open a task on the board" | `create-task` |
 | "draft a task for", "help me write this ticket", "kime atasam" (draft only, no create) | `draft-task` |
+| "mailimi kontrol et", "bu maili gönderebilir miyim", "check my email before sending" | `executive-mail-review` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
