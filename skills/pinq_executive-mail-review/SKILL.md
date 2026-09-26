@@ -67,12 +67,13 @@ These are the email-specific checks on top of the guide.
 | E4 | **Decision-ready:** when asking for a decision, the options and the sender's recommendation are given. | Major |
 | E5 | **Length and layout:** body readable in about a minute — flag over 250 words; paragraphs over 4 sentences; 3+ items not in a list. Suggest moving detail to an attachment or document. | Suggestion; Major if over 400 words |
 | E6 | **Executive tone:** confident and professional. Flag hedging ("sanırım", "belki", "I just wanted to", "sorry to bother"), over-apology, emotional or accusatory wording, blame, sarcasm, slang, emoji, repeated exclamation marks, and all-caps. | Major; Critical for accusatory or offensive wording |
-| E7 | **Address consistency:** greeting fits the recipient; in Turkish, "siz" / "sen" is not mixed within the email. | Major |
-| E8 | **Closing and signature:** a closing line and a signature with full name and role are present. | Suggestion |
+| E7 | **Address consistency:** the email opens with a plain greeting and the recipient's name ("Merhaba Emir," / "Hi Emir,"); in Turkish, "siz" / "sen" is not mixed within the email. | Major |
+| E8 | **Signature:** a signature with full name and role is present. A closing line is optional and only used when it says something (see E13). | Suggestion |
 | E9 | **Confidentiality:** no passwords, tokens, personal data (TC kimlik no, IBAN, health data), or internal-only figures sent to an external recipient. Personal compensation, insurance, health, or psychological information sent internally is also flagged: keep the recipient list to the people who need it, with no group address or wide CC. | Critical for an external recipient; Major for an internal one |
 | E10 | **Attachments and links:** if the text says "ekte" / "attached" / "linkte", remind the sender to confirm the attachment or link is actually there. URLs and addresses are complete and well-formed: a scheme with `//`, a plausible domain, and no typo compared to sibling links in the same email (for example `https:/api-test.pinqponqi.o` next to `wss://rtc-test.pinqponq.io`). | Suggestion for an attachment reminder; Major for a malformed link |
 | E11 | **One topic:** unrelated topics are split into separate emails. | Major |
 | E12 | **Channel fit:** when the email raises a personal matter (own pay or benefits, health, well-being, a conflict with a named colleague, resignation), suggest discussing it one-on-one first and using the email to record what was agreed. | Suggestion |
+| E13 | **No empty courtesy:** thanks only for something the recipient has already done, and name it ("Dünkü deploy için teşekkürler"). Flag thanks given before anything was done ("Teşekkürler," as a sign-off on a request, "şimdiden teşekkürler", "thanks in advance") and filler openers, closers, or forms of address that carry no information ("Umarım iyisindir", "Hope this finds you well", "Kolay gelsin", "Değerli ekip arkadaşım", "Sayın" for a teammate, "abi" / "hocam"). | Major |
 
 ## Inputs
 ### Required
@@ -104,7 +105,7 @@ These are the email-specific checks on top of the guide.
      | # | Önem / Severity | Kural / Rule | Nerede / Where | Hata / Issue | Aksiyon önerisi / Suggested action |
      |---|---|---|---|---|---|
 
-     - **Kural / Rule:** the check ID (E1–E12) or the guide section (for example `Kılavuz 6 – Yazım`).
+     - **Kural / Rule:** the check ID (E1–E13) or the guide section (for example `Kılavuz 6 – Yazım`).
      - **Nerede / Where:** a short verbatim quote (at most about 12 words) or a location such as "Konu satırı" / "Subject line", "2. paragraf" / "Paragraph 2".
      - **Hata / Issue:** what is wrong, in one sentence.
      - **Aksiyon önerisi / Suggested action:** what the sender should do, in one sentence. A word-level fix is allowed for spelling (`yanlız → yalnız`), and a grouped spelling row lists every word-level fix separated by commas; a rewritten sentence or paragraph is not.
@@ -122,7 +123,7 @@ These are the email-specific checks on top of the guide.
 1. **Validate** — apply the input validation; on failure, emit the error format and stop.
 2. **Load rules** — read the writing guide from the Rule Source path.
 3. **Normalize** — separate the new message from quoted thread history, signatures of earlier messages, and disclaimers; detect the email's language. For chat input, keep only the employee's own messages (in order) as the draft, read `@name` mentions as intended recipients, and read `@here` / `@channel` as a group-wide recipient list (relevant to E9 and E11).
-4. **Check** — go through the email once for each group: E9 confidentiality → Guide 6 spelling and grammar → E1–E4 structure and ask → E6–E7 tone and address → Guide 1–5, 7 clarity, conciseness, accuracy, attribution, terms → E5, E8, E10, E11, E12.
+4. **Check** — go through the email once for each group: E9 confidentiality → Guide 6 spelling and grammar → E1–E4 structure and ask → E6–E7, E13 tone, address, and courtesy → Guide 1–5, 7 clarity, conciseness, accuracy, attribution, terms → E5, E8, E10, E11, E12.
 5. **Grade** — assign severity using the defaults above, then group:
    - Spelling errors (Guide 6 – Yazım) go into a single Critical row, quoting each wrong word under Where and listing each word-level fix under Suggested action.
    - When a spelling pattern runs through the whole text (for example Turkish characters missing everywhere, or colloquial verb endings throughout), name the pattern and give 3–5 examples instead of listing every occurrence ("Türkçe karakterler metnin tamamında eksik, örneğin `aticaz → atacağız`, …").
@@ -190,7 +191,7 @@ Geçen hafta toplantıda konuştuğumuz gibi reklam bütçesini gözden geçirdi
 | 4 | Önemli | E3 – Net talep | "en kısa sürede dönüş yaparsan" | Ne istendiği ve son tarih belirsiz. | İstenen aksiyonu ve kesin bir tarih yazın. |
 | 5 | Önemli | E6 – Ton | "bence biraz fazla olabilir sanırım" | Çekingen ifadeler üst üste kullanılmış. | Hangi kalemin ne kadar fazla olduğunu somut rakamla belirtin. |
 | 6 | Önemli | E7 – Hitap | "bakarsanız" / "dönüş yaparsan" | "Siz" ve "sen" hitabı karışık. | Alıcıya uygun tek bir hitap biçimi seçin. |
-| 7 | Öneri | E8 – İmza | Mailin sonu | Kapanış ve imza yok. | Kapanış cümlesi ve ad-soyad, unvan içeren imza ekleyin. |
+| 7 | Öneri | E8 – İmza | Mailin sonu | İmza yok. | Ad-soyad ve unvan içeren bir imza ekleyin. |
 | 8 | Öneri | E10 – Ek | "Ekteki tabloya" | Ek dosyadan bahsediliyor. | Göndermeden önce tablonun eklendiğini kontrol edin. |
 
 ## Kontrol edilemeyenler / Varsayımlar
@@ -225,3 +226,4 @@ how_to_fix: Göndermeyi planladığınız mailin konu satırını ve tam metnini
 - T7 Informal input: a two-sentence chat-style message with no subject, greeting, or signature → reviewed as an email, not rejected; E1 (missing subject), E7 (missing greeting), and E8 (missing signature) are reported as findings, and "Not checked / Assumptions" notes it was reviewed as an email draft.
 - T8 Personal matter: an internal email about unpaid allowance and the sender's motivation → E9 Major (keep the recipient list narrow) and E12 Suggestion (discuss one-on-one first); pervasive missing Turkish characters appear as one pattern row with 3–5 examples.
 - T9 Group chat: a screenshot with messages from several senders and no statement of who the employee is → the skill asks which messages are theirs and does not produce a report yet; once answered, only those messages are reviewed and a malformed URL among them (`https:/…`) is an E10 Major finding.
+- T10 Empty courtesy: a request that opens with "Umarım iyisindir" and ends with "Şimdiden teşekkürler," → two E13 Major findings; a thank-you that names something the recipient already did ("Bugüne kadarki emeğiniz için teşekkür ederiz") is not flagged.
