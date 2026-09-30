@@ -12,6 +12,7 @@ pinq-doq/
     kotlin-naming.md          paths: ['**/*.kt','**/*.kts']
     kotlin-conventions.md     paths: ['**/*.kt','**/*.kts'] — Compose, style, null-safety, DI
     kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
+    kotlin-testing.md         paths: ['**/*.kt','**/*.kts'] — test stack, what every change must test, device proof
     dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
   skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
     add-feature/                orchestrates a whole feature: presentation + API, then connects them
@@ -26,7 +27,7 @@ pinq-doq/
     kotlin/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
-      naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md
+      naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md, testing.md
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
@@ -87,7 +88,7 @@ Claude runs [`tasks/update.md`](tasks/update.md): pulls the latest pinq-doq, re-
 Claude Code auto-loads **every** `.md` directly under a project's `.claude/rules/` into every session at startup. Because `integrate`/`update` copy `pinq-doq/rules/` into `.claude/rules/`, those rule files — and only those — auto-load in consumers. Control loading per file with `paths:` YAML frontmatter:
 
 - **Universal rules** (`common.md`) — no frontmatter, so they always load. `common.md` also carries a short pointer to the stack-specific files so Claude knows they exist before one triggers.
-- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `dotnet-conventions.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
+- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `kotlin-testing.md`, `dotnet-conventions.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
 
   ```yaml
   ---

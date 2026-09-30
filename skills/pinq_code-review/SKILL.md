@@ -1,6 +1,6 @@
 ﻿---
 name: pinq_code-review
-description: Reviews the current code diff against the pinq-doq rule files by reading those rules live at review time (no Notion, no MCP, no external services) and reporting violations grouped by severity. Detects which rules apply from the changed file extensions and loads only those (always common.md; the Kotlin rules kotlin-architecture.md, kotlin-naming.md, kotlin-conventions.md and, when the project depends on deveng-core-kmp, kotlin-deveng-core.md for *.kt/*.kts; dotnet-conventions.md for *.cs/*.csproj/*.sln), consulting deep references on demand. Use when the user says "review my changes", "review this diff", "check against standards", "do a coding-standards review", "review before PR", or asks whether changed code follows the pinq-doq / team conventions. Read-and-report only â€” does not modify code unless the user explicitly asks.
+description: Reviews the current code diff against the pinq-doq rule files by reading those rules live at review time (no Notion, no MCP, no external services) and reporting violations grouped by severity. Detects which rules apply from the changed file extensions and loads only those (always common.md; the Kotlin rules kotlin-architecture.md, kotlin-naming.md, kotlin-conventions.md, kotlin-testing.md and, when the project depends on deveng-core-kmp, kotlin-deveng-core.md for *.kt/*.kts; dotnet-conventions.md for *.cs/*.csproj/*.sln), consulting deep references on demand. Use when the user says "review my changes", "review this diff", "check against standards", "do a coding-standards review", "review before PR", or asks whether changed code follows the pinq-doq / team conventions. Read-and-report only â€” does not modify code unless the user explicitly asks.
 ---
 
 # Code Review
@@ -114,7 +114,7 @@ Map the changed files to rule files. Always include `common.md`.
 | Changed file matches | Load these rule files |
 |---|---|
 | any file | `common.md` (always) |
-| `*.kt`, `*.kts` | `kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`; **and** `kotlin-deveng-core.md` **if** the project depends on `deveng-core-kmp` |
+| `*.kt`, `*.kts` | `kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-testing.md`; **and** `kotlin-deveng-core.md` **if** the project depends on `deveng-core-kmp` |
 | `*.cs`, `*.csproj`, `*.sln` | `dotnet-conventions.md` |
 
 - **deveng-core-kmp dependency check**: treat the project as depending on deveng-core-kmp when its build/dependency files reference `deveng-core-kmp` (e.g. a `deveng-core` / `deveng-core-kmp` entry in `*.gradle.kts`, `*.toml` version catalog, or settings). If unsure and Kotlin files changed, you MAY still load `kotlin-deveng-core.md` but only raise deveng-core findings when the dependency is actually present.
@@ -125,7 +125,7 @@ Map the changed files to rule files. Always include `common.md`.
 
 Rule files may live at different roots depending on where the skill runs. Resolve in this order and use the first that exists (or honor `rules_root` if given):
 
-1. **Consumer project (most common):** rules copied to `.claude/rules/` â€” i.e. `.claude/rules/common.md`, `.claude/rules/kotlin-architecture.md`, `.claude/rules/kotlin-naming.md`, `.claude/rules/kotlin-conventions.md`, `.claude/rules/kotlin-deveng-core.md`, `.claude/rules/dotnet-conventions.md`. Deep references live at `.pinq-doq/references/` â€” e.g. `.pinq-doq/references/kotlin/deveng-core-reference.md`, `.pinq-doq/references/kotlin/architecture.md`.
+1. **Consumer project (most common):** rules copied to `.claude/rules/` â€” i.e. `.claude/rules/common.md`, `.claude/rules/kotlin-architecture.md`, `.claude/rules/kotlin-naming.md`, `.claude/rules/kotlin-conventions.md`, `.claude/rules/kotlin-testing.md`, `.claude/rules/kotlin-deveng-core.md`, `.claude/rules/dotnet-conventions.md`. Deep references live at `.pinq-doq/references/` â€” e.g. `.pinq-doq/references/kotlin/deveng-core-reference.md`, `.pinq-doq/references/kotlin/architecture.md`.
 2. **The pinq-doq repo itself:** `rules/common.md`, `rules/kotlin-*.md`, `rules/dotnet-conventions.md`, with references at `references/...`.
 
 Read the files with the file-read tool. Do not reconstruct rule content from memory.
