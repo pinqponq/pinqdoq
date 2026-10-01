@@ -42,6 +42,19 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 
 ---
 
+## Tests must be able to fail (mutation testing)
+
+A test that passes whatever the code does is worse than no test. Prove the tests of a change catch regressions by running PIT on the lines the change touched.
+
+- **MUST:** run `python3 scripts/testing/run_pit.py <worktree> origin/<default-branch>` (JVM/desktop tests; it mutates only the changed lines of changed production classes and runs only the changed tests) before opening the PR.
+- **MUST:** the score on changed lines is **at least 85%**. Below that, add or sharpen tests for the surviving mutants and rerun.
+- **MUST:** every survivor that remains is listed in the PR with a one-line reason. Accepted reasons: covered by a screenshot or device flow (UI wiring PIT's JVM tests cannot see), a defensive path that cannot be reached through fakes, or an equivalent mutant (redundant code). A redundant call surfaced this way is a finding: remove the call or test it.
+- A mutant on the core guard or branch the change introduces (the bug fix's condition, the new `if`) must be killed; it is never an accepted survivor.
+- The script already ignores coroutine state-machine noise (`throwOnFailure`) and Unit-lambda return mutants. Do not widen the ignore list to raise the score.
+- PIT covers JVM tests only; iOS, wasm and device flows are outside it. Do not mutate whole classes or the whole project: scope stays on the diff.
+
+---
+
 ## Writing tests
 
 - Test **behavior through public API**: send `Event`s to the ViewModel, assert on `State` and `Effect`. Never reach into private members or add `@VisibleForTesting` hooks.
