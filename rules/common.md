@@ -16,6 +16,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 ## Naming Conventions
 
 - Use English strictly. No Turkish identifiers, comments, or abbreviations.
+- String literals in code are English too: exception, validation and log messages, tool/API descriptions, and the test assertions that check them. Follow this even where older code in the repo is Turkish. Exceptions: localized user-facing copy (it lives in the string resources) and quoted examples of what a user might type.
 - No abbreviations anywhere. Write it out.
 - Variables are nouns. Methods are verbs. Names must reflect context, not just type.
 
