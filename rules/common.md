@@ -39,6 +39,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 - Each code unit must have exactly one responsibility.
 - Extract large logical blocks (retry logic, setup, try-catch) into well-named sub-functions.
 - Apply SRP without over-engineering. Do not create abstractions without real value.
+- Before adding infrastructure the task did not ask for (a test project, CI step, shared helper, package), check the repo's open pull requests and branches for the same work. If one exists, build on it (branch from it and target it as the base) instead of opening a parallel one.
 - Layer dependency rules:
   - Application depends only on Domain.
   - Domain must not depend on any other layer; Domain may only depend on other Domain modules.
