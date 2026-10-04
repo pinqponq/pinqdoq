@@ -37,7 +37,7 @@ Pinqloq is the org's log platform. Its panel has an **Import Filter** that opens
 **How to get it.**
 1. Call `get_collections` and pick the collection(s) of the affected system. Use canonical names, never short aliases.
 2. Find the logs that show the problem with `search_logs` (a distinctive token: exception type, endpoint, error text), `get_error_summary` (what is failing and how often) or `get_logs` (a plain slice: one device, one version, one event or path). Keep every call bounded by a collection or a time window; default to the last 7 days when the user gives no time anchor.
-3. Get the filter from the MCP: call `export_filter_preset` with the values the evidence supports (collections, minimum level, and only when every matched log shares them: device id, app version, correlation id, event, path) and the window of the matched logs. The tool validates the values and returns the panel's preset JSON. If that tool is not in the session yet, build the preset by hand under the contract below.
+3. Get the filter from the MCP: call `export_filter` with the values the evidence supports (collections, minimum level, and only when every matched log shares them: device id, app version, correlation id, event, path) and the window of the matched logs. The tool validates the values and returns the panel's preset JSON. If that tool is not in the session yet, build the preset by hand under the contract below.
 4. Add a `## Pinqloq filter` section to the issue body, after the acceptance criteria: one sentence saying what the filter shows (how many logs, which window, the timezone), the preset in a fenced `json` block, and the line "Paste it into the Pinqloq panel's Import Filter." If the problem needs a search term the preset cannot carry, name the term to type into the panel's search box.
 
 **Preset contract (hand-built fallback).** Exactly these keys, in this order: `collections` (canonical names), `minLogLevelIndex` (0 Any, 1 Information, 2 Warning, 3 Error, 4 Fatal; the lowest level among the matched logs, 0 when filtering by correlation id), `deviceUid`, `appVersionName`, `correlationId`, `startDate`, `endDate`. Add `event` and `path` only when the panel's `FilterPreset` in `pinqponq/pinqloq` already has them. Empty strings are `""`, never `null`: one `null` makes the whole import fail. Dates are 12 digits, `DDMMYYYYHHmm`, in `Europe/Istanbul` local time (the MCP returns UTC; convert with the offset in effect at that instant), padded 2 minutes around the first and last matched log.
@@ -172,7 +172,7 @@ Always derive and apply two label categories before creating the issue:
 - Write as if explaining to a teammate in a chat message — concrete, grounded, no filler.
 
 ## Tool Policy
-- **Allowed tools:** Read (members doc only), Bash (`gh` CLI: `gh issue create`, `gh label list`, `gh label create`, `gh api graphql`), Pinqloq MCP read-only tools (`get_collections`, `get_logs`, `search_logs`, `get_error_summary`, `export_filter_preset`)
+- **Allowed tools:** Read (members doc only), Bash (`gh` CLI: `gh issue create`, `gh label list`, `gh label create`, `gh api graphql`), Pinqloq MCP read-only tools (`get_collections`, `get_logs`, `search_logs`, `get_error_summary`, `export_filter`)
 - **Prerequisite:** `gh auth status` must show the `project` scope (needed for Projects v2). If missing, tell the user to run `gh auth refresh -h github.com -s project,read:project` and stop.
 - **Gate — create/add:** only after explicit user confirmation in step 9.
 - **Data minimization:** do not put members doc content into the issue; use only the derived assignee handle.
@@ -212,7 +212,7 @@ Board: pinqponq/rindle-cmp on Project #9, Quarter 3, Todo
 ### Example A2 (bug with a Pinqloq filter)
 **Input:** "Rindle'da günün sorusu bazen açılmıyor"
 
-The skill searches Pinqloq, finds 11 `Error` logs on `/api/couple/daily-question` over the last 7 days, gets the preset from `export_filter_preset`, and the issue body ends with:
+The skill searches Pinqloq, finds 11 `Error` logs on `/api/couple/daily-question` over the last 7 days, gets the preset from `export_filter`, and the issue body ends with:
 
 ````
 ## Pinqloq filter
