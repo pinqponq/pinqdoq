@@ -23,6 +23,7 @@ pinq-doq/
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
     vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
+    vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
   scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault)
   references/     → NOT copied; read on demand by path
     kotlin/
@@ -58,6 +59,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "draft a task for", "help me write this ticket", "kime atasam" (draft only, no create) | `draft-task` |
 | "mailimi kontrol et", "bu maili gönderebilir miyim", "check my email before sending" | `executive-mail-review` |
 | "move secrets to Vault", "read appsettings from Vault", "set up Vault configuration for this project" | `vault-config-setup` |
+| "vault hesabım var, projeyi ayağa kaldırmak istiyorum", "run this project locally", "vault login", "Vault rejected the token" | `vault-dev-setup` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 

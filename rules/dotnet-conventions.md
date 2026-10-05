@@ -96,7 +96,7 @@ return new Response { HasNextPage = hasNextPage };
 - A setting that differs between the prod server, the test server and a developer machine (an address, a URL) lives in Vault too. A setting that is identical everywhere (timeouts, limits, logging, lists) stays in `appsettings.json`.
 - Records are `apps/<project>/<prod|test|local>/<service>`. The test server runs with `DOTNET_ENVIRONMENT=Test`, never `Development`.
 - Give every array a single home: .NET merges arrays from different files by index.
-- Moving a project onto this standard: use the `pinq_vault-config-setup` skill. Details: `.pinq-doq/references/dotnet/vault-configuration.md`; developer machine setup: `.pinq-doq/references/dotnet/vault-cli-setup.md`.
+- Moving a project onto this standard: use the `pinq_vault-config-setup` skill. Details: `.pinq-doq/references/dotnet/vault-configuration.md`; developer machine setup: `.pinq-doq/references/dotnet/vault-cli-setup.md` or the `pinq_vault-dev-setup` skill (run a moved project locally).
 
 ---
 

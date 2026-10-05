@@ -1,6 +1,6 @@
 # Vault CLI setup for developers
 
-What you need on your machine so that a pinqponq .NET project starts with its settings coming from Vault. About ten minutes, and you do not need anyone's help. The background is in [vault-configuration.md](vault-configuration.md).
+What you need on your machine so that a pinqponq .NET project starts with its settings coming from Vault. About ten minutes. In a project that has pinq-doq delivered you can also ask Claude ("vault hesabım var, projeyi ayağa kaldırmak istiyorum"): the `pinq_vault-dev-setup` skill does these steps with you, and `vault_config.py check` tells you what is missing. Your own Vault account and its access come from the DevOps unit. The background is in [vault-configuration.md](vault-configuration.md).
 
 You need three things: the VPN (the Vault servers are on the internal network), the Vault CLI, and your own Vault account.
 
@@ -33,7 +33,7 @@ vault version
 
 ## 2. Log in
 
-Use the address of the **test Vault** and your own user name (ask the team lead for an account if you do not have one):
+Use the address of the **test Vault** and your own user name (ask the DevOps unit for an account if you do not have one):
 
 ```bash
 vault login -address=http://10.0.0.1:8200 -method=userpass username=<your-user-name>
@@ -92,8 +92,8 @@ Pass the file to `scripts/vault_config.py` with `--prod-token-file`; the `pinq_v
 | `No Vault token was found` | You have not logged in on this machine | Step 2 |
 | `Vault at '...' rejected the token saved by the Vault CLI` | The login expired, was made against a different Vault server, or your policy cannot read this record | Log in again against the address shown in the message |
 | `Vault is unreachable` | No VPN, wrong address, or the Vault server is down | Connect the VPN and open http://10.0.0.1:8200 in a browser |
-| `Vault configuration record '...' does not exist` | The service has no record for your environment yet | Ask the team lead; the record is created with `scripts/vault_config.py` |
+| `Vault configuration record '...' does not exist` | The service has no record for your environment yet | Ask the DevOps unit (or whoever moved the project to Vault); the record is created with `scripts/vault_config.py` |
 | `Vault configuration setting 'Path' is required` | A settings file is missing the `VaultConfiguration` section | Compare with another service's `appsettings.Development.json` |
-| `permission denied` in the UI | Your policy does not cover that folder | Ask the team lead |
+| `permission denied` in the UI | Your policy does not cover that folder | Ask the DevOps unit for read access to `apps/data/<project>/local/*` |
 
 Two safety notes. Never paste your token or password into chat, an issue or a commit; `vault login` keeps it in the file for you. And do not copy a root token into a settings file to "make it work": ask for access instead.

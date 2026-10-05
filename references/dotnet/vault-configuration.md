@@ -2,7 +2,7 @@
 
 How PinqPonq .NET services read their settings from HashiCorp Vault: what lives in Vault, how the records are laid out, who reads which record, and how tokens work. The first project on this standard is pinqponq-server; the rest follow it.
 
-The terse rule is in `rules/dotnet-conventions.md` (Configuration & Secrets). To apply the standard to a project, use the `pinq_vault-config-setup` skill. To get a developer machine ready, see [vault-cli-setup.md](vault-cli-setup.md).
+The terse rule is in `rules/dotnet-conventions.md` (Configuration & Secrets). To apply the standard to a project, use the `pinq_vault-config-setup` skill. To get a developer machine ready, see [vault-cli-setup.md](vault-cli-setup.md) or use the `pinq_vault-dev-setup` skill, which runs `scripts/vault_config.py check` and says what is missing (VPN, login, access, record).
 
 ## The model in one table
 

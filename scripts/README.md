@@ -57,7 +57,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 |---|---|
 | `deliver.py` | Delivery helper — copies `rules/`+`skills/` into a consumer (driven by `tasks/`, not run by hand). |
 | `path_utils.py` | Shared helper (no `main`); imported by the generators. Must stay alongside them. |
-| `vault_config.py` | .NET helper, not a KMP generator: plans, applies and verifies moving a project's secrets and per-reader settings into Vault records. Driven by the `vault-config-setup` skill. See [`vault_config.py`](#vault_configpy) below. |
+| `vault_config.py` | .NET helper, not a KMP generator: plans, applies and verifies moving a project's secrets and per-reader settings into Vault records, and checks that a developer machine can read them. Driven by the `vault-config-setup` and `vault-dev-setup` skills. See [`vault_config.py`](#vault_configpy) below. |
 
 ## Configuration — `config.json`
 
@@ -113,11 +113,14 @@ Not a KMP generator: a .NET helper (stdlib only) for the Vault configuration sta
 | `plan` | Reads each service's `appsettings.json` and `appsettings.Development.json` and lists the keys that would move to Vault and why (secret name, or differs between server and developer machine). Writes nothing, needs no Vault access. |
 | `apply` | Checks that every reader would see the same settings as before, then writes the three records per service (`prod`, `test`, `local`) and rewrites the settings files. The `apps` mount must already exist as KV version 2 (the script checks and never creates it). A dry run unless `--apply-changes` is given; `--skip-prod` leaves the prod Vault untouched. Once the files are rewritten, `--baseline-ref <commit>` builds the records from the commit before the move instead, and `--only-prod` writes just the prod records (without touching the settings files), which is how prod follows a `--skip-prod` run. |
 | `verify` | Compares what each reader sees now (settings files plus live records) with the settings files at `--baseline-ref`, and flags secrets still left in `appsettings.json`. `--skip-prod` leaves the prod Vault and the prod reader out, for use before the prod records exist. Secret-looking values left in `appsettings.json` or `appsettings.Development.json` fail the check unless the key was kept on purpose and is named with `--exclude`. Differences you made on purpose (a setting that moved to a new place, an unused section you dropped) are acknowledged with `--accept-differences <keys>`; they are still listed. |
+| `check` | Developer preflight on a project that is already moved: for each service it reads the record named in `appsettings.Development.json` (`--reader test` for `appsettings.Test.json`) with the login `vault login` saved (or `VAULT_TOKEN`) and says PASS or why not: `UNREACHABLE` (VPN), `NO TOKEN`, `TOKEN REJECTED`, `NO ACCESS` (ask the DevOps unit), `MISSING RECORD`. Writes nothing and prints only record paths and key counts. |
 
 ```bash
 python .pinq-doq/scripts/vault_config.py plan   --project-root . --project-name <name>
 python .pinq-doq/scripts/vault_config.py apply  --project-root . --project-name <name> --apply-changes --skip-prod
 python .pinq-doq/scripts/vault_config.py verify --project-root . --project-name <name> --baseline-ref <commit before the move> --skip-prod
+# on a developer machine, once logged in (vault login):
+python .pinq-doq/scripts/vault_config.py check  --project-root . --project-name <name>
 # after testing, with the prod token saved in a file (see references/dotnet/vault-cli-setup.md):
 python .pinq-doq/scripts/vault_config.py apply  --project-root . --project-name <name> --apply-changes --only-prod --baseline-ref <commit before the move> --prod-token-file ~/.vault-token-prod
 python .pinq-doq/scripts/vault_config.py verify --project-root . --project-name <name> --baseline-ref <commit before the move> --prod-token-file ~/.vault-token-prod

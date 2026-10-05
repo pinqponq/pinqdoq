@@ -27,9 +27,12 @@ DEVELOPMENT_SETTINGS = {'Downstream': {'BaseUrl': 'http://localhost:8080'}}
 
 
 class FakeVault:
-    """Just enough of the KV v2 HTTP API: read, write and the mount listing."""
+    """Just enough of the Vault HTTP API: KV v2 read and write, the mount listing, health and token lookup."""
 
     def __init__(self):
+        fake = self
+        self.valid_tokens = None  # None: every token is accepted
+        self.forbidden = set()  # record paths the token may not read
         self.records = {}
         self.tokens_seen = set()
         self.mounts = {'apps/': {'options': {'version': '2'}}}
@@ -49,11 +52,22 @@ class FakeVault:
                 self.wfile.write(data)
 
             def do_GET(self):
-                tokens_seen.add(self.headers.get('X-Vault-Token'))
                 path = self.path[len('/v1/'):]
+                if path == 'sys/health':
+                    return self._send(200, {'sealed': False})
+                token = self.headers.get('X-Vault-Token')
+                tokens_seen.add(token)
+                accepted = fake.valid_tokens is None or token in fake.valid_tokens
+                if path == 'auth/token/lookup-self':
+                    return self._send(200 if accepted else 403)
+                if not accepted:
+                    return self._send(403)
                 if path == 'sys/mounts':
                     return self._send(200, {'data': mounts})
-                record = records.get(path.replace('apps/data/', ''))
+                record_key = path.replace('apps/data/', '')
+                if record_key in fake.forbidden:
+                    return self._send(403)
+                record = records.get(record_key)
                 self._send(404) if record is None else self._send(200, {'data': {'data': record}})
 
             def do_POST(self):
@@ -337,6 +351,88 @@ class NoDevelopmentFileTests(VaultScriptTestCase):
         development = json.loads((service / 'appsettings.Development.json').read_text(encoding='utf-8'))
         self.assertEqual(development['VaultConfiguration']['Path'], 'acme/local/orders-api')
         self.assertEqual(self.run_script('verify', '--baseline-ref', self.baseline, '--skip-prod', prod_token=False).returncode, 0)
+
+
+class DeveloperCheckTests(VaultScriptTestCase):
+    """`check`: a developer with a login asks whether the moved project can start on this machine, and why not."""
+
+    def setUp(self):
+        super().setUp()
+        self.home = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.home, True)
+        applied = self.run_script('apply', '--apply-changes', '--skip-prod', prod_token=False)
+        self.assertEqual(applied.returncode, 0, applied.stdout + applied.stderr)
+
+    def run_check(self, *arguments, token=TEST_TOKEN, saved_login=None):
+        # A throwaway home keeps the test away from the real ~/.vault-token.
+        environment = {key: value for key, value in os.environ.items() if key not in ('VAULT_TOKEN', 'VAULT_TEST_TOKEN', 'VAULT_PROD_TOKEN')}
+        environment.update(HOME=str(self.home), USERPROFILE=str(self.home))
+        if token:
+            environment['VAULT_TOKEN'] = token
+        if saved_login:
+            (self.home / '.vault-token').write_text(saved_login, encoding='utf-8')
+        result = subprocess.run([sys.executable, str(SCRIPT), 'check', '--project-root', str(self.project_root), '--project-name', 'acme', *arguments],
+                                env=environment, capture_output=True, text=True, encoding='utf-8')
+        for secret in (SECRET_VALUE, TEST_TOKEN, FILE_TOKEN, 'tok-other-0c9d'):
+            self.assertNotIn(secret, result.stdout + result.stderr, 'no token or secret value may be printed')
+        return result
+
+    def test_a_working_setup_passes_for_every_service(self):
+        result = self.run_check()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('PASS  acme.Orders.Api', result.stdout)
+        self.assertIn('acme/local/orders-api', result.stdout)
+
+    def test_the_login_saved_by_the_vault_cli_is_used_when_no_variable_is_set(self):
+        result = self.run_check(token=None, saved_login=TEST_TOKEN + '\n')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_no_login_says_how_to_log_in(self):
+        result = self.run_check(token=None)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('NO TOKEN', result.stdout)
+        self.assertIn(f'vault login -address={self.test_vault.address} -method=userpass', result.stdout)
+
+    def test_an_expired_or_foreign_login_is_told_apart_from_no_login(self):
+        self.test_vault.valid_tokens = {'tok-other-0c9d'}
+        result = self.run_check()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('TOKEN REJECTED', result.stdout)
+
+    def test_a_policy_without_access_points_to_the_devops_unit(self):
+        self.test_vault.forbidden = {'acme/local/orders-api'}
+        result = self.run_check()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('NO ACCESS', result.stdout)
+        self.assertIn('DevOps unit', result.stdout)
+        self.assertIn('apps/data/acme/local/*', result.stdout)
+
+    def test_a_missing_record_is_reported_as_such(self):
+        del self.test_vault.records['acme/local/orders-api']
+        result = self.run_check()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('MISSING RECORD', result.stdout)
+
+    def test_an_unreachable_vault_suggests_the_vpn(self):
+        self.test_vault.stop()
+        result = self.run_check()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('UNREACHABLE', result.stdout)
+        self.assertIn('VPN', result.stdout)
+
+    def test_the_test_reader_reads_the_record_named_in_the_test_settings(self):
+        result = self.run_check('--reader', 'test')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('acme/test/orders-api', result.stdout)
+
+
+class CheckOnAProjectThatIsNotMovedTests(VaultScriptTestCase):
+    def test_a_project_without_vault_settings_is_reported_not_failed(self):
+        result = subprocess.run([sys.executable, str(SCRIPT), 'check', '--project-root', str(self.project_root), '--project-name', 'acme'],
+                                capture_output=True, text=True, encoding='utf-8')
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('SKIP', result.stdout)
+        self.assertIn('has not been moved', result.stdout)
 
 
 sys.path.insert(0, str(SCRIPT.parent))

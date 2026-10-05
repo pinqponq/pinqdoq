@@ -13,6 +13,8 @@ Subcommands (stdlib only, no third-party packages; run from anywhere with --proj
     plan     Read the settings files and show which keys would move to Vault, and why. Writes nothing.
     apply    Write the three records per service, then rewrite the settings files. Dry run unless --apply-changes.
     verify   Check that every reader still sees exactly the settings it saw before the move.
+    check    Developer preflight on a project that is already moved: can this machine, with the login `vault login`
+             saved (or VAULT_TOKEN), read the records its services need, and if not, why. Writes nothing.
 
 Secrets are never printed and never passed on the command line. The test Vault token comes from VAULT_TEST_TOKEN or,
 when that is unset, from the token `vault login` saved in ~/.vault-token; the prod Vault token must be given in
@@ -23,6 +25,7 @@ Typical use:
     python vault_config.py plan   --project-root <repo> --project-name <name>
     python vault_config.py apply  --project-root <repo> --project-name <name> --apply-changes
     python vault_config.py verify --project-root <repo> --project-name <name> --baseline-ref <git ref before the move>
+    python vault_config.py check  --project-root <repo> --project-name <name>
 """
 import argparse
 import copy
@@ -726,6 +729,82 @@ def command_verify(arguments):
 
 # --------------------------------------------------------------------------- entry point
 
+def settings_location(service, reader):
+    """The VaultConfiguration section the way .NET sees it for a reader: the base file with the environment file laid over it."""
+    layers = [service.base_path, service.development_path if reader == 'local' else service.test_path]
+    location = {}
+    for layer_path in layers:
+        section = get_path(SettingsFile.read(layer_path).content, (VAULT_SECTION,)) if layer_path.is_file() else None
+        if isinstance(section, dict):
+            location.update(section)
+    return location
+
+
+def probe_address(vault, token):
+    """Why this machine and this login cannot use the Vault at all, or None. Reads no record and prints no token."""
+    try:
+        status, _ = vault.call('GET', 'sys/health')
+    except ConfigurationProblem:
+        return ('UNREACHABLE', f'Connect the VPN, then open {vault.address} in a browser.')
+    if status == 503:
+        return ('SEALED', f'The Vault at {vault.address} is sealed: tell the DevOps unit.')
+    if status not in (200, 429, 472, 473):
+        return (f'UNEXPECTED (status {status})', f'The Vault at {vault.address} answered an unexpected health status: tell the DevOps unit.')
+    if not token:
+        return ('NO TOKEN', f'Log in: vault login -address={vault.address} -method=userpass username=<your user name>')
+    status, _ = vault.call('GET', 'auth/token/lookup-self')
+    if status in (401, 403):
+        return ('TOKEN REJECTED', f'The login has expired or was made against another Vault: log in again with vault login -address={vault.address} -method=userpass username=<your user name>')
+    if status != 200:
+        return (f'UNEXPECTED (status {status})', f'The Vault at {vault.address} could not check the login: tell the DevOps unit.')
+    return None
+
+
+def command_check(arguments):
+    """Developer preflight: can this machine, with this login, read the records the services need?"""
+    root = Path(arguments.project_root).resolve()
+    services = discover_services(root, arguments.project_name, arguments.only)
+    token = os.environ.get('VAULT_TOKEN') or read_cli_token()
+    print(f'Vault check for the "{arguments.reader}" reader (settings: '
+          f'{"appsettings.Development.json" if arguments.reader == "local" else "appsettings.Test.json"}). Nothing is written, no token or value is printed.')
+    vaults, address_problems, hints = {}, {}, {}
+    failures = reading = 0
+    for service in services:
+        location = settings_location(service, arguments.reader)
+        address, mount, path = location.get('Address'), location.get('Mount'), location.get('Path')
+        if not (address and mount and path):
+            print(f'SKIP  {service.directory:34} the settings hold no complete VaultConfiguration: this service does not read from Vault')
+            continue
+        reading += 1
+        if address not in vaults:
+            vaults[address] = Vault('check', address, token or '')
+            address_problems[address] = probe_address(vaults[address], token)
+        problem = address_problems[address]
+        if not problem:
+            status, body = vaults[address].call('GET', f'{mount}/data/{path}')
+            project = path.split('/')[0]
+            if status == 200:
+                print(f'PASS  {service.directory:34} {mount}/{path} ({len(leaves(body["data"]["data"]))} keys)')
+                continue
+            if status == 404:
+                problem = ('MISSING RECORD', 'The record does not exist yet: ask the DevOps unit (or whoever moved the project to Vault) to create it.')
+            elif status == 403:
+                problem = ('NO ACCESS', f'Your account may not read {mount}/data/{path}: ask the DevOps unit for read access to {mount}/data/{project}/local/*.')
+            else:
+                problem = (f'UNEXPECTED (status {status})', f'Vault answered {status} for {mount}/{path}: tell the DevOps unit.')
+        failures += 1
+        print(f'FAIL  {service.directory:34} {problem[0]}')
+        hints.setdefault(problem[1], None)
+    if not reading:
+        print('No service reads from Vault in this repository yet: the project has not been moved (pinq_vault-config-setup).')
+    if hints:
+        print('\nWhat to do:')
+        for hint in hints:
+            print(f'  - {hint}')
+    print('ALL SERVICES CAN READ THEIR RECORDS' if reading and not failures else f'{failures} SERVICE(S) CANNOT READ THEIR RECORDS' if failures else '')
+    return EXIT_PROBLEM if failures else 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__.split('\n\n')[0], formatter_class=argparse.RawDescriptionHelpFormatter)
     subcommands = parser.add_subparsers(dest='command', required=True)
@@ -761,6 +840,10 @@ def build_parser():
     apply_command.add_argument('--overwrite', action='store_true', help='Replace records that already exist.')
     apply_command.add_argument('--skip-prod', action='store_true',
                                help='Do not contact or write the prod Vault (needs no prod token). appsettings.json still gets the prod path.')
+    check_command = subcommands.add_parser('check', help='Developer preflight: can this machine and this login read the Vault records the services need? Writes nothing.')
+    common(check_command)
+    check_command.add_argument('--reader', choices=('local', 'test'), default='local',
+                               help='Which settings file decides the record: local (appsettings.Development.json, default) or test (appsettings.Test.json).')
     verify_command = subcommands.add_parser('verify', help='Check each reader still sees the same settings as before the move.')
     common(verify_command)
     verify_command.add_argument('--baseline-ref', default='HEAD', help='Git ref holding the settings files from before the move (default HEAD).')
@@ -778,7 +861,7 @@ def main(argv=None):
         stream.reconfigure(encoding='utf-8', errors='replace')
     arguments = build_parser().parse_args(argv)
     try:
-        handler = {'plan': command_plan, 'apply': command_apply, 'verify': command_verify}[arguments.command]
+        handler = {'plan': command_plan, 'apply': command_apply, 'verify': command_verify, 'check': command_check}[arguments.command]
         return handler(arguments) or 0
     except ConfigurationProblem as problem:
         print(f'ERROR: {problem}', file=sys.stderr)
