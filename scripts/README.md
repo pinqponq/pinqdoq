@@ -57,6 +57,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 |---|---|
 | `deliver.py` | Delivery helper — copies `rules/`+`skills/` into a consumer (driven by `tasks/`, not run by hand). |
 | `path_utils.py` | Shared helper (no `main`); imported by the generators. Must stay alongside them. |
+| `vault_config.py` | .NET helper, not a KMP generator: plans, applies and verifies moving a project's secrets and per-reader settings into Vault records. Driven by the `vault-config-setup` skill. See [`vault_config.py`](#vault_configpy) below. |
 
 ## Configuration — `config.json`
 
@@ -102,3 +103,28 @@ These build the presentation layer. The `presentation-scaffold` skill wraps them
 ## `path_utils.py`
 
 Shared helper (no `main`) imported by almost every generator to turn `config.json` into paths/packages. It must stay alongside the other scripts.
+
+## `vault_config.py`
+
+Not a KMP generator: a .NET helper (stdlib only) for the Vault configuration standard in [`references/dotnet/vault-configuration.md`](../references/dotnet/vault-configuration.md). The `vault-config-setup` skill drives it, but it runs on its own.
+
+| Subcommand | Does |
+|---|---|
+| `plan` | Reads each service's `appsettings.json` and `appsettings.Development.json` and lists the keys that would move to Vault and why (secret name, or differs between server and developer machine). Writes nothing, needs no Vault access. |
+| `apply` | Checks that every reader would see the same settings as before, then writes the three records per service (`prod`, `test`, `local`) and rewrites the settings files. The `apps` mount must already exist as KV version 2 (the script checks and never creates it). A dry run unless `--apply-changes` is given; `--skip-prod` leaves the prod Vault untouched. Once the files are rewritten, `--baseline-ref <commit>` builds the records from the commit before the move instead, and `--only-prod` writes just the prod records (without touching the settings files), which is how prod follows a `--skip-prod` run. |
+| `verify` | Compares what each reader sees now (settings files plus live records) with the settings files at `--baseline-ref`, and flags secrets still left in `appsettings.json`. `--skip-prod` leaves the prod Vault and the prod reader out, for use before the prod records exist. Secret-looking values left in `appsettings.json` or `appsettings.Development.json` fail the check unless the key was kept on purpose and is named with `--exclude`. Differences you made on purpose (a setting that moved to a new place, an unused section you dropped) are acknowledged with `--accept-differences <keys>`; they are still listed. |
+
+```bash
+python .pinq-doq/scripts/vault_config.py plan   --project-root . --project-name <name>
+python .pinq-doq/scripts/vault_config.py apply  --project-root . --project-name <name> --apply-changes --skip-prod
+python .pinq-doq/scripts/vault_config.py verify --project-root . --project-name <name> --baseline-ref <commit before the move> --skip-prod
+# after testing, with the prod token saved in a file (see references/dotnet/vault-cli-setup.md):
+python .pinq-doq/scripts/vault_config.py apply  --project-root . --project-name <name> --apply-changes --only-prod --baseline-ref <commit before the move> --prod-token-file ~/.vault-token-prod
+python .pinq-doq/scripts/vault_config.py verify --project-root . --project-name <name> --baseline-ref <commit before the move> --prod-token-file ~/.vault-token-prod
+```
+
+The commands are written with `python`; on macOS use `python3` (or `py -3` on Windows if `python` is only the Microsoft Store alias). Python 3.8 or newer, standard library only.
+
+The end-to-end tests run against two in-memory fake Vault servers (no real Vault is contacted): `python -m unittest discover -s scripts/tests -v`.
+
+The test Vault token comes from `VAULT_TEST_TOKEN` or, when that is unset, from the file `vault login` saved (`~/.vault-token`); the prod Vault token must be in `VAULT_PROD_TOKEN` or in a file given with `--prod-token-file` (never `~/.vault-token`), so a prod write is always deliberate. Change the variable names with `--test-token-env` / `--prod-token-env`. Tokens are never read from the command line, and no output contains a secret value. With only one Vault, pass just `--prod-vault-address`: the test and local records then go to the same server (the addresses are also found in the settings files on later runs). The settings files are edited as text: only the moved keys disappear and the `VaultConfiguration` section is added, while indentation, inline arrays, key order and line endings of everything else stay as they were (the file is rewritten as a whole only if the text edit cannot be proven to give the intended settings). Use a lower-case `--project-name`: the script prints a note for capitals, because Vault paths are case sensitive. Use `--include` / `--exclude` to correct the plan, and `--test-from local` only if the test server really needs the developer-machine values. Run with `--help` for everything else.

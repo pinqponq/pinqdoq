@@ -13,7 +13,7 @@ pinq-doq/
     kotlin-conventions.md     paths: ['**/*.kt','**/*.kts'] — Compose, style, null-safety, DI
     kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
     kotlin-testing.md         paths: ['**/*.kt','**/*.kts'] — test stack, what every change must test, device proof
-    dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
+    dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln'] — incl. Configuration & Secrets (Vault)
   skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
     add-feature/                orchestrates a whole feature: presentation + API, then connects them
     presentation-scaffold/      presentation layer via scripts/ (screen/MVI, nav, components, strings)
@@ -22,12 +22,16 @@ pinq-doq/
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
-  scripts/        → NOT copied; run in place via CLI (KMP code generators + deliver.py, the copy helper)
+    vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
+  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault)
   references/     → NOT copied; read on demand by path
     kotlin/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
       naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md, testing.md
+    dotnet/
+      vault-configuration.md    the Vault configuration standard: readers, record layout, tokens, pitfalls
+      vault-cli-setup.md        developer machine setup: install the CLI, log in, troubleshoot
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
@@ -53,6 +57,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "create a task", "add this to GitHub", "task aç", "open a task on the board" | `create-task` |
 | "draft a task for", "help me write this ticket", "kime atasam" (draft only, no create) | `draft-task` |
 | "mailimi kontrol et", "bu maili gönderebilir miyim", "check my email before sending" | `executive-mail-review` |
+| "move secrets to Vault", "read appsettings from Vault", "set up Vault configuration for this project" | `vault-config-setup` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
