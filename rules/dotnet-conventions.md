@@ -106,3 +106,12 @@ return new Response { HasNextPage = hasNextPage };
 // ✅ Correct
 PostgresErrorCodes.ForeignKeyViolation
 ```
+
+---
+
+## Mutation Testing
+
+- Prove that new tests can fail with Stryker.NET, scoped to the changed files: from the test project, run `dotnet stryker -p <Project>.csproj -m "**/<ChangedFile>.cs"` for each changed production project.
+- Count only the mutants on lines changed against the default branch, and report that score with every surviving mutant and its reason.
+- Hand-written mutants do not count as mutation testing.
+- `[Description]` and other attribute constants cannot be mutated; say so instead of counting them.
