@@ -144,6 +144,6 @@ The settings files are edited as text: only the moved keys disappear and the `Va
 ### Options
 
 - `--project-name`: use lower case. The script prints a note for capitals, because Vault paths are case sensitive.
-- `--include` / `--exclude`: correct the plan.
+- `--include` / `--exclude`: correct the plan. They are not remembered: pass the same flags to every later `apply` and `verify`.
 - `--test-from local`: only if the test server really needs the developer-machine values.
 - `--help` lists everything else.

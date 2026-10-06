@@ -136,7 +136,7 @@ People get a policy that covers the records they maintain. Turn on a Vault audit
 Use the skill; the order it follows is:
 
 1. Record the git commit that holds the settings files from before the change (the baseline).
-2. `scripts/vault_config.py plan`, review what would move, adjust with `--include` / `--exclude`.
+2. `scripts/vault_config.py plan`, review what would move, adjust with `--include` / `--exclude`. The script does not remember these flags: pass the same ones to every later `apply` and `verify`.
 3. `scripts/vault_config.py apply --skip-prod` as a dry run, then with `--apply-changes`. This writes the `test` and `local` records only; the prod Vault is not contacted.
 4. Add the package (`dotnet add package Pinqponq.Configuration.Vault`, newest stable version) and the `Program.cs` line to each service.
 5. `scripts/vault_config.py verify --baseline-ref <commit> --skip-prod`: the `local` and `test` readers see what they saw before. Changes you made on purpose are acknowledged with `--accept-differences`, and stay listed in the output.
