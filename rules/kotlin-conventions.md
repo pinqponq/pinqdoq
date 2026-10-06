@@ -1,5 +1,5 @@
 ---
-paths: ['**/*.kt', '**/*.kts']
+paths: ['**/*.kt', '**/*.kts', '**/composeResources/**/strings.xml']
 ---
 
 # Kotlin / KMP — Conventions & Style
@@ -52,6 +52,13 @@ if (state.uiState.isProductListVisible) { ... }
 - Include edge cases: long text, special characters.
 - File under `preview/` directory.
 - Naming: `[Entity]PreviewProvider`, `Fake[Entity]DataProvider`
+
+---
+
+## Compose Multiplatform String Resources
+
+- In `composeResources/**/strings.xml`, write apostrophes and quotes as plain characters: `l'abonnement`, `"photo"`. Compose resources resolve only `\uXXXX`, `\n`, `\t` and `\\`; every other escape, such as `\'` or `\"`, is shown with its backslash. This differs from Android `res/values`.
+- Keep a unit test that reads every `strings.xml` under `composeResources` and fails with the file and key when a value contains an escape Compose shows literally, so a new string cannot bring it back.
 
 ---
 
