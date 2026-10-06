@@ -57,7 +57,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 |---|---|
 | `deliver.py` | Delivery helper — copies `rules/`+`skills/` into a consumer (driven by `tasks/`, not run by hand). |
 | `path_utils.py` | Shared helper (no `main`); imported by the generators. Must stay alongside them. |
-| `vault_config.py` | .NET helper, not a KMP generator: plans, applies and verifies moving a project's secrets and per-reader settings into Vault records, and checks that a developer machine can read them. Driven by the `vault-config-setup` and `vault-dev-setup` skills. See [`vault_config.py`](#vault_configpy) below. |
+| `vault_config.py` | Plans, applies and verifies moving a project's secrets and per-reader settings into Vault records, and checks that a developer machine can read them. Driven by the `vault-config-setup` and `vault-dev-setup` skills. See [`vault_config.py`](#vault_configpy) below. |
 
 ## Configuration — `config.json`
 
@@ -106,7 +106,7 @@ Shared helper (no `main`) imported by almost every generator to turn `config.jso
 
 ## `vault_config.py`
 
-Not a KMP generator: a .NET helper (stdlib only) for the Vault configuration standard in [`references/dotnet/vault-configuration.md`](../references/dotnet/vault-configuration.md). The `vault-config-setup` skill drives it, but it runs on its own.
+A .NET helper (stdlib only) for the Vault configuration standard in [`references/dotnet/vault-configuration.md`](../references/dotnet/vault-configuration.md). The `vault-config-setup` skill drives it, but it runs on its own.
 
 | Subcommand | Does |
 |---|---|
@@ -126,8 +126,24 @@ python .pinq-doq/scripts/vault_config.py apply  --project-root . --project-name 
 python .pinq-doq/scripts/vault_config.py verify --project-root . --project-name <name> --baseline-ref <commit before the move> --prod-token-file ~/.vault-token-prod
 ```
 
-The commands are written with `python`; on macOS use `python3` (or `py -3` on Windows if `python` is only the Microsoft Store alias). Python 3.8 or newer, standard library only.
+### Tokens
 
-The end-to-end tests run against two in-memory fake Vault servers (no real Vault is contacted): `python -m unittest discover -s scripts/tests -v`.
+- Test Vault: `VAULT_TEST_TOKEN`, or the file `vault login` saved (`~/.vault-token`) when that is unset.
+- Prod Vault: `VAULT_PROD_TOKEN`, or a file given with `--prod-token-file`. `~/.vault-token` is never used for prod, so a prod write is always deliberate.
+- The variable names can be changed with `--test-token-env` and `--prod-token-env`.
+- Tokens are never read from the command line, and no output contains a secret value.
 
-The test Vault token comes from `VAULT_TEST_TOKEN` or, when that is unset, from the file `vault login` saved (`~/.vault-token`); the prod Vault token must be in `VAULT_PROD_TOKEN` or in a file given with `--prod-token-file` (never `~/.vault-token`), so a prod write is always deliberate. Change the variable names with `--test-token-env` / `--prod-token-env`. Tokens are never read from the command line, and no output contains a secret value. With only one Vault, pass just `--prod-vault-address`: the test and local records then go to the same server (the addresses are also found in the settings files on later runs). The settings files are edited as text: only the moved keys disappear and the `VaultConfiguration` section is added, while indentation, inline arrays, key order and line endings of everything else stay as they were (the file is rewritten as a whole only if the text edit cannot be proven to give the intended settings). Use a lower-case `--project-name`: the script prints a note for capitals, because Vault paths are case sensitive. Use `--include` / `--exclude` to correct the plan, and `--test-from local` only if the test server really needs the developer-machine values. Run with `--help` for everything else.
+### One Vault
+
+With only one Vault, pass just `--prod-vault-address`: the test and local records then go to the same server. On later runs the addresses are found in the settings files.
+
+### Settings files
+
+The settings files are edited as text: only the moved keys disappear and the `VaultConfiguration` section is added. Indentation, inline arrays, key order and line endings of everything else stay as they were. The file is rewritten as a whole only if the text edit cannot be proven to give the intended settings.
+
+### Options
+
+- `--project-name`: use lower case. The script prints a note for capitals, because Vault paths are case sensitive.
+- `--include` / `--exclude`: correct the plan.
+- `--test-from local`: only if the test server really needs the developer-machine values.
+- `--help` lists everything else.

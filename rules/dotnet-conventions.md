@@ -95,7 +95,7 @@ return new Response { HasNextPage = hasNextPage };
 - Never commit a secret (password, key, token, connection string with a password) to an `appsettings*.json` file. Read it from Vault with `Pinqponq.Configuration.Vault`: `builder.Configuration.AddPinqponqVault("VaultConfiguration")`.
 - A setting that differs between the prod server, the test server and a developer machine (an address, a URL) lives in Vault too. A setting that is identical everywhere (timeouts, limits, logging, lists) stays in `appsettings.json`.
 - Records are `apps/<project>/<prod|test|local>/<service>`. The test server runs with `DOTNET_ENVIRONMENT=Test`, never `Development`.
-- Give every array a single home: .NET merges arrays from different files by index.
+- Define a list setting (a JSON array) in one settings file only: .NET merges the same list from two settings files element by element, so the leftover elements of the longer one leak through.
 - Moving a project onto this standard: use the `pinq_vault-config-setup` skill. Details: `.pinq-doq/references/dotnet/vault-configuration.md`; developer machine setup: `.pinq-doq/references/dotnet/vault-cli-setup.md` or the `pinq_vault-dev-setup` skill (run a moved project locally).
 
 ---
