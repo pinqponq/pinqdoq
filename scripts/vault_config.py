@@ -23,9 +23,12 @@ prod). Output shows key names, types and counts only.
 
 Typical use:
     python vault_config.py plan   --project-root <repo> --project-name <name>
-    python vault_config.py apply  --project-root <repo> --project-name <name> --apply-changes
-    python vault_config.py verify --project-root <repo> --project-name <name> --baseline-ref <git ref before the move>
+    python vault_config.py apply  --project-root <repo> --project-name <name> --apply-changes --skip-prod
+    python vault_config.py verify --project-root <repo> --project-name <name> --baseline-ref <git ref before the move> --skip-prod
     python vault_config.py check  --project-root <repo> --project-name <name>
+    # prod, last, with the prod token saved in a file:
+    python vault_config.py apply  --project-root <repo> --project-name <name> --apply-changes --only-prod --baseline-ref <git ref before the move> --prod-token-file <file>
+    python vault_config.py verify --project-root <repo> --project-name <name> --baseline-ref <git ref before the move> --prod-token-file <file>
 """
 import argparse
 import copy
@@ -378,8 +381,8 @@ def build_records(base, development, selected_paths, test_from):
         set_path(local, path, local_value(base_leaves, development_leaves, path))
         base_value, development_value = base_leaves.get(path), development_leaves.get(path)
         if isinstance(base_value, list) and isinstance(development_value, list) and len(base_value) != len(development_value):
-            warnings.append(f'{":".join(path)}: the Development array has {len(development_value)} elements and the base array {len(base_value)}; '
-                            f'.NET merges them by index, so the local record keeps the merged result. Review it.')
+            warnings.append(f'{":".join(path)}: this list setting has {len(development_value)} elements in appsettings.Development.json and {len(base_value)} in appsettings.json; '
+                            f'.NET merges them element by element, so the local record keeps the merged result. Review it.')
     test = copy.deepcopy(prod if test_from == 'prod' else local)
     return {'prod': prod, 'test': test, 'local': local}, warnings
 

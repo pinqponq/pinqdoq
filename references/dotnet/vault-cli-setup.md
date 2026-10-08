@@ -25,6 +25,8 @@ To fix a single open PowerShell window without restarting it:
 $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')
 ```
 
+On macOS, run `eval "$(brew shellenv)"` in the open window instead.
+
 Check the install:
 
 ```bash
