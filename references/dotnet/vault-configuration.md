@@ -125,7 +125,7 @@ People get a policy that covers the records they maintain. Turn on a Vault audit
 
 ## Pitfalls that already happened
 
-- **Arrays merge by index.** .NET merges an array defined in two places element by element. A shorter array in `appsettings.Development.json` keeps the remaining elements of the one in `appsettings.json`. Give every array exactly one home: the file when every reader sees the same list, otherwise the Vault records, each holding the complete list. `scripts/vault_config.py` detects this and reports it.
+- **List settings merge element by element.** A list setting is a JSON array in a settings file, such as `BypassPaths`. When the same list is defined in two settings files, .NET merges them by position: a shorter list in `appsettings.Development.json` keeps the remaining elements of the longer one in `appsettings.json`. Give every list setting exactly one home: the file when every reader sees the same list, otherwise the Vault records, each holding the complete list. `scripts/vault_config.py` detects this and reports it.
 - **Developer addresses in the shared record.** Putting `localhost` or `10.0.0.1` into the record the test server reads breaks service-to-service calls inside containers. That is the reason for the separate `local` record.
 - **Empty strings do not hide a value.** An empty string left in a Development file overrides the real value of `appsettings.json`. Remove keys when they move; do not blank them.
 - **A removed secret is still in git history.** Moving a secret to Vault does not make the old value safe. Rotate it separately.

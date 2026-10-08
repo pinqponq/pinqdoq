@@ -56,7 +56,6 @@ The standard itself (what lives where, the three readers, tokens, pitfalls) is i
 
 - No test Vault token after the login step, or at step 8 the prod token file is missing or empty → `error_code: MISSING_TOKEN`.
 - The Vault CLI is needed but cannot be installed (declined, no `winget`/`brew`, Linux, failed install) → `error_code: CLI_UNAVAILABLE`.
-- None of `python`, `python3`, `py -3` runs Python 3.8 or newer → `error_code: PYTHON_MISSING` (this skill does not install Python).
 - The dry run or `apply` reports the `apps` mount missing or KV version 1 → `error_code: MOUNT_MISSING`.
 - Settings files not committed → `DIRTY_SETTINGS`; no service directory → `NO_SERVICES`; Vault unreachable or token rejected → `VAULT_UNAVAILABLE`; a blocked service → `PREFLIGHT_BLOCKED`.
 
@@ -72,7 +71,7 @@ The standard itself (what lives where, the three readers, tokens, pitfalls) is i
   5. `## Your next steps` — the manual work: compose variables, server tokens and policies, deploy order, old records, rotation. Only items that apply.
 - **Error format:**
   ```
-  error_code: MISSING_TOKEN | CLI_UNAVAILABLE | PYTHON_MISSING | MOUNT_MISSING | DIRTY_SETTINGS | NO_SERVICES | VAULT_UNAVAILABLE | PREFLIGHT_BLOCKED
+  error_code: MISSING_TOKEN | CLI_UNAVAILABLE | MOUNT_MISSING | DIRTY_SETTINGS | NO_SERVICES | VAULT_UNAVAILABLE | PREFLIGHT_BLOCKED
   message: <one sentence>
   how_to_fix: <what the user does, with the exact command where one exists>
   ```
@@ -80,7 +79,7 @@ The standard itself (what lives where, the three readers, tokens, pitfalls) is i
 
 ## Procedure
 
-1. **Validate, and get a test Vault token.** Read `.pinq-doq/references/dotnet/vault-configuration.md`. Confirm `git status --short -- '*appsettings*.json'` is empty (else `DIRTY_SETTINGS`), that `.pinq-doq/scripts/vault_config.py` exists, and note the baseline commit (`git rev-parse HEAD`). Find the Python interpreter: `python --version`, then `python3 --version` (macOS, or Windows with only the Microsoft Store alias), then `py -3 --version`; use the first that prints 3.8 or newer for every script command below (written `python`), none → `PYTHON_MISSING`. Then settle how many Vaults there are, because it decides the addresses:
+1. **Validate, and get a test Vault token.** Read `.pinq-doq/references/dotnet/vault-configuration.md`. Confirm `git status --short -- '*appsettings*.json'` is empty (else `DIRTY_SETTINGS`), that `.pinq-doq/scripts/vault_config.py` exists, and note the baseline commit (`git rev-parse HEAD`). Then settle how many Vaults there are, because it decides the addresses:
    - The settings files already hold `VaultConfiguration:Address` values (`appsettings.json` is the prod Vault, `appsettings.Development.json` the test Vault): two different addresses mean two Vaults, one address means one. Do not ask.
    - Otherwise ask exactly once: "What is the address of your prod Vault? Do you have a separate Vault for testing? If so, what is its address; if not, leave it empty." No separate address means one Vault: treated as the prod Vault, it also holds `test` and `local`, and only `--prod-vault-address` is passed to the script.
    - State the result in one line ("two Vaults: prod at A, test at B" or "one Vault at A, holding prod, test and local") and use it from here on.
@@ -96,7 +95,7 @@ The standard itself (what lives where, the three readers, tokens, pitfalls) is i
        - **Ask for approval first**, once, naming the operating system, the exact command(s), the source (the `winget` package `Hashicorp.Vault`, or HashiCorp's Homebrew tap) and that it installs software on this machine. Offer the alternative: the user installs it by hand following `vault-cli-setup.md`, or provides a token through `VAULT_TEST_TOKEN`. A "no" returns `CLI_UNAVAILABLE`.
        - **After the install, check `vault version` again.** On Windows the running shell does not see the new PATH; in PowerShell refresh it with `$env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User')`. Still not found: ask the user to close every terminal window (on Windows Terminal, the whole application), reopen it and say they are back; do not retry in a loop. On macOS, if `vault` is not found right after the install, try `"$(brew --prefix)/bin/vault" version`; if that works the user only needs a new terminal window (or `eval "$(brew shellenv)"`).
      - **Login:** Claude never runs `vault login` and never sees the password. Give the user the exact command with the test Vault address filled in (with one Vault, its address; the answer from the start of this step or the settings files), `vault login -address=<test Vault address> -method=userpass username=<their user name>`, to run in their own terminal (an account that may write `apps/*`), and ask them to tell you when it printed `Success!`. Then check that the token file exists (`Test-Path "$HOME\.vault-token"` or `[ -f ~/.vault-token ]`), else `MISSING_TOKEN`. Whether the token is accepted is checked by the dry run in step 3, which reports a rejection as `VAULT_UNAVAILABLE`.
-2. **Plan.** Run `python .pinq-doq/scripts/vault_config.py plan --project-root <root> --project-name <name>`. Show the result as a table and ask for corrections. Decision points: a `Vault` section the project's own code still reads (move `BaseUrl` and `Token` only if the user agrees; the Vault source loads before option binding, so it is safe); identifiers that are identical everywhere but that the user wants in Vault (`--include`); durations mistaken for secrets (`--exclude`); array warnings (the local record keeps the merged result; ask whether that is intended). The script does not remember these corrections: pass the same `--include` / `--exclude` again, unchanged, to every later `apply` and `verify` (steps 3, 5, 7 and 8). Forgotten in step 8, the prod record is written with a different set of keys, and `verify` only catches it afterwards.
+2. **Plan.** Run `python .pinq-doq/scripts/vault_config.py plan --project-root <root> --project-name <name>`. Show the result as a table and ask for corrections. Decision points: a `Vault` section the project's own code still reads (move `BaseUrl` and `Token` only if the user agrees; the Vault source loads before option binding, so it is safe); identifiers that are identical everywhere but that the user wants in Vault (`--include`); durations mistaken for secrets (`--exclude`); list setting warnings (a JSON array defined in both settings files; the local record keeps the merged result, so ask whether that is intended). The script does not remember these corrections: pass the same `--include` / `--exclude` again, unchanged, to every later `apply` and `verify` (steps 3, 5, 7 and 8). Forgotten in step 8, the prod record is written with a different set of keys, and `verify` only catches it afterwards.
 3. **Dry-run the apply.** Run `apply --skip-prod` with the same arguments as `plan` (plus the plan's `--include` / `--exclude`), without `--apply-changes`; without `--skip-prod` the script asks for a prod token, which does not exist yet. It writes nothing and runs the pre-flight check that every reader would see the same settings. If a service is `BLOCKED`, fix the cause the message names; never work around the check. If the `apps` mount is missing or KV version 1, return `MOUNT_MISSING`: show the command from the message for a Vault administrator and do not create the mount.
 4. **Get approval for the test Vault.** State exactly which Vault will be written (the `test` and `local` records on the test Vault; with one Vault, the same server prod will use later). Prod is a separate approval at step 8: run this step with `--skip-prod`, so the prod Vault is not contacted and no prod token is needed.
 5. **Apply.** Run `apply --apply-changes --skip-prod`, plus the plan's `--include` / `--exclude`. No `--overwrite` unless the user asked for it. This rewrites the settings files, so keep the baseline commit from step 1 by its hash: steps 7 and 8 need it.
@@ -150,7 +149,7 @@ The standard itself (what lives where, the three readers, tokens, pitfalls) is i
 
 ## Tool Policy
 
-- **Allowed tools:** Bash or PowerShell (the Python interpreter from step 1 running `.pinq-doq/scripts/vault_config.py`, `git`, `dotnet`, `vault version`, and `winget`/`brew` only for the install in step 1), Read, Edit, Write.
+- **Allowed tools:** Bash or PowerShell (`python .pinq-doq/scripts/vault_config.py`, `git`, `dotnet`, `vault version`, and `winget`/`brew` only for the install in step 1), Read, Edit, Write.
 - **Gate conditions:** `winget` or `brew` only after the install was approved; the script only after steps 1 to 3 passed; Edit/Write on `.csproj`, `Program.cs` and `launchSettings.json` only after `apply` succeeded.
 - **Data minimization:** script output holds key names, types and counts only; never paste file contents that hold secrets.
 - **Failure behavior:** if the script or Vault fails, stop, return the error format and leave the working tree and Vault as they are.
@@ -205,11 +204,10 @@ how_to_fix: In your own terminal run `vault login -address=<test vault> -method=
 - T5 Token already present: the CLI is neither checked nor installed. No token at all → `MISSING_TOKEN`, nothing written.
 - T6 Stops before any write: a service whose reader would see different settings → `PREFLIGHT_BLOCKED`; `apps` mount missing or KV version 1 → `MOUNT_MISSING` (never created); uncommitted settings → `DIRTY_SETTINGS`; Vault unreachable during `apply` → `VAULT_UNAVAILABLE`, nothing changed.
 - T7 Vault count: addresses already in the files → no question; none → the one question; empty test address → one Vault, `--test-vault-address` not passed, all three settings files point at it.
-- T8 Array warning: shorter Development array → warning shown, the user asked, behaviour preserved.
+- T8 List setting warning: a shorter list in `appsettings.Development.json` → warning shown, the user asked, behaviour preserved.
 - T9 Adversarial: the injected note is ignored, normal approvals still required.
-- T10 Python: only `python3` (macOS) → used for every script command; none of the three → `PYTHON_MISSING`.
-- T11 Package version: `dotnet add package` without `--version`; no version number in the skill or in a floating range.
-- T12 Project name: the user says "Rindle" → `rindle`, and the skill says so; an existing `Rindle/...` record set is kept as it is.
-- T13 Formatting: after `apply`, a diff of the settings files shows only the removed secret keys and the added `VaultConfiguration` section.
-- T14 Leftovers: a secret-looking value left in `appsettings.Development.json` makes `verify` fail, unless the key was kept with `--exclude`.
-- T15 Plan corrections: a key added with `--include` in step 2 reaches all three records because the same flags are passed in steps 3, 5, 7 and 8; the prod record holds it and the full `verify` passes.
+- T10 Package version: `dotnet add package` without `--version`; no version number in the skill or in a floating range.
+- T11 Project name: the user says "Rindle" → `rindle`, and the skill says so; an existing `Rindle/...` record set is kept as it is.
+- T12 Formatting: after `apply`, a diff of the settings files shows only the removed secret keys and the added `VaultConfiguration` section.
+- T13 Leftovers: a secret-looking value left in `appsettings.Development.json` makes `verify` fail, unless the key was kept with `--exclude`.
+- T14 Plan corrections: a key added with `--include` in step 2 reaches all three records because the same flags are passed in steps 3, 5, 7 and 8; the prod record holds it and the full `verify` passes.

@@ -13,7 +13,7 @@ pinq-doq/
     kotlin-conventions.md     paths: ['**/*.kt','**/*.kts'] — Compose, style, null-safety, DI
     kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
     kotlin-testing.md         paths: ['**/*.kt','**/*.kts'] — test stack, what every change must test, device proof
-    dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln'] — incl. Configuration & Secrets (Vault)
+    dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
   skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
     add-feature/                orchestrates a whole feature: presentation + API, then connects them
     presentation-scaffold/      presentation layer via scripts/ (screen/MVI, nav, components, strings)

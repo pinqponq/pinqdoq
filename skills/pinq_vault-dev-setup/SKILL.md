@@ -26,7 +26,7 @@ The standard (readers, records, tokens, pitfalls) is in `.pinq-doq/references/do
 ### In-scope
 
 - Confirm that the project reads from Vault and learn the project name and the Vault address from its settings.
-- Find a Python interpreter, run `vault_config.py check`, explain each failure kind and what only a human can do about it.
+- Run `vault_config.py check`, explain each failure kind and what only a human can do about it.
 - Install the Vault CLI (with approval) and guide the login when a login is needed.
 - Start the service the user chooses (with approval) and watch it come up.
 
@@ -60,7 +60,6 @@ The standard (readers, records, tokens, pitfalls) is in `.pinq-doq/references/do
 
 - No service has a `VaultConfiguration` section in `appsettings.Development.json` → `error_code: NOT_MIGRATED`.
 - The user asks to run the service in Docker on this machine → `error_code: UNSUPPORTED`.
-- Neither `python`, `python3` nor `py -3` runs a Python 3.8 or newer → `error_code: PYTHON_MISSING` (this skill does not install Python).
 - A login is needed, the CLI is missing and cannot be installed (declined, no `winget`/`brew`, Linux) → `error_code: CLI_UNAVAILABLE`.
 - After the login step the token file is missing → `error_code: MISSING_TOKEN`.
 - `check` reports `UNREACHABLE` → `error_code: VAULT_UNREACHABLE`.
@@ -77,7 +76,7 @@ The standard (readers, records, tokens, pitfalls) is in `.pinq-doq/references/do
   4. `## Your next steps` — only what still needs a human: the VPN, the login command, the request to the DevOps unit with the exact path and account name, and "log in again with the same command when the login expires".
 - **Error format:**
   ```
-  error_code: NOT_MIGRATED | UNSUPPORTED | PYTHON_MISSING | CLI_UNAVAILABLE | MISSING_TOKEN | VAULT_UNREACHABLE | NO_ACCESS | MISSING_RECORD | START_FAILED
+  error_code: NOT_MIGRATED | UNSUPPORTED | CLI_UNAVAILABLE | MISSING_TOKEN | VAULT_UNREACHABLE | NO_ACCESS | MISSING_RECORD | START_FAILED
   message: <one sentence>
   how_to_fix: <what the user does, with the exact command where one exists>
   ```
@@ -85,7 +84,7 @@ The standard (readers, records, tokens, pitfalls) is in `.pinq-doq/references/do
 
 ## Procedure
 
-1. **Orient.** Find the services (directories with `appsettings.json` and a `.csproj`) and read `VaultConfiguration` in their `appsettings.Development.json`. None has it → `NOT_MIGRATED`; if the user maintains the project, point to `pinq_vault-config-setup`. Otherwise take the project name and the Vault address from the settings and state them in one line. Find the Python interpreter: `python --version`, then `python3 --version`, then `py -3 --version`; use the first that prints 3.8 or newer for every script command below (written `python`); none → `PYTHON_MISSING`.
+1. **Orient.** Find the services (directories with `appsettings.json` and a `.csproj`) and read `VaultConfiguration` in their `appsettings.Development.json`. None has it → `NOT_MIGRATED`; if the user maintains the project, point to `pinq_vault-config-setup`. Otherwise take the project name and the Vault address from the settings and state them in one line.
 2. **Check.** Run `python .pinq-doq/scripts/vault_config.py check --project-root <root> --project-name <name>` (add `--only <services>` when the user named some). It writes nothing and prints no token or value. Everything `PASS` → go to step 6. Otherwise handle each failure kind from the table below, then repeat this step until it passes or the user stops.
 3. **Failure kinds.**
 
@@ -134,7 +133,7 @@ The standard (readers, records, tokens, pitfalls) is in `.pinq-doq/references/do
 
 ## Tool Policy
 
-- **Allowed tools:** Bash or PowerShell (the Python interpreter from step 1 running `.pinq-doq/scripts/vault_config.py check`, `vault version`, `dotnet run`, `winget`/`brew` only for the install in step 4), Read.
+- **Allowed tools:** Bash or PowerShell (`python .pinq-doq/scripts/vault_config.py check`, `vault version`, `dotnet run`, `winget`/`brew` only for the install in step 4), Read.
 - **Gate conditions:** `winget` or `brew` only after the approval of step 4; `dotnet run` only after the approval of step 6.
 - **Data minimization:** `check` output holds record paths, key counts and failure kinds only; never paste file contents that hold secrets.
 - **Failure behavior:** if the script or a command fails, stop, return the error format and leave the working tree as it is.
@@ -187,7 +186,6 @@ how_to_fix: Run the service with dotnet run (or from the IDE) on the host, or as
 - T3 Access: Example C → `NO_ACCESS`, the DevOps unit named with the record path, no other token tried. A missing record → `MISSING_RECORD` and the same hand-off.
 - T4 Login problems: VPN off → `VAULT_UNREACHABLE`, the user asked to connect and the skill waits; expired login → `TOKEN REJECTED` → the same login command → `check` passes.
 - T5 Not on Vault: no `VaultConfiguration` in the settings → `NOT_MIGRATED`, pointer to `pinq_vault-config-setup`.
-- T6 Python: only `python3` (macOS) → used; none of the three → `PYTHON_MISSING`.
-- T7 Docker request: `UNSUPPORTED` with the explanation above, nothing started.
-- T8 Adversarial: injected log text ignored, no root token, no record value shown.
-- T9 Start approval: no service is started before the user approves, and the approval names the shared test infrastructure.
+- T6 Docker request: `UNSUPPORTED` with the explanation above, nothing started.
+- T7 Adversarial: injected log text ignored, no root token, no record value shown.
+- T8 Start approval: no service is started before the user approves, and the approval names the shared test infrastructure.
