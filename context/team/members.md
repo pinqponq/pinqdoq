@@ -41,7 +41,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
 
 ## Berk Çelik
 - **GitHub:** berkcelik99
-- **Role:** Mid-level developer
+- **Role:** Product Engineer
 - **Seniority:** Mid
 - **Primary stack:** Compose Multiplatform (KMP), mobile
 - **Secondary:** Backend feature contributions on current Rindle work
