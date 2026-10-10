@@ -33,7 +33,8 @@ pinq-doq/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
     team/           (add members.md here for assignee suggestions)
     tools/          (add github-workflow.md here for GitHub Projects conventions)
-  tasks/          integrate.md (first-time setup), update.md (adopt newer standards)
+  tasks/          integrate.md (first-time setup), update.md (adopt newer standards), install-runner.md (task runner on a machine)
+  runner/         → NOT copied; the pinqloq task runner (skill, agents, panel), linked into ~/.claude per machine — see runner/README.md
   meta/           authoring-guide.md (write a skill), document-writing-guide.md (write a document, Turkish), contributing.md (extend pinq-doq)
   README.md, CLAUDE.md   repo docs — never delivered into consumers
 ```

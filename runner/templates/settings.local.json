@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Skill",
+      "Agent",
+      "TodoWrite",
+      "mcp__pinqloq",
+      "Edit(/{WORKSPACE_DIR}/**)",
+      "Write(/{WORKSPACE_DIR}/**)",
+      "Edit(/{WORKTREES_STORAGE_DIR}/**)",
+      "Write(/{WORKTREES_STORAGE_DIR}/**)",
+      "Edit(/{HOME}/.claude/pinqloq-task-runner/**)",
+      "Write(/{HOME}/.claude/pinqloq-task-runner/**)",
+      "Edit(//private/tmp/**)",
+      "Write(//private/tmp/**)",
+      "Edit(//tmp/**)",
+      "Write(//tmp/**)"
+    ],
+    "additionalDirectories": [
+      "{WORKSPACE_DIR}",
+      "{WORKTREES_STORAGE_DIR}",
+      "{HOME}/.claude/skills/pinqloq-task-runner",
+      "{HOME}/.claude/pinqloq-task-runner",
+      "{HOME}/.claude/agents",
+      "{HOME}/.cache",
+      "{HOME}/.gradle",
+      "{HOME}/.maestro",
+      "{HOME}/Library/Developer/Xcode/DerivedData",
+      "/private/tmp",
+      "/tmp"
+    ]
+  },
+  "env": {
+    "GH_CONFIG_DIR": "{HOME}/.config/gh-pinq-ponq",
+    "GIT_CONFIG_COUNT": "2",
+    "GIT_CONFIG_KEY_0": "credential.helper",
+    "GIT_CONFIG_VALUE_0": "",
+    "GIT_CONFIG_KEY_1": "credential.helper",
+    "GIT_CONFIG_VALUE_1": "!gh auth git-credential",
+    "GIT_AUTHOR_NAME": "pinq-ponq",
+    "GIT_AUTHOR_EMAIL": "323780991+pinq-ponq@users.noreply.github.com",
+    "GIT_COMMITTER_NAME": "pinq-ponq",
+    "GIT_COMMITTER_EMAIL": "323780991+pinq-ponq@users.noreply.github.com"
+  }
+}

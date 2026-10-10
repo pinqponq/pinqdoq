@@ -1,0 +1,15 @@
+allprojects {
+    if (path == ':composeApp') {
+        afterEvaluate {
+            tasks.register('printPitClasspath') {
+                dependsOn 'desktopTestClasses'
+                doLast {
+                    def kmp = project.extensions.getByName('kotlin')
+                    def dirs = kmp.targets.getByName('desktop').compilations.collectMany { it.output.allOutputs.files as List }
+                    def cp = configurations.getByName('desktopTestRuntimeClasspath').files
+                    println 'PITCP=' + (dirs + cp).join(':')
+                }
+            }
+        }
+    }
+}

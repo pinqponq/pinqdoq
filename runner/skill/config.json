@@ -1,0 +1,16 @@
+{
+  "smtp_host": "smtp.gmail.com",
+  "smtp_port": 587,
+  "username": "hello@pinqponq.io",
+  "keychain_service": "pinqloq-smtp",
+  "from_address": "no-reply@pinqponq.io",
+  "from_name": "pinqloq",
+  "to": [
+    "hello@pinqponq.io"
+  ],
+  "reply_to": "hello@pinqponq.io",
+  "subject_tag": "pinqloq",
+  "github_org": "pinqponq",
+  "project_number": 9,
+  "lesson_pr_reviewer": "furkanturkn"
+}
