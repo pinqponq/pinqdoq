@@ -5,8 +5,7 @@
           [--worktrees DIR] [--runner-dir DIR] [--mail-cc ADDRESS ...] [--replace] [--dry-run]
 
 What it does (idempotent, run it again after moving the checkout):
-1. Links ~/.claude/skills/pinqloq-task-runner, ~/.claude/agents/pin-*.md and ~/.claude/pinqloq-panel
-   to the checkout, so `git pull` in pinqdoq updates the runner. An existing real file or folder at
+1. Links ~/.claude/skills/pinqloq-task-runner and ~/.claude/agents/pin-*.md to the checkout, so `git pull` in pinqdoq updates the runner. An existing real file or folder at
    one of those places is left alone unless --replace is given; then it is moved (never deleted) to
    ~/.claude/pinqloq-trash/<timestamp>/.
 2. Creates the state folder and machine.json (role, folders, mail CC). An existing machine.json is
@@ -48,8 +47,7 @@ applies only to runner sessions.
 
 
 def link_targets():
-    links = [(CLAUDE_DIR / "skills" / "pinqloq-task-runner", RUNNER_DIR_IN_REPO / "skill"),
-             (CLAUDE_DIR / "pinqloq-panel", RUNNER_DIR_IN_REPO / "panel")]
+    links = [(CLAUDE_DIR / "skills" / "pinqloq-task-runner", RUNNER_DIR_IN_REPO / "skill")]
     links += [(CLAUDE_DIR / "agents" / agent.name, agent) for agent in sorted((RUNNER_DIR_IN_REPO / "agents").glob("pin-*.md"))]
     return links
 

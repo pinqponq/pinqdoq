@@ -26,7 +26,7 @@ python3 ~/StudioProjects/.pinqdoq-runner/runner/skill/scripts/install.py --role 
 - `--worktrees <dir>` when the worktrees should live elsewhere (e.g. an external disk); the default is `~/StudioProjects/.task-runner-worktrees`.
 - On a machine that already has a hand-made copy of the runner under `~/.claude`, add `--replace`: the old files are moved to `~/.claude/pinqloq-trash/<timestamp>/`, never deleted. Do this only while no runner session is running (`locks.py status` shows no task lock).
 
-The script creates `machine.json`, links the skill, agents and panel, writes the runner folder's `settings.local.json` and the routine prompts, then runs `doctor.py`. It never overwrites an existing `machine.json` or settings file.
+The script creates `machine.json`, links the skill and agents, writes the runner folder's `settings.local.json` and the routine prompts, then runs `doctor.py`. It never overwrites an existing `machine.json` or settings file.
 
 ## 4. Secrets and accounts (owner)
 
@@ -46,8 +46,11 @@ In a Claude Code chat say: **create the runner routines from `~/.claude/pinqloq-
 
 ## 6. Panel
 
+The panel is a separate repo:
+
 ```bash
-python3 ~/.claude/pinqloq-panel/server.py
+git clone https://github.com/pinqponq/pinqponq-agents ~/StudioProjects/pinqponq-agents
+python3 ~/StudioProjects/pinqponq-agents/server.py
 ```
 
 Open http://127.0.0.1:8787. The panel's Start button only writes a request; a Claude chat that watches `start-requests.jsonl` starts the routine.

@@ -70,8 +70,7 @@ def check_commands(report):
 
 
 def check_links(report):
-    expected_links = [(CLAUDE_DIR / "skills" / "pinqloq-task-runner", RUNNER_DIR_IN_REPO / "skill"),
-                      (CLAUDE_DIR / "pinqloq-panel", RUNNER_DIR_IN_REPO / "panel")]
+    expected_links = [(CLAUDE_DIR / "skills" / "pinqloq-task-runner", RUNNER_DIR_IN_REPO / "skill")]
     expected_links += [(CLAUDE_DIR / "agents" / agent.name, agent) for agent in sorted((RUNNER_DIR_IN_REPO / "agents").glob("pin-*.md"))]
     for link_path, target in expected_links:
         linked = link_path.is_symlink() and link_path.resolve() == target.resolve()
