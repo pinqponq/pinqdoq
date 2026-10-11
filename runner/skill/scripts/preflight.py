@@ -27,9 +27,11 @@ limit, which a session could not get past either.
 import contextlib
 import io
 import json
+import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -41,6 +43,7 @@ import state_tx  # noqa: E402
 
 RUNS_LOG_FILE = state_tx.STATE_DIR / "runs.log"
 VERIFICATION_RETRY_INTERVAL = timedelta(hours=6)
+SESSION_RESERVATION_MAX_AGE_SECONDS = 24 * 60 * 60
 RUNNER_COMMENT_PREFIX = "🤖"
 STARTED_STATUSES = {"in_progress", "waiting_reply", "changes_requested", "verification_blocked"}
 ISSUE_ACTIVITY_STATUSES = {"proposed", "waiting_reply", "pr_open"}
@@ -263,6 +266,24 @@ def append_idle_log(session, result):
         runs_log.write(line)
 
 
+def reserve_session_id(session_prefix):
+    """Two runners started in the same second used to get the same id, shared one devices lock and drove
+    the emulator together (2026-10-11); a reservation file per id makes the second one take the next second."""
+    reservation_dir = state_tx.STATE_DIR / "session-ids"
+    reservation_dir.mkdir(parents=True, exist_ok=True)
+    for old_reservation in reservation_dir.glob("*"):
+        if time.time() - old_reservation.stat().st_mtime > SESSION_RESERVATION_MAX_AGE_SECONDS:
+            old_reservation.unlink(missing_ok=True)
+    moment = now_utc()
+    while True:
+        session = "%s-%s" % (session_prefix, moment.strftime("%Y%m%d%H%M%S"))
+        try:
+            os.close(os.open(str(reservation_dir / session), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+            return session
+        except FileExistsError:
+            moment += timedelta(seconds=1)
+
+
 def main():
     arguments = sys.argv[1:]
     session = None
@@ -270,7 +291,7 @@ def main():
         # The routine prompts call this with a fixed command (no $(date) / $VAR), so the app can
         # remember the permission; the session id is generated here instead of in the shell.
         session_prefix = arguments[arguments.index("--new-session") + 1]
-        session = "%s-%s" % (session_prefix, now_utc().strftime("%Y%m%d%H%M%S"))
+        session = reserve_session_id(session_prefix)
     elif "--log-idle" in arguments:
         session = arguments[arguments.index("--log-idle") + 1]
     result = evaluate(locks.LIGHT_ONLY_FLAG in arguments)
