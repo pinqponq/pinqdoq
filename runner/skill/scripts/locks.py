@@ -184,6 +184,10 @@ def find_claimable_candidates():
         if is_held(lock_file_for(task_lock_name(task_key))):
             yield task_key, "locked by another session"
             continue
+        open_question_ids = [question.split(":", 1)[0].strip() for question in task.get("open_questions") or []]
+        if open_question_ids:
+            yield task_key, "waits for answers to " + ", ".join(open_question_ids)
+            continue
         unready_dependency = find_unready_dependency(task, task_statuses)
         if unready_dependency:
             yield task_key, "waits for " + unready_dependency

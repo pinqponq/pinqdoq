@@ -39,6 +39,7 @@ Turn Todo cards on the pinqponq Project #9 board into ready-for-review PRs, with
   - `state-archive.json` — merged/skipped/declined/done tasks moved out by `cleanup.py` after 3 days. `state_tx.py keys` / `statuses` cover both files; `archived <key>` shows one, `restore <key>` brings it back before you change it (e.g. a reply about an archived task).
   - `board_items.json`, `board_project.json` — `board.py` caches.
   - `locks/` — lock files; touched only by `scripts/locks.py`.
+  - A task with open questions is `waiting_reply`, whatever else is done: set that status whenever you add a question, and `in_progress` only once `open_questions` is empty. `locks.py claim` never picks a task with open questions.
   - `open_questions` entries always use the format shown above: `S<n>: <question>` and, when there are choices, one trailing `(A: … / B: … / C: …; öneri X)`. On the issue comment, write each question as a line starting with `**S<n>: …**` followed by one `- A: …` line per option, the recommended option ending in `**(öneri: <reason>)**`. The web panel reads the full question and options from that comment and offers them as choices with a free-text "Diğer" answer; the one-line `open_questions` summary is its fallback.
   - `sent_mails.jsonl` — maintained by `mailer.py`.
   - `media/<repo>-<number>/` — screenshots and recordings.
