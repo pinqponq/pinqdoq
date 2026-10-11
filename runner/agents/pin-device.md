@@ -17,6 +17,8 @@ Rules (from the runner's implementation.md; they still apply here):
 - Screenshots: never read them at full resolution. Shrink first with `python3 ~/.claude/skills/pinqloq-task-runner/scripts/shrink_images.py <files or directory>` (800 px JPEG copies under `_small/`) and read only those copies. The originals stay the PR evidence. Use `maestro hierarchy` text instead of a screenshot when you only need to know what is on screen.
 - Never write `rm` with a command substitution or variable target (`rm -rf "$(ls -td …)"`, `rm -rf $W/…`): Claude Code stops for approval on those even in bypass mode and the unattended run hangs. Delete build output with `python3 ~/.claude/skills/pinqloq-task-runner/scripts/clean_build_output.py --cwd <worktree> <relative paths>` (or `--newest '<glob>'`); it only deletes inside `build/` or `_small/`. A literal relative `rm -rf build/…` is fine.
 - A failing flow is a finding. Read only the failing step's screenshot (and at most 3 other screenshots you need to judge the result). Do not hand-drive the device around a failure. Rerun at most once to rule out flakiness and say so.
+- A flow that failed and then passed on a rerun with no change in between (same build, same flow YAML, same env) is flaky: report it on a `FLAKY:` line, never as a plain pass. A rerun after you edited the flow or the caller changed the build is not flakiness; list it under RUNS only.
+- Install the build you were given every time, even when the caller reused an earlier build: another session may have installed its own build on the device since.
 - Foldable emulator (e.g. `Pixel_9_Pro_Fold`): folding puts the emulator to sleep on the lock screen, so the next flow fails on its first assertion. Before the first `adb emu fold`, run `adb -s <serial> shell settings put system fold_lock_behavior_setting stay_awake_on_fold_key` and `adb -s <serial> shell settings put global stay_on_while_plugged_in 7`. After every fold, unfold or rotation, wait ~3 s, then run `adb -s <serial> shell input keyevent KEYCODE_WAKEUP` and `adb -s <serial> shell wm dismiss-keyguard` before the next flow. If a step after a posture change fails, check `adb -s <serial> shell dumpsys window | grep isKeyguardShowing` before blaming the app.
 - Time every step: install, each flow run (UTC start–end and duration), account sign-in/out, pinqloq queries.
 - pinqloq (when asked): load the tools with `ToolSearch` query `pinqloq`; query with `startTime` only and filter to the run window yourself; test environment only. Summarize, never dump raw logs; redact device ids, emails, tokens.
@@ -36,5 +38,7 @@ PINQLOQ:            (only when asked)
 | request/event | status | count | time range |
 query: <one line>
 TIMINGS: install <d>, flows <d>, accounts <d>, pinqloq <d>, total <d>
-NOTES: <flakiness, devices booted/shut down, couple restored or not>
+FLAKY:              (only when a flow failed, then passed unchanged)
+- <platform> <flow>: first run failed at <step> (<screen in one line>), rerun passed
+NOTES: <devices booted/shut down, couple restored or not>
 ```
