@@ -16,6 +16,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - MCP server development and tooling
   - Test infrastructure for KMP projects
   - Mobile-side backend integration
+  - App marketing and user acquisition (store listings, ad campaigns, install attribution)
 - **Assign when:** task requires cross-project coordination, mobile architecture decisions, chat/real-time systems, MCP tooling, or has no clear specialist owner.
 
 ---
@@ -35,6 +36,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Server setup and deployment
   - CI/CD auto-deploy pipelines
   - Shared infrastructure NuGet packages (PinqNugets)
+  - Technical SEO and web analytics for marketing sites (GA4, Search Console, structured data)
 - **Assign when:** task involves backend architecture, complex integrations, auth systems, stored procedures, infrastructure setup, CI/CD auto-deploy, or shared NuGet package work. For Rindle specifically, assign Atakan only for advanced architectural tasks — routine Rindle backend work goes to Berk.
 
 ---
@@ -53,6 +55,11 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Bug fixing and UI polish
   - KMP admin panel screens
   - Rindle backend feature development (active role on both backend and mobile sides)
+  - Platform-native integrations (home screen widgets, push notifications, share extension)
+  - Media capture, upload, and collage pipelines (camera, video, bulk upload)
+  - In-app monetization (subscriptions and paywall, rewarded ads)
+  - App Store and Play Store release and listing management
+  - Client-side logging and diagnostics instrumentation (Pinqloq)
 - **Assign when:** task is a KMP/CMP mobile screen, UI component, client API connection, or mobile bug fix. For Pinqponq SDK mobile side, Berk is the primary. For Rindle, Berk is the primary for both mobile and backend tasks — Atakan only steps in for advanced architectural work on Rindle. **Do not assign Pinqloq dashboard or WASM panel tasks** — those go to whoever owns the Pinqloq backend (see project-specific rules below).
 
 ---
@@ -75,6 +82,7 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Microservice and shared tooling libraries
   - .NET SDK and NuGet packaging
   - High-volume backend feature delivery
+  - Database administration and data migration (PostgreSQL, MongoDB)
 - **Assign when:** task involves infrastructure (Redis, RabbitMQ, Docker, CI/CD, logging, monitoring, secrets/networking, server migration), distributed tracing, MCP server work, payment integration, SDK/NuGet work, or large backend feature scope.
 
 ---
@@ -99,6 +107,8 @@ Reference for task assignment suggestions. Each entry covers role, seniority, ca
   - Billing, subscription, and payment systems
   - Usage metering and quota enforcement
   - Dashboard client feature development (vibe coding)
+  - Multi-language SDK and sample project development (Ruby, Go, Node.js)
+  - Marketing site and landing pages (pricing, blog, product intro)
 - **Assign when:** task involves developer-facing content, product announcement strategy, community building, or devrel research. Also available for .NET backend API development, RabbitMQ/Redis infrastructure work, MSSQL/PostgreSQL database design, billing/subscription/payment systems, usage metering, or dashboard client features (vibe coding).
 
 ---
