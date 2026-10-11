@@ -12,6 +12,7 @@ Every run is also recorded in timings.jsonl (timings.py); Maestro runs record ea
 import argparse, glob, os, re, subprocess, sys, threading, time
 import xml.etree.ElementTree as ET
 
+import android_sdk
 import timings
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -161,6 +162,7 @@ def print_list(title, items):
 
 def main():
     arguments = parse_arguments()
+    android_sdk.ensure_android_sdk_environment()
     working_directory = os.path.abspath(arguments.cwd)
     log_path = os.path.abspath(arguments.log or default_log_path(working_directory, arguments.command))
     os.makedirs(os.path.dirname(log_path), exist_ok=True)

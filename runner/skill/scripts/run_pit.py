@@ -2,13 +2,15 @@
 """Diff-scoped PIT mutation run for a KMP worktree (desktop/JVM tests).
 
 Usage: run_pit.py <worktree> <base-ref> [--threshold 85] [--lock TASK_KEY]
-Prints a JSON summary; exit 1 when the score is below the threshold. Each run is recorded in
-timings.jsonl (timings.py).
+Finds every Gradle module whose commonMain/desktopMain/jvmMain Kotlin changed (e.g. composeApp in an app,
+deveng-core in deveng-core-kmp), runs PIT per module against that module's changed tests and prints one JSON
+summary over all of them; exit 1 when the score is below the threshold. Each run is recorded in timings.jsonl.
 """
 import argparse, collections, json, os, re, subprocess, sys, urllib.request
 import time
 import xml.etree.ElementTree as ET
 
+import android_sdk
 import timings
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +26,9 @@ PIT_JARS = [
 ]
 NOISE = ("kotlin/ResultKt::throwOnFailure",)
 UNIT_LAMBDA = re.compile(r"replaced return value with null for .*\$lambda")
+MAIN_SOURCE_SETS = ("commonMain", "desktopMain", "jvmMain")
+TEST_SOURCE_SETS = ("commonTest", "desktopTest", "jvmTest")
+SOURCE_SET_PATH = re.compile(r"^(?:(.+)/)?src/([A-Za-z]+)/kotlin/")
 
 
 def ensure_jars():
@@ -38,12 +43,23 @@ def sh(cmd, cwd, **kw):
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, **kw)
 
 
-def changed_lines(worktree, base):
-    files = sh(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD", "--", "composeApp/src/commonMain", "composeApp/src/desktopMain"], worktree).stdout.split()
+def changed_kotlin_files(worktree, base, source_sets):
+    files = sh(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"], worktree).stdout.split()
+    by_module = collections.defaultdict(list)
+    for path in files:
+        match = SOURCE_SET_PATH.match(path)
+        if path.endswith(".kt") and match and match.group(2) in source_sets:
+            by_module[match.group(1) or ""].append(path)
+    return by_module
+
+
+def gradle_path(module_dir):
+    return ":" + module_dir.replace("/", ":") if module_dir else ":"
+
+
+def changed_lines(worktree, base, files):
     result = {}
     for path in files:
-        if not path.endswith(".kt"):
-            continue
         diff = sh(["git", "diff", "-U0", f"{base}...HEAD", "--", path], worktree).stdout
         lines = set()
         for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.M):
@@ -60,8 +76,7 @@ def package_and_class(worktree, path):
     return package, os.path.basename(path)[:-3]
 
 
-def test_classes(worktree, base):
-    files = sh(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD", "--", "composeApp/src/desktopTest", "composeApp/src/commonTest"], worktree).stdout.split()
+def test_classes(worktree, files):
     names = []
     for path in files:
         if path.endswith("Test.kt"):
@@ -70,45 +85,31 @@ def test_classes(worktree, base):
     return names
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("worktree")
-    parser.add_argument("base")
-    parser.add_argument("--threshold", type=float, default=85)
-    parser.add_argument("--lock")
-    args = parser.parse_args()
-    worktree = os.path.abspath(args.worktree)
-    ensure_jars()
-
-    changed = changed_lines(worktree, args.base)
-    targets = [".".join(package_and_class(worktree, p)) + "*" for p in changed]
-    tests = test_classes(worktree, args.base)
-    if not targets or not tests:
-        print(json.dumps({"skipped": "no changed production classes or no changed tests", "targets": targets, "tests": tests}))
-        return 0
-
-    gradle = sh(["./gradlew", "-q", "--init-script", INIT_SCRIPT, ":composeApp:printPitClasspath"], worktree)
+def run_module(worktree, module_dir, changed, tests, report_dir):
+    """Runs PIT for one module; returns the mutations.xml path or an error text."""
+    gradle = sh(["./gradlew", "-q", "--init-script", INIT_SCRIPT, f"-PpitModule={gradle_path(module_dir)}", "--no-configuration-cache",
+                 f"{gradle_path(module_dir).rstrip(':')}:printPitClasspath"], worktree)
     classpath = next((l[len("PITCP="):] for l in gradle.stdout.splitlines() if l.startswith("PITCP=")), None)
     if not classpath:
-        print(gradle.stdout[-2000:], gradle.stderr[-2000:], file=sys.stderr)
-        return 2
-
-    report_dir = os.path.join(worktree, "build", "pit-report")
+        return None, gradle.stdout[-2000:] + gradle.stderr[-2000:]
+    targets = [".".join(package_and_class(worktree, p)) + "*" for p in changed]
+    source_dirs = ",".join(os.path.join(module_dir, "src", source_set, "kotlin") for source_set in MAIN_SOURCE_SETS
+                           if os.path.isdir(os.path.join(worktree, module_dir, "src", source_set, "kotlin")))
     jars = ":".join(os.path.join(PIT_DIR, j) for j in os.listdir(PIT_DIR) if j.endswith(".jar"))
     run = sh(["java", "-cp", f"{jars}:{classpath}", "org.pitest.mutationtest.commandline.MutationCoverageReport",
-              "--reportDir", report_dir, "--sourceDirs", "composeApp/src/commonMain/kotlin",
+              "--reportDir", report_dir, "--sourceDirs", source_dirs,
               "--targetClasses", ",".join(targets), "--excludedClasses", "*Test*",
               "--targetTests", ",".join(tests), "--classPath", classpath,
               "--outputFormats", "XML", "--threads", "4", "--timestampedReports=false",
               "--timeoutConst", "8000", "--jvmArgs", "-Xmx2g"], worktree)
     mutations = os.path.join(report_dir, "mutations.xml")
     if not os.path.exists(mutations):
-        print(run.stdout[-3000:], run.stderr[-3000:], file=sys.stderr)
-        return 2
+        return None, run.stdout[-3000:] + run.stderr[-3000:]
+    return mutations, None
 
+
+def count_mutations(mutations, changed, counts, survivors):
     by_file = {os.path.basename(p): lines for p, lines in changed.items()}
-    counts = collections.Counter()
-    survivors = []
     for m in ET.parse(mutations).getroot():
         source = m.findtext("sourceFile")
         line = int(m.findtext("lineNumber"))
@@ -123,13 +124,48 @@ def main():
         if status in ("SURVIVED", "NO_COVERAGE"):
             survivors.append({"file": source, "line": line, "status": status,
                               "mutator": m.findtext("mutator").split(".")[-1], "description": description})
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("worktree")
+    parser.add_argument("base")
+    parser.add_argument("--threshold", type=float, default=85)
+    parser.add_argument("--lock")
+    args = parser.parse_args()
+    worktree = os.path.abspath(args.worktree)
+    android_sdk.ensure_android_sdk_environment()
+    ensure_jars()
+
+    production_by_module = changed_kotlin_files(worktree, args.base, MAIN_SOURCE_SETS)
+    tests_by_module = changed_kotlin_files(worktree, args.base, TEST_SOURCE_SETS)
+    counts = collections.Counter()
+    survivors, modules, skipped = [], [], {}
+    for module_dir, production_files in sorted(production_by_module.items()):
+        changed = changed_lines(worktree, args.base, production_files)
+        tests = test_classes(worktree, tests_by_module.get(module_dir, []))
+        if not changed or not tests:
+            skipped[module_dir or "."] = "no changed lines" if not changed else "no changed tests"
+            continue
+        report_dir = os.path.join(worktree, "build", "pit-report", module_dir.replace("/", "-") or "root")
+        mutations, error = run_module(worktree, module_dir, changed, tests, report_dir)
+        if error:
+            print(f"PIT failed for {module_dir or '.'}:", error, file=sys.stderr)
+            return 2
+        count_mutations(mutations, changed, counts, survivors)
+        modules.append(module_dir or ".")
+    if not modules:
+        print(json.dumps({"skipped": "no module with changed production classes and changed tests", "modules": skipped}))
+        return 0
+
     killed = counts["KILLED"] + counts["TIMED_OUT"]
     total = killed + counts["SURVIVED"] + counts["NO_COVERAGE"]
     score = round(100 * killed / total, 1) if total else 100.0
     timings.record("pit", args.lock, worktree, ["run_pit.py", args.base], START_SECONDS, time.time(), 0 if score >= args.threshold else 1,
                    pit={"score": score, "killed": killed, "total": total})
     print(json.dumps({"score": score, "killed": killed, "total": total, "ignored_noise": counts["noise"],
-                      "threshold": args.threshold, "survivors": sorted(survivors, key=lambda s: (s["file"], s["line"]))}, indent=1))
+                      "threshold": args.threshold, "modules": modules, "skipped_modules": skipped,
+                      "survivors": sorted(survivors, key=lambda s: (s["file"], s["line"]))}, indent=1))
     return 0 if score >= args.threshold else 1
 
 
