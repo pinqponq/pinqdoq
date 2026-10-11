@@ -36,6 +36,11 @@ TRASH_DIR = CLAUDE_DIR / "pinqloq-trash"
 ROUTINES = [("pinqloq-task-runner", "runner-1", "scheduled"),
             ("pinqloq-task-runner-2", "runner-2", "manual"),
             ("pinqloq-task-runner-3", "runner-3", "manual")]
+LIGHT_ONLY_RUNNERS = {"runner-3"}
+LIGHT_ONLY_NOTE = (
+    "- You are a light-only runner (owner, 2026-10-12): preflight already looks only at tasks marked `weight: \"light\"`, "
+    "and you claim with `locks.py claim <session> --light-only`. Never claim, start or resume any other task, never "
+    "build a feature from scratch and never take verification retries; runners 1 and 2 do that.\n")
 RUNNER_FOLDER_README = """# pinqloq-runner
 
 Working folder for the pinqloq task runner routines (runner-1/2/3). Installed by pinqdoq
@@ -137,7 +142,10 @@ def write_routine_prompts(machine, dry_run):
     template_text = (RUNNER_DIR_IN_REPO / "templates" / "routine.md").read_text()
     routines_dir = runner_config.STATE_DIR / "routines"
     for task_id, runner_label, session_prefix in ROUTINES:
+        is_light_only = runner_label in LIGHT_ONLY_RUNNERS
         prompt = (template_text.replace("{TASK_ID}", task_id).replace("{RUNNER_LABEL}", runner_label)
+                  .replace("{LIGHT_ONLY_FLAG}", " --light-only" if is_light_only else "")
+                  .replace("{LIGHT_ONLY_NOTE}", LIGHT_ONLY_NOTE if is_light_only else "")
                   .replace("{SESSION_PREFIX}", session_prefix).replace("{WORKSPACE_DIR}", str(machine["workspace_dir"])))
         if not dry_run:
             routines_dir.mkdir(parents=True, exist_ok=True)

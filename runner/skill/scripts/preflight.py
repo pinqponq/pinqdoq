@@ -191,10 +191,10 @@ def check_verification_retries(tasks):
     return task_work
 
 
-def find_claimable_task():
+def find_claimable_task(light_only):
     captured_output = io.StringIO()
     with contextlib.redirect_stdout(captured_output):
-        exit_code = locks.print_claimable()
+        exit_code = locks.print_claimable(light_only)
     lines = captured_output.getvalue().splitlines()
     return (lines[0] if exit_code == 0 else None), lines[1:]
 
@@ -222,7 +222,7 @@ def collect_housekeeping(state, tasks, errors):
     return housekeeping, task_work
 
 
-def evaluate():
+def evaluate(light_only=False):
     errors = []
     with state_tx.locked_state():
         state = state_tx.read_state()
@@ -230,7 +230,10 @@ def evaluate():
     role = runner_config.read_machine_config()["role"]
 
     housekeeping, task_work = ([], []) if role == runner_config.QUEUE_ONLY_ROLE else collect_housekeeping(state, tasks, errors)
-    claimable_task, claim_skips = find_claimable_task()
+    if light_only:
+        # Verification retries need device runs and the pinqloq backend; runner-3 leaves them to runners 1 and 2.
+        task_work = []
+    claimable_task, claim_skips = find_claimable_task(light_only)
     if claimable_task:
         task_work.insert(0, "claimable task: " + claimable_task)
 
@@ -270,7 +273,7 @@ def main():
         session = "%s-%s" % (session_prefix, now_utc().strftime("%Y%m%d%H%M%S"))
     elif "--log-idle" in arguments:
         session = arguments[arguments.index("--log-idle") + 1]
-    result = evaluate()
+    result = evaluate(locks.LIGHT_ONLY_FLAG in arguments)
     if session:
         result = {"session": session, **result}
     print(json.dumps(result, ensure_ascii=False, indent=1))

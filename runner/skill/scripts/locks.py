@@ -21,6 +21,7 @@ and is replaced by the next contender.
   locks.py claim <session>                 pick the next task this session may work on, lock it and print its key
                                            (exit 4 and print the reasons when nothing is claimable)
   locks.py claimable                       print the task `claim` would pick, without locking it (exit 4 when none)
+  `claim` and `claimable` take `--light-only` (runner-3): only tasks with `weight: "light"` are picked
   locks.py lock <task-key> <session>       lock one specific task (exit 3 when held)
   locks.py touch <task-key>                refresh a task lock
   locks.py release <task-key>              release a task lock
@@ -60,6 +61,8 @@ EXIT_NOTHING_CLAIMABLE = 4
 
 CLAIMABLE_STATUS_ORDER = ["changes_requested", "in_progress", "selected"]
 DEPENDENCY_READY_STATUSES = {"pr_open", "merged", "done"}
+LIGHT_WEIGHT = "light"
+LIGHT_ONLY_FLAG = "--light-only"
 
 
 def lock_file_for(name):
@@ -173,8 +176,9 @@ def claim_order(task_item):
             task.get("updated_at", ""), task_key)
 
 
-def find_claimable_candidates():
-    """Yield (task_key, None) for each claimable task in claim order, or (task_key, reason) when skipped."""
+def find_claimable_candidates(light_only=False):
+    """Yield (task_key, None) for each claimable task in claim order, or (task_key, reason) when skipped.
+    light_only: runner-3 takes only tasks marked `weight: "light"`; an unmarked task counts as heavy."""
     tasks = read_tasks()
     task_statuses = read_task_statuses()
     candidates = sorted(
@@ -183,6 +187,9 @@ def find_claimable_candidates():
     for task_key, task in candidates:
         if is_held(lock_file_for(task_lock_name(task_key))):
             yield task_key, "locked by another session"
+            continue
+        if light_only and task.get("weight") != LIGHT_WEIGHT:
+            yield task_key, "not a light task (runner-3 takes only light tasks)"
             continue
         open_question_ids = [question.split(":", 1)[0].strip() for question in task.get("open_questions") or []]
         if open_question_ids:
@@ -195,9 +202,9 @@ def find_claimable_candidates():
         yield task_key, None
 
 
-def print_claimable():
+def print_claimable(light_only=False):
     skipped_reasons = []
-    for task_key, skip_reason in find_claimable_candidates():
+    for task_key, skip_reason in find_claimable_candidates(light_only):
         if skip_reason is None:
             print(task_key)
             return 0
@@ -208,12 +215,12 @@ def print_claimable():
     return EXIT_NOTHING_CLAIMABLE
 
 
-def claim(session):
+def claim(session, light_only=False):
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
     with open(CLAIM_MUTEX_FILE, "a") as mutex_stream:
         fcntl.flock(mutex_stream, fcntl.LOCK_EX)
         skipped_reasons = []
-        for task_key, skip_reason in find_claimable_candidates():
+        for task_key, skip_reason in find_claimable_candidates(light_only):
             if skip_reason:
                 skipped_reasons.append("%s: %s" % (task_key, skip_reason))
                 continue
@@ -352,10 +359,12 @@ def main():
     arguments = sys.argv[1:]
     command = arguments[0] if arguments else ""
 
+    light_only = LIGHT_ONLY_FLAG in arguments
+    arguments = [argument for argument in arguments if argument != LIGHT_ONLY_FLAG]
     if command == "claim" and len(arguments) == 2:
-        sys.exit(claim(arguments[1]))
+        sys.exit(claim(arguments[1], light_only))
     if command == "claimable" and len(arguments) == 1:
-        sys.exit(print_claimable())
+        sys.exit(print_claimable(light_only))
     if command == "lock" and len(arguments) == 3:
         lock_file = lock_file_for(task_lock_name(arguments[1]))
         if try_acquire(lock_file, arguments[2]):
