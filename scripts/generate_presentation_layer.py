@@ -202,7 +202,7 @@ class {feature_name_pascal}ViewModel(
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
-import core.presentation.CustomLaunchedEffect
+import core.presentation.baseviewmodel.InitEffect
 import core.presentation.baseviewmodel.SIDE_EFFECTS_KEY
 import core.presentation.baseviewmodel.StateLayout
 import kotlinx.coroutines.flow.collect
@@ -216,7 +216,7 @@ fun {feature_name_pascal}Screen(
 ) {{
     val state = viewModel.getState()
 
-    CustomLaunchedEffect(key = Unit) {{ isInit ->
+    InitEffect(viewModel = viewModel) {{ isInit ->
         viewModel.setEvent(
             {feature_name_pascal}Contract.Event.Init(
                 isInit = isInit
