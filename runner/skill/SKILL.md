@@ -39,6 +39,7 @@ Turn Todo cards on the pinqponq Project #9 board into ready-for-review PRs, with
   - `state-archive.json` — merged/skipped/declined/done tasks moved out by `cleanup.py` after 3 days. `state_tx.py keys` / `statuses` cover both files; `archived <key>` shows one, `restore <key>` brings it back before you change it (e.g. a reply about an archived task).
   - `board_items.json`, `board_project.json` — `board.py` caches.
   - `locks/` — lock files; touched only by `scripts/locks.py`.
+  - `open_questions` entries always use the format shown above: `S<n>: <question>` and, when there are choices, one trailing `(A: … / B: … / C: …; öneri X)`. The web panel turns that into selectable options with a free-text "Diğer" answer; a question written any other way shows up without options.
   - `sent_mails.jsonl` — maintained by `mailer.py`.
   - `media/<repo>-<number>/` — screenshots and recordings.
   - `runs.log` — one line per run: timestamp, what changed. Append only with `python3 ~/.claude/skills/pinqloq-task-runner/scripts/runlog.py <session> "<text>"` (it adds the timestamp and session; use `-` to read long text from stdin).
@@ -54,7 +55,7 @@ Turn Todo cards on the pinqponq Project #9 board into ready-for-review PRs, with
       "proposal_number": 3,
       "proposal_message_id": "<…>",
       "question_message_id": "<…>",
-      "open_questions": ["…"],
+      "open_questions": ["S34: Galeriye giriş nereden olsun? (A: banner satırı / B: ⋯ menüsü / C: giriş yok; öneri A)"],
       "answers": [{"from": "…", "message_id": "<…>", "summary": "…"}],
       "branch": "task/412-short-slug",
       "worktree": "~/StudioProjects/.task-runner-worktrees/rindle-cmp-412",
