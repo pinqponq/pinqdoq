@@ -4,10 +4,10 @@
   runner_config.py            print the merged configuration as JSON (no secrets are stored in it)
 
 Two files:
-- `<skill>/config.json` (in pinqdoq, public): the team's board coordinates, mail server and
-  addressing rules that hold on every machine. No personal addresses.
+- `<skill>/config.json` (in pinqdoq, public): the team's board coordinates and settings that hold
+  on every machine. No personal addresses.
 - `~/.claude/pinqloq-task-runner/machine.json` (local, never committed): this machine's role,
-  folders and the mail recipients. `install.py` creates it; every key has a default, so a missing
+  folders. `install.py` creates it; every key has a default, so a missing
   file means "primary runner with the default folders".
 
 Roles:
@@ -33,9 +33,10 @@ DEFAULT_MACHINE_CONFIG = {
     "workspace_dir": "~/StudioProjects",
     "worktrees_dir": "~/StudioProjects/.task-runner-worktrees",
     "runner_dir": "~/StudioProjects/pinqloq-runner",
-    "mail_cc": [],
 }
 PATH_KEYS = ("workspace_dir", "worktrees_dir", "runner_dir")
+# Keys older machine.json files still carry; mail_cc lost its use when the runner stopped mailing (2026-10-11).
+RETIRED_KEYS = {"mail_cc"}
 
 
 def read_team_config():
@@ -44,6 +45,7 @@ def read_team_config():
 
 def read_machine_config():
     stored = json.loads(MACHINE_CONFIG_FILE.read_text()) if MACHINE_CONFIG_FILE.exists() else {}
+    stored = {key: value for key, value in stored.items() if key not in RETIRED_KEYS}
     unknown_keys = sorted(set(stored) - set(DEFAULT_MACHINE_CONFIG))
     if unknown_keys:
         raise ValueError("%s has unknown keys: %s" % (MACHINE_CONFIG_FILE, ", ".join(unknown_keys)))

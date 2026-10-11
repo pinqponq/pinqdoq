@@ -2,13 +2,13 @@
 """Install the pinqloq task runner on this machine from a pinqdoq checkout.
 
   python3 <pinqdoq>/runner/skill/scripts/install.py [--role primary|queue-only] [--workspace DIR]
-          [--worktrees DIR] [--runner-dir DIR] [--mail-cc ADDRESS ...] [--replace] [--dry-run]
+          [--worktrees DIR] [--runner-dir DIR] [--replace] [--dry-run]
 
 What it does (idempotent, run it again after moving the checkout):
 1. Links ~/.claude/skills/pinqloq-task-runner and ~/.claude/agents/pin-*.md to the checkout, so `git pull` in pinqdoq updates the runner. An existing real file or folder at
    one of those places is left alone unless --replace is given; then it is moved (never deleted) to
    ~/.claude/pinqloq-trash/<timestamp>/.
-2. Creates the state folder and machine.json (role, folders, mail CC). An existing machine.json is
+2. Creates the state folder and machine.json (role, folders). An existing machine.json is
    never overwritten; differing options are reported.
 3. Creates the runner folder with its README and .claude/settings.local.json (permissions + the
    pinq-ponq git/gh identity) from templates/. An existing settings file is never overwritten.
@@ -79,7 +79,7 @@ def install_link(link_path, target, replace, trash_session_dir, dry_run):
 
 def write_machine_config(arguments, dry_run):
     requested = {"role": arguments.role, "workspace_dir": arguments.workspace, "worktrees_dir": arguments.worktrees,
-                 "runner_dir": arguments.runner_dir, "mail_cc": arguments.mail_cc}
+                 "runner_dir": arguments.runner_dir}
     requested = {key: value for key, value in requested.items() if value is not None}
     config_file = runner_config.MACHINE_CONFIG_FILE
     if config_file.exists():
@@ -153,7 +153,6 @@ def parse_arguments():
     parser.add_argument("--workspace")
     parser.add_argument("--worktrees")
     parser.add_argument("--runner-dir")
-    parser.add_argument("--mail-cc", nargs="+")
     parser.add_argument("--replace", action="store_true", help="move existing real files at the link places to the trash")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()

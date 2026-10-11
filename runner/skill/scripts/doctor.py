@@ -3,7 +3,7 @@
 
   doctor.py            exit 0 when every required check passes, 1 otherwise
 
-It only reads: it never prints or stores secret values (it checks that the Keychain entry, the gh
+It only reads: it never prints or stores secret values (it checks that the gh
 login, the MCP server entry and test-accounts.json exist, not what they contain).
 """
 import json
@@ -90,7 +90,6 @@ def check_machine(report):
     report.check(worktrees_ready, "worktrees %s" % machine["worktrees_dir"], "create it (an external disk is fine; link it)")
     settings_file = machine["runner_dir"] / ".claude" / "settings.local.json"
     report.check(settings_file.exists(), "runner folder settings %s" % settings_file, "run install.py")
-    report.check(bool(machine["mail_cc"]), "mail_cc in machine.json", "add the team addresses to machine.json `mail_cc`", required=False)
     return machine
 
 
@@ -105,11 +104,6 @@ def check_github(report):
 
 
 def check_secrets(report, machine):
-    team_config = runner_config.read_team_config()
-    keychain = run_quietly(["security", "find-generic-password", "-a", team_config["username"], "-s", team_config["keychain_service"]])
-    report.check(keychain.returncode == 0, "Keychain entry %s" % team_config["keychain_service"],
-                 "security add-generic-password -a %s -s %s -w   (the SMTP app password; type it yourself)"
-                 % (team_config["username"], team_config["keychain_service"]))
     test_accounts_file = runner_config.STATE_DIR / "test-accounts.json"
     report.check(test_accounts_file.exists(), "test-accounts.json", "copy it by hand from the primary machine (never commit it)",
                  required=machine is None or machine["role"] == runner_config.PRIMARY_ROLE)

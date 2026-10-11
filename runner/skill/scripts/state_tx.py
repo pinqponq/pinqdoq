@@ -12,7 +12,7 @@ replaces the file atomically.
   state_tx.py append <list> '<json value>'       append to a top-level list (skipped if already present)
   state_tx.py remove <list> '<json value>'       remove a value from a top-level list
   state_tx.py clear <list>                       empty a top-level list
-  state_tx.py summary                            one line per active task + pending lists (read this, not `get`)
+  state_tx.py summary                            one line per active task (read this, not `get`)
   state_tx.py keys                               every known task key, active and archived (new-card detection)
   state_tx.py statuses                           {task key: status} for active and archived tasks
   state_tx.py archive [--days N]                 move merged/skipped/declined/done tasks untouched for N days
@@ -141,8 +141,6 @@ def print_summary():
         archive = read_archive()
     for task_key, task in sorted(state.get("tasks", {}).items(), key=lambda item: item[1].get("status", "")):
         print(summarize_task(task_key, task))
-    print("pending_report=%s" % json.dumps(state.get("pending_report", []), ensure_ascii=False))
-    print("pending_announcements=%d" % len(state.get("pending_announcements", [])))
     print("archived_tasks=%d (state_tx.py archived <key>)" % len(archive["tasks"]))
 
 
@@ -150,7 +148,7 @@ QUESTION_NUMBER_PATTERN = re.compile(r"\bS(\d+)\b")
 
 
 def highest_used_question_number(state, archive):
-    # Seeds the counter from every question number already mailed, so the first reserved number
+    # Seeds the counter from every question number already used, so the first reserved number
     # never repeats one the team has seen.
     text = json.dumps(state, ensure_ascii=False) + json.dumps(archive, ensure_ascii=False)
     return max([int(number) for number in QUESTION_NUMBER_PATTERN.findall(text)] or [0])

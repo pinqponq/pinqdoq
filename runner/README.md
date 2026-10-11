@@ -9,8 +9,8 @@ Unlike the rest of pinq-doq, nothing here is delivered into a project's `.claude
 ```
 runner/
   skill/        → linked as ~/.claude/skills/pinqloq-task-runner (SKILL.md, references/, scripts/, templates/)
-    config.json     team configuration (board, mail server, To address); public, no personal data
-    scripts/        state, locks, board, mail, build/PIT wrappers, preflight, install.py, doctor.py
+    config.json     team configuration (board, lesson PR reviewer); public, no personal data
+    scripts/        state, locks, board, run reports, build/PIT wrappers, preflight, install.py, doctor.py
   agents/       → linked as ~/.claude/agents/pin-test.md, pin-review.md, pin-device.md
   templates/    routine prompt and the runner folder's settings.local.json, rendered by install.py
 ```
@@ -19,8 +19,8 @@ runner/
 
 | Where | What | Committed? |
 |---|---|---|
-| `~/.claude/pinqloq-task-runner/` | `state.json` and archive, locks, runs.log, timings, sent mails, board cache, media, handoffs | never |
-| `~/.claude/pinqloq-task-runner/machine.json` | `role`, `workspace_dir`, `worktrees_dir`, `runner_dir`, `mail_cc` | never |
+| `~/.claude/pinqloq-task-runner/` | `state.json` and archive, locks, runs.log, timings, run reports, board cache, media, handoffs | never |
+| `~/.claude/pinqloq-task-runner/machine.json` | `role`, `workspace_dir`, `worktrees_dir`, `runner_dir` | never |
 | `~/.claude/pinqloq-task-runner/test-accounts.json` | test account sign-in values | never |
 | macOS Keychain `pinqloq-smtp` | SMTP app password | never |
 | `~/.config/gh-pinq-ponq` | the `pinq-ponq` bot's gh login | never |
@@ -32,7 +32,7 @@ Project-specific device setup (test accounts, emulator snapshots, simulators, th
 ## Roles
 
 - **primary** — the full runner: board scan, proposals, comment decisions, reminders, verification retries.
-- **queue-only** — a second machine: works only on the tasks the owner queues in that machine's panel (or chat). Preflight skips every housekeeping check, so it never repeats the primary's proposals, mails or comment decisions. The owner answers its questions in its panel.
+- **queue-only** — a second machine: works only on the tasks the owner queues in that machine's panel (or chat). Preflight skips every housekeeping check, so it never repeats the primary's proposals or comment decisions. The owner follows its reports and decisions in its panel.
 
 Each machine has its own state and queue; they do not coordinate, so give each task to one machine.
 
@@ -42,7 +42,7 @@ Follow [`../tasks/install-runner.md`](../tasks/install-runner.md). In short:
 
 ```bash
 git clone https://github.com/pinqponq/pinqdoq ~/StudioProjects/.pinqdoq-runner
-python3 ~/StudioProjects/.pinqdoq-runner/runner/skill/scripts/install.py --role queue-only --mail-cc <team addresses>
+python3 ~/StudioProjects/.pinqdoq-runner/runner/skill/scripts/install.py --role queue-only
 python3 ~/.claude/skills/pinqloq-task-runner/scripts/doctor.py
 ```
 

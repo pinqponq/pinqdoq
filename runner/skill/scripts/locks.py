@@ -4,7 +4,7 @@
 There is no global run lock any more. Instead:
   - every task a session works on is locked, so two sessions never work on the same task;
   - a task whose dependency (`blocked_by`) is locked or not yet ready is never claimed;
-  - the shared steps (mail replies, board scan, proposal mail, card-column check) run in one
+  - the shared steps (comment decisions, board scan, proposals, card-column check) run in one
     session at a time under the housekeeping lock; other sessions skip them;
   - each device has its own lock (devices-android, devices-ios), because two sessions driving the same
     emulator crash each other's Maestro runs (2026-09-30); one session can test on Android while
@@ -34,9 +34,6 @@ and is replaced by the next contender.
                                            touch/release only the device locks this session holds (all of them when
                                            neither --platform nor --couple is given)
   locks.py status                          list all locks with age and owner
-  locks.py report-gate <session>           before a finishing run mail: print "send", or "defer: <sessions>" and exit 3
-                                           while another session still holds a task lock (its mail will carry this
-                                           run's report from pending_report); never defers a report longer than 90 min
 """
 import fcntl
 import json
@@ -60,9 +57,6 @@ LEGACY_DEVICES_LOCK_NAME = "devices"
 ALL_DEVICE_LOCK_NAMES = ["devices-android", "devices-ios", COUPLE_LOCK_NAME, LEGACY_DEVICES_LOCK_NAME]
 EXIT_LOCK_HELD = 3
 EXIT_NOTHING_CLAIMABLE = 4
-EXIT_REPORT_DEFERRED = 3
-MAX_REPORT_DEFER_SECONDS = 90 * 60
-REPORT_DEFERRED_SINCE_FIELD = "report_deferred_since"
 
 CLAIMABLE_STATUS_ORDER = ["changes_requested", "in_progress", "selected"]
 DEPENDENCY_READY_STATUSES = {"pr_open", "merged", "done"}
@@ -316,38 +310,6 @@ def update_device_locks(action, session, lock_names):
     return 0
 
 
-def find_other_task_sessions(session):
-    other_sessions = set()
-    for lock_file in LOCK_DIR.glob("task-*.lock"):
-        holder = holder_session(lock_file)
-        if holder and holder != session and is_held(lock_file):
-            other_sessions.add(holder)
-    return sorted(other_sessions)
-
-
-def patch_state(patch):
-    subprocess.run([sys.executable, str(STATE_TX_SCRIPT), "patch"], input=json.dumps(patch),
-                   check=True, capture_output=True, text=True)
-
-
-def gate_report(session):
-    # Two runners finishing close together used to send two mails minutes apart (owner, 2026-10-11).
-    # The last runner to finish sends one mail for both; the cap keeps a stuck runner from holding reports back.
-    other_sessions = find_other_task_sessions(session)
-    deferred_since = run_state_tx("get").get(REPORT_DEFERRED_SINCE_FIELD)
-    now = time.time()
-    defer_expired = deferred_since is not None and now - deferred_since > MAX_REPORT_DEFER_SECONDS
-    if not other_sessions or defer_expired:
-        if deferred_since is not None:
-            patch_state({REPORT_DEFERRED_SINCE_FIELD: None})
-        print("send")
-        return 0
-    if deferred_since is None:
-        patch_state({REPORT_DEFERRED_SINCE_FIELD: now})
-    print("defer: " + ", ".join(other_sessions))
-    return EXIT_REPORT_DEFERRED
-
-
 def print_status():
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
     lock_files = sorted(LOCK_DIR.glob("*.lock"))
@@ -424,8 +386,6 @@ def main():
         if action == "release":
             release(lock_file)
             return
-    if command == "report-gate" and len(arguments) == 2:
-        sys.exit(gate_report(arguments[1]))
     if command == "status":
         print_status()
         return

@@ -15,7 +15,7 @@ GraphQL query) and prints one JSON object:
 
 A queue-only machine (machine.json `role`) skips every housekeeping check: it only works on tasks
 the owner queued on this machine, so a second machine never repeats the primary's proposals,
-mails or comment decisions.
+proposals or comment decisions.
 
   preflight.py [--new-session <prefix> | --log-idle <session>]
       --new-session generates the session id (<prefix>-<UTC yyyymmddHHMMSS>) and returns it as `session`;
@@ -40,7 +40,6 @@ import runner_config  # noqa: E402
 import state_tx  # noqa: E402
 
 RUNS_LOG_FILE = state_tx.STATE_DIR / "runs.log"
-REMINDER_INTERVAL = timedelta(hours=24)
 VERIFICATION_RETRY_INTERVAL = timedelta(hours=6)
 RUNNER_COMMENT_PREFIX = "🤖"
 STARTED_STATUSES = {"in_progress", "waiting_reply", "changes_requested", "verification_blocked"}
@@ -61,7 +60,7 @@ def parse_time(timestamp):
 def check_project_scope():
     completed = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True)
     auth_output = completed.stdout + completed.stderr
-    return [] if "'project'" in auth_output else ["gh token has no project scope (step 0.1 mail)"]
+    return [] if "'project'" in auth_output else ["gh token has no project scope (step 0.1 report)"]
 
 
 def check_board(tasks, known_keys):
@@ -181,30 +180,6 @@ def check_github_activity(tasks, last_housekeeping_at):
     return reasons, task_work
 
 
-def check_reminders(tasks):
-    reasons = []
-    for task_key, task in tasks.items():
-        if task.get("status") != "waiting_reply" or not task.get("open_questions"):
-            continue
-        # The owner said they will come back with something (e.g. test accounts); no reminders until then.
-        if task.get("waiting_on"):
-            continue
-        last_contact_times = [parse_time(task.get(field)) for field in ("last_reminder_at", "updated_at")]
-        last_contact = max([contact_time for contact_time in last_contact_times if contact_time] or [None])
-        if last_contact is None or now_utc() - last_contact >= REMINDER_INTERVAL:
-            reasons.append("%s question reminder due" % task_key)
-    return reasons
-
-
-def check_pending_lists(state):
-    reasons = []
-    if state.get("pending_report"):
-        reasons.append("pending_report: " + ", ".join(state["pending_report"]))
-    if state.get("pending_announcements"):
-        reasons.append("%d pending announcement(s)" % len(state["pending_announcements"]))
-    return reasons
-
-
 def check_verification_retries(tasks):
     task_work = []
     for task_key, task in tasks.items():
@@ -243,8 +218,6 @@ def collect_housekeeping(state, tasks, errors):
     if activity:
         housekeeping += activity[0]
         task_work += activity[1]
-    housekeeping += check_reminders(tasks)
-    housekeeping += check_pending_lists(state)
     task_work += check_verification_retries(tasks)
     return housekeeping, task_work
 
