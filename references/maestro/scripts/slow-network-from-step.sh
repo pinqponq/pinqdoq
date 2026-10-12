@@ -26,7 +26,10 @@ trigger_file="$(mktemp -u)"
 previous_run="$(ls -t "$MAESTRO_TESTS_DIR" 2>/dev/null | head -1 || true)"
 
 previous_http_proxy="$(adb shell settings get global http_proxy | tr -d '\r')"
-[[ "$previous_http_proxy" == "null" ]] && previous_http_proxy=":0"
+# "null" = never set; our own proxy address = left behind by a run that was killed.
+if [[ "$previous_http_proxy" == "null" || "$previous_http_proxy" == "10.0.2.2:$PROXY_PORT" ]]; then
+  previous_http_proxy=":0"
+fi
 proxy_log="${TMPDIR:-/tmp}/slow-proxy.log"
 python3 "$script_dir/slow-proxy.py" "$PROXY_PORT" "$trigger_file" "$delay_seconds" 2>"$proxy_log" &
 proxy_pid=$!

@@ -27,7 +27,9 @@ async def pipe(reader, writer, is_upstream):
                 await asyncio.sleep(DELAY_SECONDS)
             writer.write(data)
             await writer.drain()
-    except (ConnectionError, asyncio.CancelledError):
+    except ConnectionError as error:
+        print(f"connection closed: {error}", file=sys.stderr)
+    except asyncio.CancelledError:
         pass
     finally:
         writer.close()

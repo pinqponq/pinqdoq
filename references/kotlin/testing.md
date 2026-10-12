@@ -47,8 +47,11 @@ Commands:
 ```kotlin
 private val environment = ViewModelTestEnvironment()
 
-@BeforeTest fun setUp() = environment.start()
-@AfterTest fun tearDown() = environment.stop()
+@BeforeTest
+fun setUp() = environment.start()
+
+@AfterTest
+fun tearDown() = environment.stop()
 ```
 
 - `environment.recordingInterceptor.recordedEvents` / `recordedEffects` / `recordedErrors` / `recordedSilentErrors` show what every view model reported to the interceptors, each with the view model's name. `RecordingInterceptor(errorDecision = ErrorDecision.HANDLED)` passed to `start` lets a test act as an app interceptor that swallows errors.
@@ -143,11 +146,11 @@ fun invalidEmail() = runDesktopComposeUiTest(width = PHONE_SCREENSHOT_WIDTH_PX, 
             AppTheme { LoginScreenContent(state = State(LoginContract.State(email = "not-an-email", isEmailErrorVisible = true)), onEventSent = {}) }
         }
     }
-    onRoot().captureRoboImage(filePath = screenshotPath(name = "login_invalid_email"))
+    onRoot().captureRoboImage(filePath = createScreenshotPath(name = "login_invalid_email"))
 }
 ```
 
-The canvas, density, `LARGE_FONT_SCALE` and `screenshotPath` come from `core.testing` (core-testing, desktop). Screen-level: main states on a phone canvas plus a `fontScale = LARGE_FONT_SCALE` variant. Google's guidance adds nine window sizes (widths 400/610/900 dp × heights 400/500/1000 dp) — apply it to apps that ship adaptive layouts (tablet/desktop/web), not to phone-only screens.
+The canvas, density, `LARGE_FONT_SCALE` and `createScreenshotPath` come from `core.testing` (core-testing, desktop). Screen-level: main states on a phone canvas plus a `fontScale = LARGE_FONT_SCALE` variant. Google's guidance adds nine window sizes (widths 400/610/900 dp × heights 400/500/1000 dp) — apply it to apps that ship adaptive layouts (tablet/desktop/web), not to phone-only screens.
 
 ## 7. String resource escapes
 
