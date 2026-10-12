@@ -28,6 +28,9 @@ pinq-doq/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
       naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md, testing.md
+    widget/
+      widget-setup.md           home screen widget setup with deveng-widget + production lessons
+      ios/                      Swift templates for the widget extension and the app's reload helper
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
