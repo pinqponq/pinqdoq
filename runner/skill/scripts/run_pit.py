@@ -26,6 +26,11 @@ PIT_JARS = [
 ]
 NOISE = ("kotlin/ResultKt::throwOnFailure",)
 UNIT_LAMBDA = re.compile(r"replaced return value with null for .*\$lambda")
+SUSPEND_RETURN = re.compile(r"replaced return value with null for .*::invokeSuspend")
+COMPOSE_RUNTIME_CALL = "removed call to androidx/compose/runtime/"
+COMPOSE_MASK_OPERATION = re.compile(r"Replaced (bitwise (AND|OR)|Shift (Left|Right))")
+SERIALIZER_CLASS_SUFFIX = "$$serializer"
+SERIALIZER_METHOD_PREFIX = "write$Self"
 MAIN_SOURCE_SETS = ("commonMain", "desktopMain", "jvmMain")
 TEST_SOURCE_SETS = ("commonTest", "desktopTest", "jvmTest")
 SOURCE_SET_PATH = re.compile(r"^(?:(.+)/)?src/([A-Za-z]+)/kotlin/")
@@ -108,15 +113,36 @@ def run_module(worktree, module_dir, changed, tests, report_dir):
     return mutations, None
 
 
+def composable_methods(root):
+    """(class, method) pairs the Compose compiler instrumented; they carry its generated changed/default mask arithmetic."""
+    return {(m.findtext("mutatedClass"), m.findtext("mutatedMethod"))
+            for m in root if COMPOSE_RUNTIME_CALL in (m.findtext("description") or "")}
+
+
+def is_compiler_generated(m, description, composables):
+    """Mutations in code the Kotlin/Compose compiler writes: nothing a test can meaningfully kill."""
+    mutated_class = m.findtext("mutatedClass") or ""
+    mutated_method = m.findtext("mutatedMethod") or ""
+    if any(noise in description for noise in NOISE) or UNIT_LAMBDA.search(description) or SUSPEND_RETURN.search(description):
+        return True
+    if COMPOSE_RUNTIME_CALL in description:
+        return True
+    if mutated_class.endswith(SERIALIZER_CLASS_SUFFIX) or mutated_method.startswith(SERIALIZER_METHOD_PREFIX):
+        return True
+    return (mutated_class, mutated_method) in composables and bool(COMPOSE_MASK_OPERATION.search(description))
+
+
 def count_mutations(mutations, changed, counts, survivors):
     by_file = {os.path.basename(p): lines for p, lines in changed.items()}
-    for m in ET.parse(mutations).getroot():
+    root = ET.parse(mutations).getroot()
+    composables = composable_methods(root)
+    for m in root:
         source = m.findtext("sourceFile")
         line = int(m.findtext("lineNumber"))
         if line not in by_file.get(source, ()):
             continue
         description = m.findtext("description") or ""
-        if any(noise in description for noise in NOISE) or UNIT_LAMBDA.search(description):
+        if is_compiler_generated(m, description, composables):
             counts["noise"] += 1
             continue
         status = m.get("status")
