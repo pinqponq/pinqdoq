@@ -66,6 +66,7 @@ This guide ensures that when building or vibecoding an app that depends on **dev
 - Use **PaginatedFlowLoader** and **PaginatedListView** (and **PageResult** / **PaginatedListState**) for paginated lists with load-more and retry; do not reimplement pagination state or list UI that core already provides.
 - Use core **presentation** components and **theme** (e.g. CustomButton, CustomHeader, CustomDialog, CustomTextField, CustomDatePicker, PaginatedListView, AppTheme, typography) when the UI need matches what they provide.
 - For **SwipeCards** overlay actions and **left/right swipe button tint while dragging**, use **SwipeCardsTheme** inside **ComponentTheme** (`negativeSwipeHighlightColor`, `positiveSwipeHighlightColor`, `swipeHighlightIconTintBlend`, plus base `buttonBackgroundColor` / `buttonIconTint`). Do not fork that styling in the app unless the user explicitly wants a one-off.
+- When **moving app code into deveng-core-kmp**, put it in the existing `deveng-core` module (published as `global.deveng:core-kmp`). Do not add a new Gradle module or Maven artifact for it unless the owner explicitly asks for one; splitting core into modules is a separate refactor.
 
 ### SHOULD
 
