@@ -1,60 +1,32 @@
 # Testing — Setup and Worked Examples
 
-Deep reference for `rules/kotlin-testing.md`. The first working setup is rindle-cmp (`chore/test-infrastructure`); copy from there when adding tests to another KMP app.
+Deep reference for `rules/kotlin-testing.md`. The shared test infrastructure ships with deveng-core-kmp: the `global.deveng.testing` Gradle plugin and the `global.deveng:core-testing-kmp` library (test environment, fakes, robot base, screenshot defaults, string escape check). First user: rindle-cmp.
 
 ## 1. Gradle setup (single KMP module)
 
-`gradle/libs.versions.toml`:
+One line in the module's `plugins` block turns the whole setup on:
 
 ```toml
-[versions]
-kotlinx-coroutines-test = "1.10.2"
-turbine = "1.2.1"
-kover = "0.9.11"
-roborazzi = "1.76.0"   # pick the release whose ui-test-junit4-desktop matches your Compose Multiplatform minor
-
-[libraries]
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
-turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
-roborazzi-compose-desktop = { module = "io.github.takahirom.roborazzi:roborazzi-compose-desktop", version.ref = "roborazzi" }
-
+# gradle/libs.versions.toml — same version as global.deveng:core-kmp
 [plugins]
-kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+deveng-testing = { id = "global.deveng.testing", version.ref = "devengCoreKmp" }
 ```
-
-Module `build.gradle.kts`:
 
 ```kotlin
+// root build.gradle.kts
+plugins {
+    alias(libs.plugins.deveng.testing) apply false
+}
+
+// module build.gradle.kts — by id: the root already loaded it with its version, and an id without
+// a version also resolves when deveng-core-kmp is a local composite build
 plugins {
     // …
-    alias(libs.plugins.kover)
-    alias(libs.plugins.roborazzi)
-}
-
-kotlin {
-    sourceSets {
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-            implementation(libs.kotlinx.coroutines.test)
-            implementation(libs.turbine)
-        }
-        val desktopTest by getting {
-            dependencies {
-                @OptIn(ExperimentalComposeLibrary::class)
-                implementation(compose.uiTest)
-                implementation(libs.roborazzi.compose.desktop)
-            }
-        }
-    }
-}
-
-// Screenshot baselines and resource lookups depend on the JVM locale; pin it.
-tasks.withType<Test>().configureEach {
-    systemProperty("user.language", "en")
-    systemProperty("user.country", "US")
+    id("global.deveng.testing")
 }
 ```
+
+The plugin (only on Kotlin Multiplatform modules) applies Kover and Roborazzi, adds `kotlin-test` and `core-testing-kmp` to `commonTest` (which brings `kotlinx-coroutines-test`, Turbine and, on desktop, Compose UI test) and `roborazzi-compose-desktop` to `desktopTest`, and pins every `Test` task to the `en_US` locale so screenshot baselines and string lookups match on every machine. Do not declare those dependencies or plugins again; keep only project-specific test dependencies (e.g. `multiplatform-settings-test`). The root `apply false` line replaces separate `kover` / `roborazzi` entries there, so the plugins load once.
 
 Kover provides a variant per JVM target automatically (`koverHtmlReportDesktop`); do not `createVariant("desktop")` — the name is reserved.
 
@@ -70,29 +42,18 @@ Commands:
 
 ## 2. ViewModel test environment
 
-A `BaseViewModel` that injects collaborators itself (`KoinComponent` + `by inject()`) needs Koin running in tests. Wrap that in one class, used by composition (not inheritance, which kotlin.test does not reliably support across targets):
+`core.testing.ViewModelTestEnvironment` (core-testing) runs a deveng-core `BaseViewModel` outside the app: `start()` sets `Dispatchers.Main` to `testDispatcher` (unconfined) and replaces the process-wide `ViewModelInterceptors` registry with its `RecordingInterceptor` plus the interceptors you pass; `stop()` empties the registry and resets `Main`. Use it by composition (not inheritance, which kotlin.test does not reliably support across targets):
 
 ```kotlin
-@OptIn(ExperimentalCoroutinesApi::class)
-class ViewModelTestEnvironment {
-    val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
-    val logologRepository = FakeLogologRepository()
-    val conversionAnalyticsClient = FakeConversionAnalyticsClient()
-    // … one fake per collaborator BaseViewModel injects
+private val environment = ViewModelTestEnvironment()
 
-    fun start(additionalModules: List<Module> = emptyList()) {
-        Dispatchers.setMain(testDispatcher)
-        startKoin { modules(listOf(createBaseViewModelModule()) + additionalModules) }
-    }
-
-    fun stop() {
-        stopKoin()
-        Dispatchers.resetMain()
-    }
-}
+@BeforeTest fun setUp() = environment.start()
+@AfterTest fun tearDown() = environment.stop()
 ```
 
-`by inject()` is lazy, so only register what the base class resolves on common paths; document the rest (e.g. a sign-out use case resolved only on `UnauthorizedError`) and let the tests that need it pass an extra module.
+- `environment.recordingInterceptor.recordedEvents` / `recordedEffects` / `recordedErrors` / `recordedSilentErrors` show what every view model reported to the interceptors, each with the view model's name. `RecordingInterceptor(errorDecision = ErrorDecision.HANDLED)` passed to `start` lets a test act as an app interceptor that swallows errors.
+- `environment.errorPrinter` is a `FakeErrorPrinter` (prints the exception message) for view models that take an `ErrorPrinter`.
+- App-specific interceptors (logging, analytics, session) that need Koin: the app keeps a thin wrapper that starts Koin with fakes, then calls `start(additionalInterceptors = listOf(…))` (rindle: `RindleViewModelTestEnvironment`). Register only what common paths resolve; let tests that need more pass an extra module.
 
 ## 3. ViewModel test
 
@@ -127,7 +88,7 @@ class LoginViewModelTest {
 ```
 
 - Synchronous state changes can be asserted directly on `currentUiState` / `currentState` because the dispatcher is unconfined.
-- Effects are a `Channel`: always read them with Turbine inside `effect.test { }`, started **before** sending the event.
+- Effects are a `Channel`: always read them with Turbine inside `effect.test { }`, started **before** sending the event. For one event and one effect, `viewModel.awaitEffectAfterEvent(event)` (core-testing) does exactly that; `viewModel.testUiStates { … }` runs Turbine over the distinct `uiState` values.
 - Errors: throw the same exception type the networking layer throws (`DevengException(DevengUiError.NotFoundError(...))`) from the fake.
 
 ## 4. Fakes
@@ -146,26 +107,26 @@ class FakeLoginRepository : LoginRepository {
 }
 ```
 
-Configurable results as `var`s, recorded calls as lists, no behavior beyond what the interface promises. Repositories return domain types directly (no `Result` wrappers — see `data-layer.md`), so fakes do too.
+Configurable results as `var`s, recorded calls as lists, no behavior beyond what the interface promises. Fakes for deveng-core interfaces come with core-testing — `FakeErrorPrinter`, `FakeTempFileRepository` (in memory) and, on desktop, `FakePermissionsController` (all in `core.testing.fake`); never copy them into a project. A library that adds an interface ships its fake with it. Repositories return domain types directly (no `Result` wrappers — see `data-layer.md`), so fakes do too.
 
 ## 5. Compose UI behavior test with a robot
 
+Robots extend `core.testing.ScreenRobot<Event>` (core-testing, desktop): it keeps `sentEvents`, records them through `recordEvent`, and resolves string resources with `resolveString`.
+
 ```kotlin
 @OptIn(ExperimentalTestApi::class)
-class LoginScreenRobot(private val composeUiTest: ComposeUiTest) {
-    val sentEvents = mutableListOf<LoginContract.Event>()
+class LoginScreenRobot(composeUiTest: ComposeUiTest) : ScreenRobot<LoginContract.Event>(composeUiTest) {
 
     fun setContent(uiState: LoginContract.State = LoginContract.State()) = apply {
         composeUiTest.setContent {
-            AppTheme { LoginScreenContent(state = State(uiState), onEventSent = { sentEvents += it }) }
+            AppTheme { LoginScreenContent(state = State(uiState), onEventSent = ::recordEvent) }
         }
     }
 
     fun typeEmail(email: String) = apply { composeUiTest.onNode(hasSetTextAction()).performTextInput(email) }
 
     fun clickContinueWithMailButton() = apply {
-        val buttonText = runBlocking { getString(Res.string.login_feat_continue_with_mail) }
-        composeUiTest.onNodeWithText(buttonText).performClick()
+        composeUiTest.onNodeWithText(resolveString(Res.string.login_feat_continue_with_mail)).performClick()
     }
 }
 ```
@@ -176,19 +137,29 @@ Test `ScreenContent` (stateless) with a recorded `onEventSent`, never the `Scree
 
 ```kotlin
 @Test
-fun invalidEmail() = runDesktopComposeUiTest(width = 1080, height = 2400) {
+fun invalidEmail() = runDesktopComposeUiTest(width = PHONE_SCREENSHOT_WIDTH_PX, height = PHONE_SCREENSHOT_HEIGHT_PX) {
     setContent {
-        CompositionLocalProvider(LocalDensity provides Density(density = 2.625f, fontScale = 1f)) {
+        CompositionLocalProvider(LocalDensity provides Density(density = PHONE_SCREENSHOT_DENSITY, fontScale = 1f)) {
             AppTheme { LoginScreenContent(state = State(LoginContract.State(email = "not-an-email", isEmailErrorVisible = true)), onEventSent = {}) }
         }
     }
-    onRoot().captureRoboImage(filePath = "src/desktopTest/screenshots/login_invalid_email.png")
+    onRoot().captureRoboImage(filePath = screenshotPath(name = "login_invalid_email"))
 }
 ```
 
-Screen-level: main states on a phone canvas plus a `fontScale = 1.5` variant. Google's guidance adds nine window sizes (widths 400/610/900 dp × heights 400/500/1000 dp) — apply it to apps that ship adaptive layouts (tablet/desktop/web), not to phone-only screens.
+The canvas, density, `LARGE_FONT_SCALE` and `screenshotPath` come from `core.testing` (core-testing, desktop). Screen-level: main states on a phone canvas plus a `fontScale = LARGE_FONT_SCALE` variant. Google's guidance adds nine window sizes (widths 400/610/900 dp × heights 400/500/1000 dp) — apply it to apps that ship adaptive layouts (tablet/desktop/web), not to phone-only screens.
 
-## 7. Known pitfalls
+## 7. String resource escapes
+
+Compose resources show `\'` and `\"` literally (only `\uXXXX`, `\n`, `\t` and `\\` are converted). Every project with Compose resources adds the shared check once in `desktopTest`:
+
+```kotlin
+class AppComposeResourceStringEscapeTest : ComposeResourceStringEscapeTest()   // core.testing.resources
+```
+
+It scans every `strings.xml` under `src/commonMain/composeResources` (pass another path to the constructor for a different module layout) and fails with the file, key and escape it found.
+
+## 8. Known pitfalls
 
 - **Platform SDKs inside composables** (sign-in buttons, ads, maps) may throw on desktop when their provider was never initialized. Initialize them with placeholder test values once per test JVM (rindle: `TestGoogleAuthProvider.ensureCreated()`), or keep the SDK composable out of `ScreenContent`.
 - **iOS test binaries** link CocoaPods frameworks the app gets from the Xcode project; a pod the Gradle cocoapods block does not declare (e.g. `GoogleSignIn` via KMPAuth) makes `iosSimulatorArm64Test` fail to link. Until linker options are added, verify `commonTest` on the JVM targets.

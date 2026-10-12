@@ -30,6 +30,8 @@ pinq-doq/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
       naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md, testing.md
+    maestro/
+      maestro-kit.md            Maestro scripts + subflows to copy into an app (no product values)
     dotnet/
       vault-configuration.md    the Vault configuration standard: readers, record layout, tokens, pitfalls
       vault-cli-setup.md        developer machine setup: install the CLI, log in, troubleshoot

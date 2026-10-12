@@ -27,7 +27,7 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 - `commonTest` — ViewModels, use cases, repositories, mappers, fakes. Must stay platform-free so it runs on every target.
 - `desktopTest` (JVM) — Compose UI behavior tests, screenshot tests, and tests needing JVM-only APIs. It is the fast, default target (`./gradlew :<module>:desktopTest`).
 - Test packages mirror the code under test. Fakes go in `<package>.fake`, named `Fake<Interface>` (e.g. `feature.login.fake.FakeLoginRepository`).
-- Shared test infrastructure (ViewModel environment, core fakes) lives in `commonTest` under `core.testing`.
+- Shared test infrastructure comes from deveng-core-kmp: the `global.deveng.testing` Gradle plugin turns it on with one line and adds `global.deveng:core-testing-kmp` (ViewModel environment, fakes for core interfaces, robot base, screenshot defaults, string escape check). Never copy those into a project; only project-specific helpers (e.g. a Koin wrapper around the environment) live in `commonTest` under `core.testing`. Setup: `.pinq-doq/references/kotlin/testing.md` § 1.
 
 ---
 
@@ -50,7 +50,7 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 - Build the real use cases around fake repositories; fake only the boundary (repository interfaces, storages, platform seams).
 - Inject `CoroutineDispatcher` only where the class already takes one (e.g. `@Dispatcher(IO)`); pass the test dispatcher there. Don't add dispatcher parameters just for tests to ViewModels using `viewModelScope`.
 - Compose tests: match by semantics (text from `getString(Res.string.…)`, roles, `hasSetTextAction()`); fall back to `testTag` only when a matcher would need more than three conditions.
-- Use a **robot** (`<Screen>Robot`) once a screen has three or more UI tests or shared interaction steps; every robot function returns `this`.
+- Use a **robot** (`<Screen>Robot`, extending `core.testing.ScreenRobot`) once a screen has three or more UI tests or shared interaction steps; every robot function returns `this`.
 - Screenshot baselines are committed. Re-record them only for an intended UI change and say so in the PR.
 
 ---

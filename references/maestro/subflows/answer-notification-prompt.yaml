@@ -1,0 +1,30 @@
+appId: ${APP_ID}
+# Answers the system notification prompt with PROMPT_ANSWER ("allow" or "deny") on either platform.
+---
+- runFlow:
+    when:
+      platform: Android
+      true: ${PROMPT_ANSWER == 'allow'}
+    commands:
+      - tapOn:
+          id: "com.android.permissioncontroller:id/permission_allow_button"
+- runFlow:
+    when:
+      platform: Android
+      true: ${PROMPT_ANSWER == 'deny'}
+    commands:
+      - tapOn:
+          id: "com.android.permissioncontroller:id/permission_deny_button"
+- runFlow:
+    when:
+      platform: iOS
+      true: ${PROMPT_ANSWER == 'allow'}
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      platform: iOS
+      true: ${PROMPT_ANSWER == 'deny'}
+    commands:
+      - tapOn: "Don.t Allow"
+- waitForAnimationToEnd

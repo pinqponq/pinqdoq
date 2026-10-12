@@ -1,0 +1,14 @@
+appId: ${APP_ID}
+---
+# Signs out from the screen that shows the log-out button and waits for the login screen. The app's
+# wrapper subflow navigates to that screen first and passes the texts:
+#   LOGOUT_BUTTON_TEXT        the log-out button
+#   LOGOUT_CONFIRM_QUESTION   the confirmation dialog's question (the confirm button sits below it)
+#   LOGIN_EMAIL_ENTRY_TEXT    a text only the login screen shows
+- tapOn: ${LOGOUT_BUTTON_TEXT}
+- tapOn:
+    text: ${LOGOUT_BUTTON_TEXT}
+    below: ${LOGOUT_CONFIRM_QUESTION}
+- extendedWaitUntil:
+    visible: ${LOGIN_EMAIL_ENTRY_TEXT}
+    timeout: 20000

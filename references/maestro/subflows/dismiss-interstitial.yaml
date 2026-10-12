@@ -1,0 +1,10 @@
+appId: ${APP_ID}
+---
+# Closes one one-time screen (onboarding, promo, soft permission ask) only when it is on screen.
+# The app's dismiss-interstitials.yaml calls this once per screen it knows:
+#   - runFlow: { file: kit/dismiss-interstitial.yaml, env: { INTERSTITIAL_TEXT: "…", INTERSTITIAL_DISMISS_TEXT: "…" } }
+- runFlow:
+    when:
+      visible: ${INTERSTITIAL_TEXT}
+    commands:
+      - tapOn: ${INTERSTITIAL_DISMISS_TEXT}
