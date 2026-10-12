@@ -2,8 +2,8 @@
 # Runs a Maestro command and slows the Android emulator's network once the flow reaches a given step,
 # so seeding (e.g. uploads) stays fast while the step under test runs as slowly as on
 # a poor mobile network. `adb emu network delay` does not affect the emulator's Wi-Fi traffic, so the
-# emulator is routed through slow-proxy.py while the command runs; the proxy setting is restored when
-# it ends.
+# emulator is routed through slow-proxy.py while the command runs; the previous proxy setting is put
+# back when it ends. Proxy errors go to $TMPDIR/slow-proxy.log.
 # Usage: ANDROID_SERIAL=emulator-5554 maestro/scripts/slow-network-from-step.sh \
 #          <step text in maestro.log> <delay seconds> -- maestro/scripts/run-flow.sh android <flow>
 set -euo pipefail
@@ -25,12 +25,15 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 trigger_file="$(mktemp -u)"
 previous_run="$(ls -t "$MAESTRO_TESTS_DIR" 2>/dev/null | head -1 || true)"
 
-python3 "$script_dir/slow-proxy.py" "$PROXY_PORT" "$trigger_file" "$delay_seconds" 2>/dev/null &
+previous_http_proxy="$(adb shell settings get global http_proxy | tr -d '\r')"
+[[ "$previous_http_proxy" == "null" ]] && previous_http_proxy=":0"
+proxy_log="${TMPDIR:-/tmp}/slow-proxy.log"
+python3 "$script_dir/slow-proxy.py" "$PROXY_PORT" "$trigger_file" "$delay_seconds" 2>"$proxy_log" &
 proxy_pid=$!
 watcher_pid=""
 restore_network() {
   [[ -n "$watcher_pid" ]] && kill "$watcher_pid" 2>/dev/null || true
-  adb wait-for-device && adb shell settings put global http_proxy :0 >/dev/null
+  adb wait-for-device && adb shell settings put global http_proxy "$previous_http_proxy" >/dev/null
   kill "$proxy_pid" 2>/dev/null || true
   rm -f "$trigger_file"
   echo "$(date -u +%FT%TZ) network restored"
@@ -45,7 +48,7 @@ adb shell settings put global http_proxy "10.0.2.2:$PROXY_PORT" >/dev/null
     sleep 1
     current_run="$(ls -t "$MAESTRO_TESTS_DIR" 2>/dev/null | head -1 || true)"
   done
-  until grep -q "$step_marker" "$MAESTRO_TESTS_DIR/$current_run/maestro.log" 2>/dev/null; do sleep 0.2; done
+  until grep -qF -- "$step_marker" "$MAESTRO_TESTS_DIR/$current_run/maestro.log" 2>/dev/null; do sleep 0.2; done
   touch "$trigger_file"
   echo "$(date -u +%FT%TZ) network slowed: ${delay_seconds}s per upstream chunk"
 ) &

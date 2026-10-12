@@ -58,3 +58,5 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 ## Proving UI changes on a device
 
 Tests are required but not sufficient for UI work: run the change on an Android emulator and/or iOS simulator and attach screenshots or a short recording to the PR. Device interaction (taps, rapid repeated taps, scrolling) is scripted with `adb` / Google's `android` CLI (`android screen capture --annotate`, `android layout`) and `xcrun simctl`; "needs a real device" is only acceptable for hardware the emulator cannot provide (camera image quality, real push delivery, store purchases, biometrics).
+
+- Maestro flows start from the shared kit (run script, test-account wrapper, slow-network proxy, login/logout/interstitial/notification-prompt subflows): `.pinq-doq/references/maestro/maestro-kit.md`.

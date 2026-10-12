@@ -1,15 +1,20 @@
 #!/usr/bin/env bash
 # Runs Maestro flows against the booted Android emulator or iOS simulator with the right app id.
 # Usage: maestro/scripts/run-flow.sh <android|ios> <flow file or directory> [extra maestro test args]
-# App ids come from ANDROID_APP_ID / IOS_APP_ID, or from maestro/app-ids.env when it exists.
+# Run it from the app's root folder; results go to build/maestro/<platform>/ there.
+# App ids come from maestro/app-ids.env; ANDROID_APP_ID / IOS_APP_ID set in the environment win.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
 app_ids_file="$(dirname "$script_dir")/app-ids.env"
+environment_android_app_id="${ANDROID_APP_ID:-}"
+environment_ios_app_id="${IOS_APP_ID:-}"
 if [[ -f "$app_ids_file" ]]; then
   # shellcheck source=/dev/null
   source "$app_ids_file"
 fi
+ANDROID_APP_ID="${environment_android_app_id:-${ANDROID_APP_ID:-}}"
+IOS_APP_ID="${environment_ios_app_id:-${IOS_APP_ID:-}}"
 
 platform="${1:?platform (android|ios) required}"
 flow_path="${2:?flow file or directory required}"
@@ -36,7 +41,8 @@ case "$platform" in
     ;;
   ios)
     app_id="${IOS_APP_ID:?set IOS_APP_ID (e.g. in maestro/app-ids.env)}"
-    device_id="$(xcrun simctl list devices booted | awk -F '[()]' '/Booted/ { print $2; exit }')"
+    # Device names can contain parentheses ("iPhone SE (3rd generation)"), so match the UDID itself.
+    device_id="$(xcrun simctl list devices booted | grep -Eo '[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}' | head -1 || true)"
     ;;
   *)
     echo "Unknown platform: $platform (expected android or ios)" >&2
