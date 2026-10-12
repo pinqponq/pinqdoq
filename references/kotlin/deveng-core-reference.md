@@ -223,3 +223,17 @@ Every new animation reads `LocalReduceMotion.current` and switches to no animati
 
 When vibecoding, match the current task to a row above and use the indicated core API rather than
 generating equivalent logic in the app.
+
+---
+
+## Home screen widget (`deveng-widget`, `global.deveng:widget-kmp`)
+
+| Situation | Use |
+|---|---|
+| Widget needs to call the API without the app session | `HomeScreenWidgetSessionStorageImpl` + `InitializeHomeScreenWidgetSessionUseCase` / `EndHomeScreenWidgetSessionUseCase` (app implements `HomeScreenWidgetTokenRepository`) |
+| A widget request with the widget token (forget it on 401) | `SendWidgetTokenRequestUseCase` + `WidgetTokenRejectedException` |
+| Redraw widgets after a change | `HomeScreenWidgetReloader` / `RefreshHomeScreenWidgetsUseCase`; Android `AndroidHomeScreenWidgetRefreshScheduler`, iOS `IosHomeScreenWidgetReloader`, others `DisabledHomeScreenWidgetReloader` |
+| Update the widget from a push (Android) | `ApplyHomeScreenWidgetPushUseCase` + `HomeScreenWidgetSessionlessDrawer` |
+| Store / draw the widget image (Android) | `HomeScreenWidgetImageStore`, `HomeScreenWidgetBitmaps` |
+
+Setup, iOS templates and production lessons: `references/widget/widget-setup.md`.
