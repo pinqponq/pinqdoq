@@ -130,3 +130,11 @@ includeBuild("../deveng-core-kmp") {
     }
 }
 ```
+
+---
+
+## Dependency Management — Third-party Repositories
+
+- A dependency that is not on Google or Maven Central gets its own repository only through `exclusiveContent { forRepository { maven("<url>") }; filter { includeGroupAndSubgroups("<group>") } }` in `settings.gradle.kts`, so that repository resolves nothing else.
+- Pin every artifact taken from such a repository in the version catalog (`{ strictly = "x.y.z" }`, applied with a dependency constraint when it arrives transitively); no dynamic or range versions.
+- Do not exclude a transitive dependency just because it does not resolve; add its repository as above.
