@@ -2,6 +2,7 @@ import contextlib
 import io
 import json
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -436,6 +437,29 @@ class NewProductTest(unittest.TestCase):
 
         self.assertEqual(new_product.EXIT_CODE_ERROR, code)
         self.assertEqual(new_product.FILE_SYSTEM_ERROR, json.loads(output.getvalue())["error_code"])
+
+    def test_sections_that_are_not_objects_are_rejected(self):
+        for section in ("keys", "modules", "theme"):
+            with self.subTest(section=section):
+                self.assert_error(new_product.INVALID_FIELD, dict(PRODUCT, **{section: []}))
+
+    def test_secret_file_under_a_placeholder_folder_follows_the_rename(self):
+        manifest = json.loads(json.dumps(MANIFEST))
+        manifest["keys"]["SIGNING_PASSWORD"]["file"] = "iosApp/TemplateAppWidget/Secrets.xcconfig"
+        (self.template / new_product.MANIFEST_NAME).write_text(json.dumps(manifest), encoding="utf-8")
+        (self.template / ".gitignore").write_text("local.properties\nSecrets.xcconfig\n", encoding="utf-8")
+
+        self.run_generate(dict(PRODUCT, keys=dict(PRODUCT["keys"], SIGNING_PASSWORD="sign_secret")))
+
+        self.assertEqual("SIGNING_PASSWORD=sign_secret\n", self.read("iosApp/LumoWidget/Secrets.xcconfig"))
+
+    def test_git_failure_is_reported(self):
+        original_run = new_product.subprocess.run
+        new_product.subprocess.run = lambda *args, **kwargs: subprocess.CompletedProcess(args, 1, "", "no git")
+        try:
+            self.assert_error(new_product.GIT_UNAVAILABLE)
+        finally:
+            new_product.subprocess.run = original_run
 
     def test_invalid_product_json_is_rejected(self):
         self.product_path.write_text("{", encoding="utf-8")

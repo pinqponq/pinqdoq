@@ -58,6 +58,7 @@ THEME_FILE_MISSING = "THEME_FILE_MISSING"
 UNKNOWN_THEME_TOKEN = "UNKNOWN_THEME_TOKEN"
 PLACEHOLDERS_LEFT = "PLACEHOLDERS_LEFT"
 FILE_SYSTEM_ERROR = "FILE_SYSTEM_ERROR"
+GIT_UNAVAILABLE = "GIT_UNAVAILABLE"
 
 
 class StarterError(Exception):
@@ -103,6 +104,10 @@ def validate_product(product: dict, manifest: dict) -> None:
         value = product[field]
         if not isinstance(value, str) or not pattern.match(value):
             raise StarterError(INVALID_FIELD, f"{field} '{value}' is invalid", f"Use a {expected}")
+
+    for section in ("keys", "modules", "theme"):
+        if not isinstance(product.get(section, {}), dict):
+            raise StarterError(INVALID_FIELD, f"{section} is not a JSON object", f"Give {section} as an object")
 
     keys = product.get("keys", {})
     key_specs = manifest.get("keys", {})
@@ -269,14 +274,14 @@ def prune_empty_parents(path: Path, root: Path) -> None:
         path = path.parent
 
 
-def write_keys(root: Path, manifest: dict, keys: dict) -> List[str]:
+def write_keys(root: Path, manifest: dict, keys: dict, pairs: List[tuple]) -> List[str]:
     written = []
     secret_lines: Dict[str, List[str]] = {}
     for name, key_spec in manifest.get("keys", {}).items():
         if name not in keys:
             continue
         if key_spec.get("secret"):
-            secret_lines.setdefault(key_spec["file"], []).append(f"{name}={keys[name]}\n")
+            secret_lines.setdefault(apply_replacements(key_spec["file"], pairs), []).append(f"{name}={keys[name]}\n")
         written.append(name)
     for relative, lines in secret_lines.items():
         if not is_gitignored(root, relative):
@@ -293,7 +298,9 @@ def is_gitignored(root: Path, relative: str) -> bool:
         return False
     with tempfile.TemporaryDirectory() as repository:
         shutil.copy(gitignore, Path(repository) / GITIGNORE_NAME)
-        subprocess.run(["git", "init", "--quiet", repository], check=True, capture_output=True)
+        initialized = subprocess.run(["git", "init", "--quiet", repository], capture_output=True, text=True)
+        if initialized.returncode != 0:
+            raise StarterError(GIT_UNAVAILABLE, f"git init failed: {initialized.stderr.strip()}", "Install git and run again")
         completed = subprocess.run(
             ["git", "-C", repository, "check-ignore", "--quiet", "--no-index", relative],
             capture_output=True,
@@ -371,7 +378,7 @@ def generate(template: str, product_path: Path, destination: Path, dry_run: bool
                 path.write_text(updated, encoding="utf-8")
                 changed += 1
         renamed = rename_paths(staging, pairs)
-        written = write_keys(staging, manifest, keys)
+        written = write_keys(staging, manifest, keys, pairs)
         theme_tokens = set_theme(staging, manifest, product.get("theme", {}), pairs)
         (staging / MANIFEST_NAME).unlink()
 
