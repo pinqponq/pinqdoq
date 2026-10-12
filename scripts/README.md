@@ -110,8 +110,8 @@ Shared helper (no `main`) imported by almost every generator to turn `config.jso
 Driven by the `new-product` skill; the manifest and product file formats are in [`references/templates/new-product-starter.md`](../references/templates/new-product-starter.md). It prints a JSON summary, or a JSON error (`error_code`, `message`, `how_to_fix`) with exit code 2, and writes nothing when validation or the leftover-placeholder check fails.
 
 ```bash
-python .pinq-doq/scripts/new_product.py --template <dir|git url> --product <product.json> --dest <new dir> --dry-run
-python .pinq-doq/scripts/new_product.py --template <dir|git url> --product <product.json> --dest <new dir>
+python .pinq-doq/scripts/new_product.py --template <dir|git url> --product <product.json> --destination <new dir> --dry-run
+python .pinq-doq/scripts/new_product.py --template <dir|git url> --product <product.json> --destination <new dir>
 ```
 
 Tests: `python3 -m unittest discover -s scripts/tests`.

@@ -90,7 +90,7 @@ Each template has a `template.json` at its root. `new_product.py` reads it and d
 ```
 
 - **placeholders:** every occurrence in file contents and in file and folder names is replaced, longest first. The lower-case app name (`templateapp`, e.g. a deep link scheme) and the package as a path (`com/pinqponq/templateapp`, the source folders) are replaced too.
-- **keys:** a public key is written where `__<KEY_NAME>__` appears in the template. A secret key is appended as `KEY=value` to its `file`, which must be in the template's `.gitignore`. `required` defaults to true.
+- **keys:** a public key is written where `__<KEY_NAME>__` appears in the template; an optional one the product leaves out becomes an empty string. Secret keys are written as `KEY=value` to their `file`, which must be covered by the template's `.gitignore` (a path, a glob or a folder entry). The template's own copy of a secret file is never copied, so a template secret cannot reach a product. `required` defaults to true.
 - **modules:** a removed module's `paths` are deleted, and every block between lines containing `template:<module>:start` and `template:<module>:end` (in any comment syntax) is cut. In kept modules only the marker lines go. `default` is the choice when the product file does not mention the module; it defaults to true.
 - **theme_file:** the `Color.kt` whose `val <Token> = Color(0x…)` values the product's `theme` replaces.
 

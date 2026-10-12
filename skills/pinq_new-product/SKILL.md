@@ -38,6 +38,16 @@ The template layout, the `template.json` manifest and the product file are descr
 - **Assume when:** module choices are not given (use each module's `default` from `template.json` and list them); theme colors are not given (keep the template palette and say so); the backend name is not given (`<AppName>` prefix, same as the app).
 - **Refuse when:** asked to put a secret into a tracked file, a commit, a PR or the conversation output, or to do anything under Non-Goals.
 
+### Assumptions
+
+- Both templates have a `template.json` at their root and pass their own CI.
+- The machine has JDK 21, the Android SDK and the .NET SDK the templates name, so the generated projects can build here.
+
+### Hard constraints (MUST NOT)
+
+- No secret value in a tracked file, a commit, a PR, an issue or the conversation output.
+- No remote repositories, store records, console projects or Vault records.
+
 ## Inputs
 
 ### Required
@@ -57,7 +67,7 @@ The template layout, the `template.json` manifest and the product file are descr
 
 ### Validation
 
-`new_product.py` validates every field and prints a JSON error with `error_code`, `message` and `how_to_fix`. Pass it through unchanged.
+`new_product.py` validates every field and prints a JSON error with `error_code`, `message`, `missing_fields` and `how_to_fix`. Pass it through unchanged.
 
 ## Output Contract
 
@@ -71,6 +81,7 @@ The template layout, the `template.json` manifest and the product file are descr
   ```
   error_code: <the script's error_code> | BUILD_FAILED
   message: <one sentence>
+  missing_fields: <field or key names, empty when none>
   how_to_fix: <what the user does>
   ```
 - **No-extra-text rule:** progress lines during the run are fine; the final answer is the report only.
@@ -79,15 +90,20 @@ The template layout, the `template.json` manifest and the product file are descr
 
 1. **Validate.** Write the product file to a temporary path outside both destinations (it may contain keys). Run the dry run for each template:
    ```bash
-   python .pinq-doq/scripts/new_product.py --template <template_app> --product <product.json> --dest <dest_app> --dry-run
-   python .pinq-doq/scripts/new_product.py --template <template_backend> --product <backend-product.json> --dest <dest_backend> --dry-run
+   python .pinq-doq/scripts/new_product.py --template <template_app> --product <product.json> --destination <dest_app> --dry-run
+   python .pinq-doq/scripts/new_product.py --template <template_backend> --product <backend-product.json> --destination <dest_backend> --dry-run
    ```
    The backend product file has the same identity fields and only the backend's keys and modules. An error → stop with it.
 2. **Generate.** Run the same commands without `--dry-run`. Keep the JSON summaries for the report.
 3. **Theme.** If the user gave a font or component styling, follow `pinq_kmp-theme-setup` in `dest_app`; the color tokens are already set by the script.
 4. **Verify.** In `dest_app`: `./gradlew :composeApp:allTests :composeApp:assembleDebug`. In `dest_backend`: `dotnet build` and `dotnet test`. A failure → report `BUILD_FAILED` with the failing task and the first error; do not patch the generated code to make it pass.
 5. **Clean up.** Delete the temporary product file.
-6. **Emit** the report.
+6. **Verify the report** against this checklist:
+   - the four sections are present, in order;
+   - every key appears by name only, and no value from the product file's `keys` appears anywhere in the report;
+   - each build and test command is listed with its result;
+   - "Your next steps" lists only items that apply to this product.
+7. **Emit** the report.
 
 ## Rules
 
@@ -109,8 +125,9 @@ The template layout, the `template.json` manifest and the product file are descr
 
 ## Tool Policy
 
-- **Allowed:** Bash for `new_product.py`, Gradle and `dotnet` in the destination directories; file reads in the destinations.
+- **Allowed:** Bash for `new_product.py`, Gradle and `dotnet` in the destination directories; file reads in the destinations; writing and deleting the temporary product file (steps 1 and 5).
 - **Gate:** `git clone` of a template only from the URLs above or one the user gives.
+- **Data minimization:** keys go only into the product file and, through the script, into the generated projects; the product file lives outside both repos and is deleted at the end.
 - **Failure behavior:** a script error or a failed build stops the run with the error format.
 
 ## Security
