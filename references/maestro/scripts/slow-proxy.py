@@ -37,13 +37,25 @@ async def handle_client(client_reader, client_writer):
     request_line = await client_reader.readline()
     while (await client_reader.readline()) not in (b"\r\n", b"\n", b""):
         pass
-    method, target, _ = request_line.decode("latin-1").split(" ", 2)
+    try:
+        method, target, _ = request_line.decode("latin-1").split(" ", 2)
+    except ValueError:
+        print(f"malformed request line: {request_line!r}", file=sys.stderr)
+        client_writer.write(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+        client_writer.close()
+        return
     if method != "CONNECT":
         client_writer.write(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n")
         client_writer.close()
         return
-    host, port = target.rsplit(":", 1)
-    server_reader, server_writer = await asyncio.open_connection(host, int(port))
+    try:
+        host, port = target.rsplit(":", 1)
+        server_reader, server_writer = await asyncio.open_connection(host, int(port))
+    except (ValueError, OSError) as error:
+        print(f"cannot reach {target}: {error}", file=sys.stderr)
+        client_writer.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
+        client_writer.close()
+        return
     client_writer.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
     await client_writer.drain()
     await asyncio.gather(
@@ -53,7 +65,9 @@ async def handle_client(client_reader, client_writer):
 
 
 async def main():
-    server = await asyncio.start_server(handle_client, "0.0.0.0", LISTEN_PORT)
+    # Loopback only: the Android emulator reaches the host's loopback as 10.0.2.2, and nothing else
+    # on the network should be able to use this proxy.
+    server = await asyncio.start_server(handle_client, "127.0.0.1", LISTEN_PORT)
     async with server:
         await server.serve_forever()
 

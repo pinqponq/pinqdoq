@@ -27,9 +27,9 @@ Keep the kit files unchanged so a newer kit can be copied over them; everything 
 
 | Script | What it does |
 |---|---|
-| `run-flow.sh <android\|ios> <flow> [maestro args]` | Picks the booted device (requires `ANDROID_SERIAL` when several Android devices are connected), resets a snapshot's stale clock on Android, passes `APP_ID`, writes JUnit + screenshots to `build/maestro/<platform>/` |
-| `with-test-account.sh <account> <android\|ios> <flow>` | Reads the test account from a local, never committed file (`TEST_ACCOUNTS_FILE`), passes `TEST_EMAIL` / `TEST_OTP` and masks them in the output |
-| `slow-network-from-step.sh <step> <delay> -- <command>` | Slows the Android emulator's traffic once the flow reaches a step (through `slow-proxy.py`), to widen race windows; restores the proxy setting at the end |
+| `run-flow.sh <android\|ios> <flow> [maestro args]` (from the app root) | Picks the booted device (requires `ANDROID_SERIAL` when several Android devices are connected), resets a snapshot's stale clock on Android, passes `APP_ID`, writes JUnit + screenshots to `build/maestro/<platform>/` |
+| `with-test-account.sh <account> <android\|ios> <flow>` | Reads the test account from a local, never committed file (`TEST_ACCOUNTS_FILE`), passes `TEST_EMAIL` / `TEST_OTP` and masks them in the console output |
+| `slow-network-from-step.sh <step> <delay> -- <command>` | Slows the Android emulator's traffic once the flow reaches a step (through `slow-proxy.py`), to widen race windows; puts the previous proxy setting back at the end |
 
 ## 3. Subflows
 
@@ -57,4 +57,4 @@ appId: ${APP_ID}
 - runFlow: dismiss-interstitials.yaml
 ```
 
-Rules for the flows themselves (start signed in, selectors, destructive flows, realistic scenarios, pinqloq before/after) are in `rules/kotlin-testing.md` → "Proving UI changes on a device".
+The rules for proving a change on a device are in `rules/kotlin-testing.md` → "Proving UI changes on a device".

@@ -26,5 +26,6 @@ appId: ${APP_ID}
       platform: iOS
       true: ${PROMPT_ANSWER == 'deny'}
     commands:
+      # The dot matches both the straight and the curly apostrophe iOS versions use.
       - tapOn: "Don.t Allow"
 - waitForAnimationToEnd
