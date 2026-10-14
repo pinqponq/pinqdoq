@@ -4,7 +4,8 @@
 Usage: run_pit.py <worktree> <base-ref> [--threshold 85] [--lock TASK_KEY]
 Finds every Gradle module whose commonMain/desktopMain/jvmMain Kotlin changed (e.g. composeApp in an app,
 deveng-core in deveng-core-kmp), runs PIT per module against that module's changed tests and prints one JSON
-summary over all of them; exit 1 when the score is below the threshold. Each run is recorded in timings.jsonl.
+summary over all of them. Results are kept per module in build/pit-history, so a re-run after adding tests only re-tests
+mutants whose class or covering tests changed (PIT's incremental analysis; scores stay identical to a full run); exit 1 when the score is below the threshold. Each run is recorded in timings.jsonl.
 """
 import argparse, collections, json, os, re, subprocess, sys, urllib.request
 import time
@@ -100,13 +101,16 @@ def run_module(worktree, module_dir, changed, tests, report_dir):
     targets = [".".join(package_and_class(worktree, p)) + "*" for p in changed]
     source_dirs = ",".join(os.path.join(module_dir, "src", source_set, "kotlin") for source_set in MAIN_SOURCE_SETS
                            if os.path.isdir(os.path.join(worktree, module_dir, "src", source_set, "kotlin")))
+    history_file = os.path.join(worktree, "build", "pit-history", (module_dir.replace("/", "-") or "root") + ".bin")
+    os.makedirs(os.path.dirname(history_file), exist_ok=True)
     jars = ":".join(os.path.join(PIT_DIR, j) for j in os.listdir(PIT_DIR) if j.endswith(".jar"))
     run = sh(["java", "-cp", f"{jars}:{classpath}", "org.pitest.mutationtest.commandline.MutationCoverageReport",
               "--reportDir", report_dir, "--sourceDirs", source_dirs,
               "--targetClasses", ",".join(targets), "--excludedClasses", "*Test*",
               "--targetTests", ",".join(tests), "--classPath", classpath,
               "--outputFormats", "XML", "--threads", "4", "--timestampedReports=false",
-              "--timeoutConst", "8000", "--jvmArgs", "-Xmx2g"], worktree)
+              "--timeoutConst", "8000",
+              "--historyInputLocation", history_file, "--historyOutputLocation", history_file, "--jvmArgs", "-Xmx2g"], worktree)
     mutations = os.path.join(report_dir, "mutations.xml")
     if not os.path.exists(mutations):
         return None, run.stdout[-3000:] + run.stderr[-3000:]
