@@ -11,7 +11,7 @@ Open the PR only when **all** of these hold; otherwise push the branch, keep the
 - [ ] **No duplicate of open work.** Before adding infrastructure the task did not ask for (a test project, CI change, shared helper, package), check the repo's open PRs and branches (`gh pr list -R <repo> --state open`) for the same thing. If one exists, build on it (branch from it, PR base = its branch) instead of opening a parallel one. (2026-10-04: pinqloq#117 opened mcp-server#10, a second test project, while #7 already added one.)
 
 ## Verification retries
-Tasks in `verification_blocked` are retried only in the pinqloq verification step: if pinqloq is reachable again, run the device scenario and log checks, update the PR's pinqloq sections and continue from step 11; otherwise leave them as they are.
+Tasks in `verification_blocked` are retried only in the pinqloq verification step: if pinqloq is reachable again, run the device scenario and log checks, update the PR's pinqloq sections and continue from step 11; otherwise leave them as they are. `preflight.py` does not report a retry while the task's `backend_pr` is still open; it reports the task again when that pull request is merged.
 
 ## Handoff file (one per task, since 2026-10-07)
 

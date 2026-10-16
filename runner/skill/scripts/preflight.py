@@ -159,11 +159,13 @@ def collect_comments(node):
 
 
 def check_github_activity(tasks, last_housekeeping_at):
+    """Returns (housekeeping reasons, task work, keys of tasks whose backend pull request is still open)."""
     reasons = []
     task_work = []
+    waiting_on_backend = set()
     query, aliases = build_activity_query(tasks)
     if not aliases:
-        return reasons, task_work
+        return reasons, task_work, waiting_on_backend
     data = board.run_graphql(query, {})
     for alias, (task_key, kind) in aliases.items():
         repository = data.get(alias) or {}
@@ -173,6 +175,8 @@ def check_github_activity(tasks, last_housekeeping_at):
                      if moment] or [None])
         if kind == "pr" and node.get("state") in ("MERGED", "CLOSED"):
             reasons.append("%s PR is %s" % (task_key, node["state"].lower()))
+        if kind == "backend_pr" and node.get("state") == "OPEN":
+            waiting_on_backend.add(task_key)
         if kind == "backend_pr" and node.get("state") == "MERGED":
             task_work.append("%s backend PR merged: finish device/pinqloq verification" % task_key)
         new_comments = [comment for comment in collect_comments(node) if is_new_human_comment(comment, since)]
@@ -180,13 +184,15 @@ def check_github_activity(tasks, last_housekeeping_at):
             authors = ", ".join(sorted({(comment.get("author") or {}).get("login", "?") for comment in new_comments}))
             reasons.append("%s: %d new comment(s)/review(s) on the %s by %s"
                            % (task_key, len(new_comments), "issue" if kind == "issue" else kind, authors))
-    return reasons, task_work
+    return reasons, task_work, waiting_on_backend
 
 
-def check_verification_retries(tasks):
+def check_verification_retries(tasks, waiting_on_backend):
+    """A retry is pointless while the backend pull request the verification waits for is still open;
+    the activity check reports the task as soon as that pull request is merged."""
     task_work = []
     for task_key, task in tasks.items():
-        if task.get("status") != "verification_blocked":
+        if task.get("status") != "verification_blocked" or task_key in waiting_on_backend:
             continue
         updated_at = parse_time(task.get("updated_at"))
         if updated_at is None or now_utc() - updated_at >= VERIFICATION_RETRY_INTERVAL:
@@ -218,10 +224,12 @@ def collect_housekeeping(state, tasks, errors):
     housekeeping += run_check(check_project_scope, errors) or []
     housekeeping += run_check(check_board, errors, tasks, known_keys) or []
     activity = run_check(check_github_activity, errors, tasks, parse_time(state.get("last_housekeeping_at")))
+    waiting_on_backend = set()
     if activity:
         housekeeping += activity[0]
         task_work += activity[1]
-    task_work += check_verification_retries(tasks)
+        waiting_on_backend = activity[2]
+    task_work += check_verification_retries(tasks, waiting_on_backend)
     return housekeeping, task_work
 
 
