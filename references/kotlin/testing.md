@@ -193,3 +193,22 @@ Screen-level: main states on a phone canvas plus a `fontScale = 1.5` variant. Go
 - **Platform SDKs inside composables** (sign-in buttons, ads, maps) may throw on desktop when their provider was never initialized. Initialize them with placeholder test values once per test JVM (rindle: `TestGoogleAuthProvider.ensureCreated()`), or keep the SDK composable out of `ScreenContent`.
 - **iOS test binaries** link CocoaPods frameworks the app gets from the Xcode project; a pod the Gradle cocoapods block does not declare (e.g. `GoogleSignIn` via KMPAuth) makes `iosSimulatorArm64Test` fail to link. Until linker options are added, verify `commonTest` on the JVM targets.
 - **Build side effects:** tasks hooked to `assemble*` (like an iOS version sync) can touch tracked files during test runs; don't commit those changes.
+
+---
+
+## 8. Mutation testing with PIT
+
+`scripts/testing/run_pit.py <worktree> <base-ref> [--threshold 85]` runs PIT 1.17 on the desktop (JVM) tests, scoped to the diff:
+
+1. Gradle init script (`pit.init.gradle`, nothing is added to the repo) prints the desktop test runtime classpath.
+2. PIT runs with the changed production classes as targets and only the changed `*Test` classes as tests.
+3. Results are filtered to the changed lines; noise (`throwOnFailure`, Unit-lambda return values) is dropped.
+4. Output is JSON: `score`, `killed`, `total`, `survivors[]` (file, line, mutator). Exit 1 below the threshold.
+
+Typical findings and fixes:
+
+- *Negated conditional survived on a guard*: the test asserts only the end state, which a later step overwrites. Assert state right after the guarded event, before the next one.
+- *Removed call survived*: the effect is invisible to the test (or the call is redundant). Assert the observable result or delete the call.
+- *No coverage on an `onError` branch*: reachable only if the failure escapes the inner `runCatching`; accept with a reason, or test it if a fake can throw there.
+
+Kotlin lacks a free PIT plugin (Arcmutate's is paid), so expect coroutine noise and keep scope on the diff. Jars are downloaded to `~/.cache/pinq-pit` on first run.
