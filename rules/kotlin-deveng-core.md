@@ -83,6 +83,7 @@ This guide ensures that when building or vibecoding an app that depends on **dev
 - Implement permission request/check/settings navigation without using PermissionsController or core Permissions.
 - Implement infinite-scroll paginated lists with custom state and list UI when PaginatedFlowLoader + PaginatedListView fit.
 - Duplicate core presentation components (e.g. custom “theme” or “generic button” that mirrors AppTheme/CustomButton) without reason.
+- Build a new dialog on Compose `androidx.compose.ui.window.Dialog` / `AlertDialog`; wrap it in core **CustomDialog** (or **CustomAlertDialog** for title + buttons). An existing dialog in the app that uses the raw Compose `Dialog` is legacy, not a pattern to copy.
 
 ## Reference
 
