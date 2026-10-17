@@ -93,3 +93,13 @@ See **`references/kotlin/deveng-core-reference.md`** (in the pinq-doq mount, e.g
 Core uses a **domain + data** split for camera temp storage: repository interface in **core.domain.camera.temp** (`CameraTempPhotoRepository`, `TempPhotoItem`), implementation and file/dir abstractions in **core.data.camera.temp** (`CameraTempPhotoRepositoryImpl`, `CameraTempDirProvider`, `CameraTempFileOps`). Apps depend on the interface and register platform-specific `CameraTempDirProvider` in DI.
 
 **Sample app:** The `sample:composeApp` **ThemingDemo** screen includes a **SwipeCards** example at the top of the main lazy column for manual testing.
+
+## Changing the core library (definition of done)
+
+A change to the public surface of deveng-core-kmp (new component, new parameter, new API, new server-driven capability) is complete only when it also contains:
+
+1. **A sample:** a working example in `sample/composeApp` showing each new public piece in its main states (new demo screen reachable from the main list, or a section in an existing demo). The sample must build on Android and desktop.
+2. **Documentation:** the `README.MD` section added or updated, with a link to deeper docs when they exist.
+3. **The PR says where:** a "Sample" line in the PR body naming the demo screen.
+
+Internal refactors and bug fixes without public surface may skip the sample; say so in the PR. Do not defer the sample to a later task.
