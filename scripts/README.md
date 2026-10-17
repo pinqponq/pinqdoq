@@ -58,6 +58,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 | `deliver.py` | Delivery helper — copies `rules/`+`skills/` into a consumer (driven by `tasks/`, not run by hand). |
 | `path_utils.py` | Shared helper (no `main`); imported by the generators. Must stay alongside them. |
 | `vault_config.py` | Moves a .NET project's secrets and per-reader settings into Vault records (see [below](#vault_configpy)). |
+| `new_product.py` | Turns a template repo into a new product: identity, keys, modules, theme (see [below](#new_productpy)). |
 
 ## Configuration — `config.json`
 
@@ -103,6 +104,17 @@ These build the presentation layer. The `presentation-scaffold` skill wraps them
 ## `path_utils.py`
 
 Shared helper (no `main`) imported by almost every generator to turn `config.json` into paths/packages. It must stay alongside the other scripts.
+
+## `new_product.py`
+
+Driven by the `new-product` skill; the manifest and product file formats are in [`references/templates/new-product-starter.md`](../references/templates/new-product-starter.md). It prints a JSON summary, or a JSON error (`error_code`, `message`, `how_to_fix`) with exit code 2, and writes nothing when validation or the leftover-placeholder check fails.
+
+```bash
+python .pinq-doq/scripts/new_product.py --template <dir|git url> --product <product.json> --destination <new dir> --dry-run
+python .pinq-doq/scripts/new_product.py --template <dir|git url> --product <product.json> --destination <new dir>
+```
+
+Tests: `python3 -m unittest discover -s scripts/tests`.
 
 ## `vault_config.py`
 

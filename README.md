@@ -24,7 +24,8 @@ pinq-doq/
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
     vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
-  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault)
+    new-product/                start a new product from kmp-app-template + the backend template (via scripts/new_product.py)
+  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault, new_product.py for templates)
   references/     → NOT copied; read on demand by path
     kotlin/
       deveng-core-reference.md  full deveng-core-kmp API map
@@ -33,6 +34,8 @@ pinq-doq/
     dotnet/
       vault-configuration.md    the Vault configuration standard: readers, record layout, tokens, pitfalls
       vault-cli-setup.md        developer machine setup: install the CLI, log in, troubleshoot
+    templates/
+      new-product-starter.md    mobile and backend templates, template.json manifest, product file
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
