@@ -7,7 +7,7 @@
 2. For archived tasks: removes their local media folder (the evidence is already on the repo's
    `task-runner-media` branch).
 3. Removes folders in the worktrees directory that no active task or lock refers to and that were
-   not touched for two days: worktrees of finished tasks, helper worktrees (`-base`, `-develop`,
+   not touched for two days (a merged task's folders go right away): worktrees of finished tasks, helper worktrees (`-base`, `-develop`,
    `-media`, baselines) and non-git output folders (Stryker). A git worktree goes only when its changes are just regenerable build files (CocoaPods
    output, the local Info.plist/pbxproj edits pod install makes, the never-committed composite
    build, the pinq-doq submodule pointer) and every commit is on a remote, or the task is merged.
@@ -98,7 +98,8 @@ def remove_orphan_folder(folder, references, merged_numbers, dry_run):
     folder_numbers = set(TASK_NUMBER_PATTERN.findall(folder.name))
     if str(folder) in references["text"] or folder_numbers & references["numbers"]:
         return None
-    if time.time() - last_touched_at(folder) < ORPHAN_MIN_AGE_SECONDS:
+    task_was_merged = bool(folder_numbers) and folder_numbers <= merged_numbers
+    if not task_was_merged and time.time() - last_touched_at(folder) < ORPHAN_MIN_AGE_SECONDS:
         return None
     is_worktree = (folder / ".git").exists()
     if is_worktree:
@@ -106,7 +107,6 @@ def remove_orphan_folder(folder, references, merged_numbers, dry_run):
         if unsaved_changes:
             return "kept %s: %d changed file(s) such as %s" % (folder.name, len(unsaved_changes), unsaved_changes[0])
         missing_commits = count_commits_missing_from_remotes(folder)
-        task_was_merged = bool(folder_numbers) and folder_numbers <= merged_numbers
         if missing_commits and not task_was_merged:
             return "kept %s: %d commit(s) not on any remote" % (folder.name, missing_commits)
     if dry_run:
