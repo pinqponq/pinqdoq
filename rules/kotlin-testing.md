@@ -19,6 +19,7 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 | Compose behavior | Compose Multiplatform UI test (`runComposeUiTest`) | Espresso, Robolectric |
 | Screenshots | Roborazzi (`captureRoboImage`) on the desktop JVM | device screenshots as the only check |
 | Coverage | Kover | Jacoco |
+| Device scenarios | Maestro flows (`maestro/`), Android + iOS | stepping through the device by hand, Espresso/XCUITest |
 
 ---
 
@@ -57,4 +58,15 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 
 ## Proving UI changes on a device
 
-Tests are required but not sufficient for UI work: run the change on an Android emulator and/or iOS simulator and attach screenshots or a short recording to the PR. Device interaction (taps, rapid repeated taps, scrolling) is scripted with `adb` / Google's `android` CLI (`android screen capture --annotate`, `android layout`) and `xcrun simctl`; "needs a real device" is only acceptable for hardware the emulator cannot provide (camera image quality, real push delivery, store purchases, biometrics).
+Tests are required but not sufficient for UI work: run the change on an Android emulator and/or iOS simulator and attach screenshots or a short recording to the PR.
+
+- **MUST:** device scenarios are Maestro flows in `maestro/` at the repo root (same YAML for Android and iOS), run through the repo's runner script. Stepping through a device by hand with screenshots and `adb input` is only for exploring a screen while writing a flow.
+- **MUST:** before writing a flow, look for an existing flow or subflow that covers the scenario and reuse or extend it. Shared steps (navigation, seeding test data, dismissing one-time screens) live in `maestro/subflows/`. A new flow is added only for a new scenario.
+- **MUST:** when the app sends logs to pinqloq, check the affected flow's errors in pinqloq **before** running device scenarios and fix what shows up there first; afterwards, verify in pinqloq the requests and errors the scenario produced (expected calls, expected counts, no new errors) and put that result in the PR as a **before / after** comparison: the same realistic flow on a default-branch build next to the same queries over the run on the change's build (production incident logs as extra context), with counts, time ranges, one trimmed sample entry, and personal data redacted.
+- **MUST:** flows reproduce the real scenario: the issue's actions in the same order and timing, under the same conditions (data volume, network latency — e.g. `adb emu network delay` — platform, locale). For a bug fix, run the flow on a default-branch build first and show it reproduces the problem (failure or the problem's pinqloq footprint) before testing the fix; a flow that passes on the old build is not realistic enough. Differences from reality that could not be removed are listed in the PR.
+- **MUST:** destructive flows create their own data and act only on what they created (e.g. ids newer than one remembered before seeding); a flow fails rather than guessing.
+- Flows start from a signed-in app (`launchApp` with `stopApp: false`, never `clearState`); they do not type credentials.
+- Selectors: visible text or accessibility labels first, `id` (testTag) where the app owns the element, a relative `point` only for controls without semantics, and only after asserting the expected screen.
+- "Needs a real device" is only acceptable for hardware the emulator cannot provide (camera image quality, real push delivery, store purchases, biometrics).
+
+Setup and patterns: `.pinq-doq/references/kotlin/testing.md` § 8.

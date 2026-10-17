@@ -193,3 +193,46 @@ Screen-level: main states on a phone canvas plus a `fontScale = 1.5` variant. Go
 - **Platform SDKs inside composables** (sign-in buttons, ads, maps) may throw on desktop when their provider was never initialized. Initialize them with placeholder test values once per test JVM (rindle: `TestGoogleAuthProvider.ensureCreated()`), or keep the SDK composable out of `ScreenContent`.
 - **iOS test binaries** link CocoaPods frameworks the app gets from the Xcode project; a pod the Gradle cocoapods block does not declare (e.g. `GoogleSignIn` via KMPAuth) makes `iosSimulatorArm64Test` fail to link. Until linker options are added, verify `commonTest` on the JVM targets.
 - **Build side effects:** tasks hooked to `assemble*` (like an iOS version sync) can touch tracked files during test runs; don't commit those changes.
+
+## 8. Device scenarios with Maestro
+
+First working setup: rindle-cmp `maestro/` (pinqponq/rindle-cmp#389). Install on the machine with the official script from maestro.dev (needs a JDK); set `MAESTRO_CLI_NO_ANALYTICS=1`.
+
+Layout:
+
+```
+maestro/
+├── config.yaml              ← which flow folders a directory run includes
+├── scripts/run-flow.sh      ← <android|ios> <flow>: picks the booted device, passes APP_ID, writes build/maestro/<platform>/
+├── subflows/                ← reusable steps (open-<tab>, seed-<data>, dismiss-interstitials, …)
+└── <feature>/<scenario>.yaml
+```
+
+Flow skeleton:
+
+```yaml
+appId: ${APP_ID}            # Android and iOS bundle ids differ; the runner script passes the right one
+name: Gallery bulk delete ignores repeated confirm taps (#377)
+tags: [gallery, destructive]
+---
+- launchApp:
+    stopApp: false           # keep the signed-in session
+    permissions: { photos: allow, camera: allow }
+- runFlow: ../subflows/open-gallery.yaml
+- runFlow: ../subflows/remember-newest-media-id.yaml
+- runFlow: ../subflows/seed-three-photos.yaml
+- runFlow: ../subflows/wait-for-seeded-media.yaml
+- startRecording: gallery-bulk-delete
+- longPressOn: ${output.newestMediaId}
+# …
+- tapOn: { text: "Delete", repeat: 3, delay: 50, waitToSettleTimeoutMs: 0 }   # rapid repeated taps
+- stopRecording
+```
+
+Patterns and pitfalls:
+
+- Platform differences go inside one flow with `runFlow: { when: { platform: iOS }, commands: [...] }`. The iOS simulator has no camera: seed media through the photo-library import (Maestro can drive the system picker) after `xcrun simctl addmedia`.
+- Screens that never settle (live camera preview) make every `tapOn` wait for its settle timeout; pass `waitToSettleTimeoutMs: 500` there and avoid `waitForAnimationToEnd`.
+- Compose on iOS exposes a container and its child with the same label, so `index` on a repeated selector counts differently per platform. Select by a unique label (e.g. a copied id) instead of by index.
+- One-time screens (onboarding, promos) appear depending on account state; close them in a `dismiss-interstitials` subflow guarded by `when: visible`.
+- Maestro runs in unattended sessions, where interactive simulator tools are not available.
