@@ -40,6 +40,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 - Extract large logical blocks (retry logic, setup, try-catch) into well-named sub-functions.
 - Apply SRP without over-engineering. Do not create abstractions without real value.
 - Before adding infrastructure the task did not ask for (a test project, CI step, shared helper, package), check the repo's open pull requests and branches for the same work. If one exists, build on it (branch from it and target it as the base) instead of opening a parallel one.
+- Shared libraries (pinqnuqets, deveng-core-kmp, deveng-networking-kmp, …) hold only what every product can use. When moving product code into one, keep the product's conventions (header and route names, error codes and messages, defaults, policies such as which errors count as client errors) in the product, or turn them into settings with neutral defaults that the product sets. Check the moved code, its comments and its docs for product names before opening the pull request.
 - Layer dependency rules:
   - Application depends only on Domain.
   - Domain must not depend on any other layer; Domain may only depend on other Domain modules.
