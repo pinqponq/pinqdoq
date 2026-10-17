@@ -15,7 +15,7 @@ What it does (idempotent, run it again after moving the checkout):
 4. Writes the routine prompts to <state>/routines/ for creating the scheduled tasks.
 5. Runs doctor.py.
 
-It never handles secrets: the SMTP password, the pinq-ponq gh login, the pinqloq MCP key and
+It never handles secrets: the pinq-ponq gh login, the pinqloq MCP key and
 test-accounts.json are set up by hand (doctor.py says what is missing).
 """
 import argparse
