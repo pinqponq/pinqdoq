@@ -154,5 +154,6 @@ When a change moves code to a shared library or replaces a whole layer (error ha
 
 - First add characterization tests in their own pull request against the default branch. A characterization test records what the old code does today. Test through public behavior (HTTP responses, logs sent, values a service returns), not through the classes that will be removed, so the same tests still compile after the move. Keep the code that names the old classes in one test helper.
 - These tests must pass on the default branch without any of the new code.
-- Then base the moving branch on that pull request and run the whole suite. A test that passed before and fails after is a regression, so fix the code. If the new behavior is wanted, change the expected result in its own commit and write why in the commit message and in the pull request.
+- Then base the moving branch on that pull request and run the whole suite. A test that passed before and fails after is a regression, so fix the code.
+- A move changes no behavior, and the moving pull request does not change any expected result of these tests. If the new library behaves differently, keep the old behavior in the code that uses it (a resolver, writer, middleware or small wrapper). A behavior change that the new library makes possible goes into its own small pull request after the move: list it in the moving pull request's notes with what changes, why it helps and which clients it can affect.
 - In the pull request, list each removed piece, whether it had a test before, and which test covers it now.
