@@ -119,6 +119,20 @@ PostgresErrorCodes.ForeignKeyViolation
 
 ---
 
+## Shared Packages (pinqnuqets)
+
+`pinqnuqets` holds only what any Pinqponq ASP.NET Core API wants for itself. A project-specific thing never goes into it.
+
+- Test for every type, option, default, constant and message: would a project other than the first one need exactly this? If the answer depends on one product, it stays in that product.
+- Project-specific means: a header, query key, route, response code, message or default taken from one product's client or contract; an option that exists for one product only; a feature that only products with one kind of client (for example a mobile app) need.
+- A doubtful part stays in the product, or becomes a setting with a neutral default (no value copied from the first product) in a separate opt-in package. It is never switched on by default.
+- Technology-specific code (PostgreSQL, MongoDB, EF Core, Vault) is fine in its own opt-in package, as long as nothing in it names a product.
+- When moving code out of a product into `pinqnuqets`, remove the product-specific parts first and leave them in the product. The product then keeps them as its own code on top of the package.
+- A pull request that adds or changes a `pinqnuqets` package lists, per package, what stayed in, what was left in the product, and why.
+- Reviewers: a product-specific constant or default in a `pinqnuqets` change is a blocker.
+
+---
+
 ## Mutation Testing
 
 - Prove that new tests can fail with Stryker.NET, scoped to the changed files: from the test project, run `dotnet stryker -p <Project>.csproj -m "**/<ChangedFile>.cs"` for each changed production project.
