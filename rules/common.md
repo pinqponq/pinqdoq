@@ -145,3 +145,14 @@ RabbitMQService(rabbitOptions)
 
 - Required config fields must be validated at startup.
 - Fail fast during application boot, not at runtime.
+
+---
+
+## Moving or Replacing Existing Code
+
+When a change moves code to a shared library or replaces a whole layer (error handling, logging, paging, data access), prove with tests written against the old code that the behavior stays the same.
+
+- First add characterization tests in their own pull request against the default branch. A characterization test records what the old code does today. Test through public behavior (HTTP responses, logs sent, values a service returns), not through the classes that will be removed, so the same tests still compile after the move. Keep the code that names the old classes in one test helper.
+- These tests must pass on the default branch without any of the new code.
+- Then base the moving branch on that pull request and run the whole suite. A test that passed before and fails after is a regression, so fix the code. If the new behavior is wanted, change the expected result in its own commit and write why in the commit message and in the pull request.
+- In the pull request, list each removed piece, whether it had a test before, and which test covers it now.
