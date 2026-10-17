@@ -99,9 +99,23 @@ This file always loads. Stack-specific rules load automatically only when you to
 - When changing code, also check the comments tied to it: update or remove any that are no longer valid, but never delete a comment without understanding the context and rationale it carries.
 - In `TODO` comments, state the rationale, a tracking reference, and the removal condition where possible.
 - Do not auto-generate line-by-line comments just to explain generated code.
-- Keep comments short and concrete.
+- Keep comments concrete and in plain words. Clarity comes before brevity: do not shorten a comment if that removes meaning or makes it harder to follow. How to word a comment is in "Writing Style" below.
 
 **Core test:** if removing a comment would not lose an important, verifiable rationale or warning, the comment was unnecessary.
+
+---
+
+## Writing Style (comments, XML docs, KDoc, README, PR text)
+
+Text you write must be easy to understand on the first read. Clear wording matters more than short or clever wording, and shortening must never remove meaning. The company guide is `meta/document-writing-guide.md` (clear, understandable, plain); these are the rules that apply to code and pull requests.
+
+- One idea per sentence. Say who does what with plain verbs. Write "because", "so", "if", "when" out in full instead of arrows (`→`), slashes or semicolon chains.
+- Define a term the first time it appears, or use the plain description instead. Decision codes (`S238`), internal names ("runner", "shipped panel", "pre-contract") and jargon ("sparse", "floor", "snapshot") mean nothing to a reader outside the discussion. For a decision, write the question and the chosen option in words.
+- Use one word for one thing and keep it everywhere: the word the code or the API uses (`rowCount`, not "total" in one place and "count" in another; "log", not "entry", "record" and "match" mixed). Do not use a word both as a noun and as a verb ("page" the query).
+- Comments, XML docs and KDoc describe how the code works today. History, incident stories and "this used to be" go into the pull request or commit message.
+- A claim must be true as written. State its limit next to it ("exact", "all", "never" need a reason or an exception). When behavior changes, search the docs, README files, tool descriptions and PR text for the old statement and fix it.
+- Shared packages never name a product in their text ("rindle-backend's contract").
+- Before you finish, read each sentence you wrote as someone who has not seen the task. If you had to know something outside the text to follow it, add that or remove the sentence.
 
 ---
 
