@@ -12,6 +12,7 @@ Extends `common.md`. The structural rules for Android and Kotlin Multiplatform f
 
 - Features split into `data/` + `domain/` + `presentation/`. Application depends only on Domain; Domain depends on nothing outward (see `common.md`).
 - Presentation is MVI: one `[Feature]Contract.kt` per feature holding `Event` / `State` / `Effect`; the ViewModel is the only writer of state.
+- The Screen holds no decisions. It collects effects and makes the platform call an effect asks for (navigate, open a URL, copy to the clipboard, show a snackbar). When such a call fails, the Screen sends the failure as an `Event` (e.g. `HandleExternalUrlOpenFailure(url)`), and the ViewModel decides what happens next through new effects, so the decision has a ViewModel test.
 - Full package skeleton, data-layer recipe, and Screen/ScreenContent/ViewModel split: `.pinq-doq/references/kotlin/architecture.md`, `.pinq-doq/references/kotlin/data-layer.md`, `.pinq-doq/references/kotlin/mvi-pattern.md`, `.pinq-doq/references/kotlin/viewmodel-patterns.md`.
 
 ---
