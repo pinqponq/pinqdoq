@@ -10,7 +10,7 @@
    not touched for two days (a merged task's folders go right away): worktrees of finished tasks, helper worktrees (`-base`, `-develop`,
    `-media`, baselines) and non-git output folders (Stryker). A git worktree goes only when its changes are just regenerable build files (CocoaPods
    output, the local Info.plist/pbxproj edits pod install makes, the never-committed composite
-   build, the pinq-doq submodule pointer) and every commit is on a remote, or the task is merged.
+   build, the pinq-doq submodule pointer, an untracked `build/` folder, screenshot `_small/` folders) and every commit is on a remote, or the task is merged.
 4. Keeps only the newest state.json backups and deletes loose build logs older than a week from
    the worktrees directory.
 """
@@ -33,7 +33,8 @@ KEPT_BACKUP_COUNT = 3
 LOOSE_LOG_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 ORPHAN_MIN_AGE_SECONDS = 2 * 24 * 60 * 60
 REGENERABLE_PATH_PATTERNS = [r"(^|/)Pods/", r"(^|/)Podfile\.lock$", r"\.xcworkspace/", r"(^|/)Info\.plist$",
-                             r"\.pbxproj$", r"^settings\.gradle\.kts$", r"^\.pinq-doq$", r"^maestro/"]
+                             r"\.pbxproj$", r"^settings\.gradle\.kts$", r"^\.pinq-doq$", r"^maestro/",
+                             r"(^|/)build/$", r"(^|/)_small/$"]
 TASK_NUMBER_PATTERN = re.compile(r"(?:^|-)(?:org)?(\d+)(?=-|$)")
 
 
