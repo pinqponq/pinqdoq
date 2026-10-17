@@ -160,6 +160,24 @@ Use these instead of reimplementing equivalent generic components.
 
 ---
 
+## Motion, press feedback, shimmer and haptics (`core.presentation.motion`)
+
+| Situation                                                  | Use                                                                                                   |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Animation durations, easings, springs                      | `MotionTokens` (`DURATION_*_MILLIS`, `StandardEasing`, `Emphasized*Easing`, `defaultSpring`, `bouncySpring`, `pressSpring`) |
+| A tween that must become instant under reduce motion       | `MotionTokens.tweenOrSnap(isReduceMotionEnabled)`                                                     |
+| Small scale-down while a clickable is pressed              | `Modifier.pressScale(interactionSource)` (same `interactionSource` as the `clickable`)                |
+| Skeleton / loading placeholder                             | `ShimmerBox` (`core.presentation.component.shimmer`) or `Modifier.shimmer()`; theme: `ComponentTheme.shimmer` (`ShimmerTheme`) |
+| NavHost / AnimatedContent screen transitions               | `NavTransitions.enter` / `exit` / `popEnter` / `popExit(isReduceMotionEnabled)`                       |
+| Whether the user turned on reduce motion                   | `LocalReduceMotion` (provided by `AppTheme` from the system setting; `AppTheme(reduceMotion = …)` overrides) |
+| Tap / success / warning haptics                            | `rememberAppHaptics()` → `tap()`, `success()`, `warning()` (`core.presentation.haptics`)              |
+
+Every new animation reads `LocalReduceMotion.current` and switches to no animation or an instant change when it is true.
+
+**Do not:** Hardcode animation durations or easings per screen, write a custom shimmer/skeleton, or call `LocalHapticFeedback` with ad-hoc types when these fit.
+
+---
+
 ## Utils (common)
 
 | Situation                                          | Use                                                                                                                                                                  |
