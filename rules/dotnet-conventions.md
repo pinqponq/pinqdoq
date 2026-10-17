@@ -44,6 +44,14 @@ Avoid crash-prone LINQ calls on collections.
 
 ---
 
+## Database Filters
+
+- Every new filter or search parameter on a large or write-heavy collection or table must use an index. Add the index in the same change, or do not add the filter.
+- An index costs time on every write. Index only the fields a stated need filters by. Do not add an index per key "in case".
+- A filter without an index scans the collection. Narrowing the time window does not make it safe. If an unindexed filter is really needed, it is a decision: record it and get it approved before the PR.
+
+---
+
 ## Startup & Dependency Registration
 
 - `Program.cs` must not become a God Object.
