@@ -28,6 +28,9 @@ PIT_JARS = [
 NOISE = ("kotlin/ResultKt::throwOnFailure",)
 UNIT_LAMBDA = re.compile(r"replaced return value with null for .*\$lambda")
 SUSPEND_RETURN = re.compile(r"replaced return value with null for .*::invokeSuspend")
+NULL_RETURN = re.compile(r"replaced return value with null for .*::([A-Za-z_][A-Za-z0-9_]*)$")
+SUSPEND_SIGNATURE_SUFFIX = "Lkotlin/coroutines/Continuation;)Ljava/lang/Object;"
+FLOW_COLLECTOR_EMIT = "emit"
 COMPOSE_RUNTIME_CALL = "removed call to androidx/compose/runtime/"
 COMPOSE_MASK_OPERATION = re.compile(r"Replaced (bitwise (AND|OR)|Shift (Left|Right))")
 SERIALIZER_CLASS_SUFFIX = "$$serializer"
@@ -123,11 +126,42 @@ def composable_methods(root):
             for m in root if COMPOSE_RUNTIME_CALL in (m.findtext("description") or "")}
 
 
-def is_compiler_generated(m, description, composables):
-    """Mutations in code the Kotlin/Compose compiler writes: nothing a test can meaningfully kill."""
+def declares_only_unit_suspend_functions(source, name):
+    """True when every `suspend fun <name>` in the Kotlin source has no return type, or `: Unit`, before its `{` body."""
+    found = False
+    for match in re.finditer(r"\bsuspend\s+fun\s+(?:<[^>]*>\s*)?(?:[\w.<>?, ]+\.)?" + re.escape(name) + r"\s*\(", source):
+        depth, index = 1, match.end()
+        while depth and index < len(source):
+            depth += {"(": 1, ")": -1}.get(source[index], 0)
+            index += 1
+        rest = source[index:].lstrip()
+        if not (rest.startswith("{") or re.match(r":\s*Unit\s*\{", rest)):
+            return False
+        found = True
+    return found
+
+
+def is_unit_suspend_null_return(m, description, source):
+    """`return null` instead of Unit from a suspend function that returns Unit: callers never read that value.
+
+    The JVM signature of every suspend function returns Object, so only the source tells a Unit function apart.
+    `emit` is FlowCollector.emit (always Unit), compiled into the collector class of a `collect { }` block.
+    """
+    match = NULL_RETURN.search(description)
+    if not match or not (m.findtext("methodDescription") or "").endswith(SUSPEND_SIGNATURE_SUFFIX):
+        return False
+    name = match.group(1)
+    return name == FLOW_COLLECTOR_EMIT or (source is not None and declares_only_unit_suspend_functions(source, name))
+
+
+def is_compiler_generated(m, description, composables, source=None):
+    """Mutations in code the Kotlin/Compose compiler writes, or that change nothing a caller can see:
+    nothing a test can meaningfully kill."""
     mutated_class = m.findtext("mutatedClass") or ""
     mutated_method = m.findtext("mutatedMethod") or ""
     if any(noise in description for noise in NOISE) or UNIT_LAMBDA.search(description) or SUSPEND_RETURN.search(description):
+        return True
+    if is_unit_suspend_null_return(m, description, source):
         return True
     if COMPOSE_RUNTIME_CALL in description:
         return True
@@ -136,8 +170,10 @@ def is_compiler_generated(m, description, composables):
     return (mutated_class, mutated_method) in composables and bool(COMPOSE_MASK_OPERATION.search(description))
 
 
-def count_mutations(mutations, changed, counts, survivors):
+def count_mutations(worktree, mutations, changed, counts, survivors):
     by_file = {os.path.basename(p): lines for p, lines in changed.items()}
+    paths = {os.path.basename(p): os.path.join(worktree, p) for p in changed}
+    sources = {}
     root = ET.parse(mutations).getroot()
     composables = composable_methods(root)
     for m in root:
@@ -145,8 +181,11 @@ def count_mutations(mutations, changed, counts, survivors):
         line = int(m.findtext("lineNumber"))
         if line not in by_file.get(source, ()):
             continue
+        if source not in sources:
+            with open(paths[source]) as file:
+                sources[source] = file.read()
         description = m.findtext("description") or ""
-        if is_compiler_generated(m, description, composables):
+        if is_compiler_generated(m, description, composables, sources[source]):
             counts["noise"] += 1
             continue
         status = m.get("status")
@@ -182,7 +221,7 @@ def main():
         if error:
             print(f"PIT failed for {module_dir or '.'}:", error, file=sys.stderr)
             return 2
-        count_mutations(mutations, changed, counts, survivors)
+        count_mutations(worktree, mutations, changed, counts, survivors)
         modules.append(module_dir or ".")
     if not modules:
         print(json.dumps({"skipped": "no module with changed production classes and changed tests", "modules": skipped}))
@@ -200,4 +239,5 @@ def main():
 
 
 START_SECONDS = time.time()
-sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
