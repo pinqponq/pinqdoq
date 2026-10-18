@@ -113,6 +113,21 @@ Implementation: **core.data.temp** — `TempFileRepositoryImpl(dirProvider, file
 
 ---
 
+## Push notifications (`core.push`)
+
+| Situation | Use |
+|-----------|-----|
+| Push permission status, the app's own request (soft ask) and its cadence, system prompt or settings | `PushNotifications` (`resolvePermissionStatus`, `softAsk`, `isSystemPromptShownDirectly`, `enableNotifications`) with `PushNotificationOptions` / `SoftAskPolicy` |
+| Register the device token with the backend (once per token, again after a rotation) | `PushNotifications.registerTokenIfPermitted` / `handleNewToken` / `registerTokenUpdates`; backend call as `PushTokenRegistrar` |
+| Remove the device token on sign-out | `PushNotifications.unregisterToken`; backend call as `PushTokenUnregistrar` |
+| Remember whether the system prompt was shown and the ask count | `NotificationPermissionStorage` / `NotificationPermissionStorageImpl` |
+| The platform push token | `PlatformPushTokenSource` (Android FCM; iOS from Swift through `IosPushTokenBridge.updateToken`) |
+| Android FCM service (channel, notification, tap deep link, token rotation) | subclass `PushNotificationMessagingService`; override `resolveDeepLink` / `handleDataMessage` |
+
+**Do not:** Write your own FirebaseMessagingService, token registration use case, permission status or soft-ask logic for push notifications. Setup steps (manifest, AppDelegate): deveng-core-kmp README "Push Notifications".
+
+---
+
 ## Pagination
 
 | Situation                                                                              | Use                                                           |
