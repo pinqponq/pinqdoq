@@ -34,6 +34,7 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 ## What every change must test
 
 - **MUST:** a change to ViewModel, use case, repository, or mapper logic adds or updates unit tests for the changed behavior, including the error path.
+- **MUST:** every other behavior a change touches gets a test too, also in platform (`actual`) code, library internals and private helpers reached through a public function: each branch the change adds or moves (e.g. with and without location data), a temp file or other resource the change creates is gone after success **and** after failure, and a change meant to keep the output the same (encoding to a file instead of memory, a split function) is compared against the old way's output. Run it where the code runs (an Android instrumented test for Android-only code). A test that passes on the old code too is fine when the behavior was meant to stay; the PR then shows it can fail (a small mutation, or PIT).
 - **MUST:** a UI change that alters what a state renders updates or adds a screenshot for that state; a change in what a user action sends adds a UI behavior test.
 - **MUST:** a bug fix starts with a test that fails without the fix.
 - **SHOULD:** a new screen gets screenshot tests for its main states (content, empty, error, loading as applicable) plus one large-font (`fontScale = 1.5`) variant.
