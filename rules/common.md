@@ -158,4 +158,14 @@ When a change moves code to a shared library or replaces a whole layer (error ha
 - These tests must pass on the default branch without any of the new code.
 - Then base the moving branch on that pull request and run the whole suite. A test that passed before and fails after is a regression, so fix the code.
 - A move changes no behavior, and the moving pull request does not change any expected result of these tests. If the new library behaves differently, keep the old behavior in the code that uses it (a resolver, writer, middleware or small wrapper). A behavior change that the new library makes possible goes into its own small pull request after the move: list it in the moving pull request's notes with what changes, why it helps and which clients it can affect.
+
+### Consumers of shared code
+
+A shared-code task is not finished with the shared repository's pull request alone. Every project that uses the moved or new code gets its own pull request, and each of those is a sub-issue of the shared task.
+
+- Bind each consumer to the shared change with a composite build (a local `includeBuild` of the shared Kotlin checkout, or a local package source for .NET) so the consumer runs against the unreleased change.
+- The consumer pull request removes the project's own copy and keeps only product parts (texts, ids, endpoints) as parameters.
+- Show that the old behavior is unchanged: the consumer's tests pass before and after, and where the change touches the app, add before and after device recordings and the pinqloq events for the same flow.
+- Keep the consumer pull request a draft until the shared change is released, then switch it from the composite build to the released version and mark it ready.
+- Open the consumer issues when the shared task is written, link them with GitHub sub-issues, and list them in the shared pull request's description. A shared pull request without its consumer sub-issues is incomplete.
 - In the pull request, list each removed piece, whether it had a test before, and which test covers it now.
