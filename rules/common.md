@@ -37,6 +37,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 ## Separation of Concerns & Single Responsibility
 
 - Each code unit must have exactly one responsibility.
+- A function name that joins two actions with "And" (`saveAndClose`, `saveToPhotosAndDeleteTempFile`) does two jobs: split it into one function per action and call them in sequence from the caller. "And" between two conditions in a test name (`…_withRotatedPhotoAndLowFreeHeap_…`) is fine.
 - Extract large logical blocks (retry logic, setup, try-catch) into well-named sub-functions.
 - Apply SRP without over-engineering. Do not create abstractions without real value.
 - Before adding infrastructure the task did not ask for (a test project, CI step, shared helper, package), check the repo's open pull requests and branches for the same work. If one exists, build on it (branch from it and target it as the base) instead of opening a parallel one.
