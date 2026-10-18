@@ -66,6 +66,7 @@ Turn Todo cards on the pinqponq Project #9 board into ready-for-review PRs, with
       "waiting_on": "set when the owner said they will provide something (accounts, access); no question reminders while it is set, cleared when it arrives",
       "queue_priority": 1,
       "weight": "light (set in step 3; unset = heavy)",
+      "verification_waits_for": "set when the device/pinqloq verification cannot start yet and only a person can unblock it, for example \"api-test deploy\"; preflight reports no verification work and no start requests while it is set; clear it when the thing exists",
       "updated_at": "ISO-8601"
     }
   },
