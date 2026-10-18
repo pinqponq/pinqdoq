@@ -177,7 +177,7 @@ def check_github_activity(tasks, last_housekeeping_at):
             reasons.append("%s PR is %s" % (task_key, node["state"].lower()))
         if kind == "backend_pr" and node.get("state") == "OPEN":
             waiting_on_backend.add(task_key)
-        if kind == "backend_pr" and node.get("state") == "MERGED":
+        if kind == "backend_pr" and node.get("state") == "MERGED" and not tasks[task_key].get("verification_waits_for"):
             task_work.append("%s backend PR merged: finish device/pinqloq verification" % task_key)
         new_comments = [comment for comment in collect_comments(node) if is_new_human_comment(comment, since)]
         if new_comments:
@@ -188,11 +188,12 @@ def check_github_activity(tasks, last_housekeeping_at):
 
 
 def check_verification_retries(tasks, waiting_on_backend):
-    """A retry is pointless while the backend pull request the verification waits for is still open;
-    the activity check reports the task as soon as that pull request is merged."""
+    """A retry is pointless while the backend pull request the verification waits for is still open, or while the
+    task names something it waits for in `verification_waits_for` (for example "api-test deploy"). The activity check
+    reports the task as soon as that pull request is merged and nothing is named."""
     task_work = []
     for task_key, task in tasks.items():
-        if task.get("status") != "verification_blocked" or task_key in waiting_on_backend:
+        if task.get("status") != "verification_blocked" or task_key in waiting_on_backend or task.get("verification_waits_for"):
             continue
         updated_at = parse_time(task.get("updated_at"))
         if updated_at is None or now_utc() - updated_at >= VERIFICATION_RETRY_INTERVAL:
