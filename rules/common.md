@@ -2,6 +2,8 @@
 
 These rules apply to all projects and all languages unless a language-specific file overrides them.
 
+**What belongs in this file:** standards for the code and text a developer writes (naming, structure, errors, comments, tests). How a task, pull request or automated runner works (branching, review steps, which devices to run, which issues to open) does not belong here; it goes into the instructions of the tool that does the work, for example `runner/skill/references/implementation.md`.
+
 ---
 
 ## Stack-specific rules
@@ -40,7 +42,6 @@ This file always loads. Stack-specific rules load automatically only when you to
 - A function name that joins two actions with "And" (`saveAndClose`, `saveToPhotosAndDeleteTempFile`) does two jobs: split it into one function per action and call them in sequence from the caller. "And" between two conditions in a test name (`…_withRotatedPhotoAndLowFreeHeap_…`) is fine.
 - Extract large logical blocks (retry logic, setup, try-catch) into well-named sub-functions.
 - Apply SRP without over-engineering. Do not create abstractions without real value.
-- Before adding infrastructure the task did not ask for (a test project, CI step, shared helper, package), check the repo's open pull requests and branches for the same work. If one exists, build on it (branch from it and target it as the base) instead of opening a parallel one.
 - Shared libraries (pinqnuqets, deveng-core-kmp, deveng-networking-kmp, …) hold only what any product would need on its own. When moving product code into one, keep the product's conventions (header and route names, error codes and messages, defaults, policies such as which errors count as client errors) in the product. A setting counts as a convention when only one product would change it: do not add it to keep that product's behavior; the product rebuilds the behavior on the library's extension points (its own middleware, resolver, endpoint). Technology-specific parts go to separate optional packages. Check the moved code, its comments and its docs for product names before opening the pull request.
 - Layer dependency rules:
   - Application depends only on Domain.
@@ -154,8 +155,6 @@ RabbitMQService(rabbitOptions)
 
 When a change moves code to a shared library or replaces a whole layer (error handling, logging, paging, data access), prove with tests written against the old code that the behavior stays the same.
 
-- First add characterization tests in their own pull request against the default branch. A characterization test records what the old code does today. Test through public behavior (HTTP responses, logs sent, values a service returns), not through the classes that will be removed, so the same tests still compile after the move. Keep the code that names the old classes in one test helper.
-- These tests must pass on the default branch without any of the new code.
-- Then base the moving branch on that pull request and run the whole suite. A test that passed before and fails after is a regression, so fix the code.
-- A move changes no behavior, and the moving pull request does not change any expected result of these tests. If the new library behaves differently, keep the old behavior in the code that uses it (a resolver, writer, middleware or small wrapper). A behavior change that the new library makes possible goes into its own small pull request after the move: list it in the moving pull request's notes with what changes, why it helps and which clients it can affect.
-- In the pull request, list each removed piece, whether it had a test before, and which test covers it now.
+- A characterization test records what the old code does today. Test through public behavior (HTTP responses, logs sent, values a service returns), not through the classes that will be removed, so the same tests still compile after the move. Keep the code that names the old classes in one test helper.
+- These tests must pass on the old code without any of the new code, and they must still pass after the move. A test that passed before and fails after is a regression, so fix the code.
+- A move changes no behavior, and the move does not change any expected result of these tests. If the new library behaves differently, keep the old behavior in the code that uses it (a resolver, writer, middleware or small wrapper). A behavior change that the new library makes possible is made separately after the move, with a note on what changes, why it helps and which clients it can affect.
