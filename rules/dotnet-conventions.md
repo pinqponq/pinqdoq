@@ -138,6 +138,7 @@ PostgresErrorCodes.ForeignKeyViolation
 - When moving code out of a product into `pinqnuqets`, remove the product-specific parts first and leave them in the product. The product then keeps them as its own code on top of the package.
 - A pull request that adds or changes a `pinqnuqets` package lists, for each package, what the package kept, what was left in the product, and why.
 - Reviewers: a product-specific constant or default in a `pinqnuqets` change is a blocker.
+- A package that targets several frameworks is tested on every one of them before the pull request: install the runtime of each `TargetFrameworks` entry and run `dotnet test` without `-f`. A green run on the newest runtime says nothing about the oldest one; for example, a `DispatchProxy` test double over a large SDK interface fails only on .NET 8.
 
 ---
 
