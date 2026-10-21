@@ -8,7 +8,8 @@ There is no global run lock any more. Instead:
     session at a time under the housekeeping lock; other sessions skip them;
   - each device has its own lock (devices-android, devices-ios), because two sessions driving the same
     emulator crash each other's Maestro runs (2026-09-30); one session can test on Android while
-    another tests on iOS;
+    another tests on iOS; devices-web is the browser for a web project's Playwright flows, whose dev server
+    uses one fixed port per project;
   - both devices are signed into the same test couple (Android=test1, iOS=test2), so a flow that
     changes the couple's shared server state (unmatch/re-match, seeding or deleting shared media)
     also takes the devices-couple lock: an unmatch on one device changes what the other device sees.
@@ -27,11 +28,11 @@ and is replaced by the next contender.
   locks.py release <task-key>              release a task lock
   locks.py housekeeping acquire <session>  exit 0 when acquired, 3 when another session is doing it
   locks.py housekeeping touch|release
-  locks.py devices acquire <session> [--platform android|ios|both] [--couple] [--task <task-key>] [--wait-minutes N]
+  locks.py devices acquire <session> [--platform android|ios|web|both] [--couple] [--task <task-key>] [--wait-minutes N]
                                            wait (default 90 min) until all requested locks are free, then take them
-                                           together (all or nothing); --platform defaults to both; touches the task
+                                           together (all or nothing); --platform defaults to both (android and ios); touches the task
                                            lock while waiting
-  locks.py devices touch|release <session> [--platform android|ios|both] [--couple]
+  locks.py devices touch|release <session> [--platform android|ios|web|both] [--couple]
                                            touch/release only the device locks this session holds (all of them when
                                            neither --platform nor --couple is given)
   locks.py status                          list all locks with age and owner
@@ -52,10 +53,10 @@ STATE_TX_SCRIPT = Path(__file__).with_name("state_tx.py")
 LOCK_MAX_AGE_SECONDS = 75 * 60
 DEVICE_WAIT_POLL_SECONDS = 30
 DEFAULT_DEVICE_WAIT_MINUTES = 90
-PLATFORM_LOCK_NAMES = {"android": "devices-android", "ios": "devices-ios"}
+PLATFORM_LOCK_NAMES = {"android": "devices-android", "ios": "devices-ios", "web": "devices-web"}
 COUPLE_LOCK_NAME = "devices-couple"
 LEGACY_DEVICES_LOCK_NAME = "devices"
-ALL_DEVICE_LOCK_NAMES = ["devices-android", "devices-ios", COUPLE_LOCK_NAME, LEGACY_DEVICES_LOCK_NAME]
+ALL_DEVICE_LOCK_NAMES = ["devices-android", "devices-ios", "devices-web", COUPLE_LOCK_NAME, LEGACY_DEVICES_LOCK_NAME]
 EXIT_LOCK_HELD = 3
 EXIT_NOTHING_CLAIMABLE = 4
 
@@ -237,7 +238,7 @@ def claim(session, light_only=False):
 
 
 def requested_device_lock_names(platform, include_couple):
-    if platform not in ("android", "ios", "both"):
+    if platform not in ("android", "ios", "web", "both"):
         raise SystemExit("unknown platform: %s" % platform)
     platforms = ["android", "ios"] if platform == "both" else [platform]
     lock_names = [PLATFORM_LOCK_NAMES[name] for name in platforms]

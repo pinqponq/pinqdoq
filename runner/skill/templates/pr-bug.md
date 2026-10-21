@@ -18,6 +18,7 @@ Closes #<n>
 ## Test videosu
 - Android: <link>
 - iOS: <link, if the change touches shared UI>
+- Web: <screenshots of the Playwright run, for a web project; a bug fix adds the old-code run's trace>
 
 ## Ekran görüntüleri
 <only if they show something the video does not; otherwise omit this section>

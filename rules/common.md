@@ -12,6 +12,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 
 - **Kotlin / KMP / Compose** (`*.kt`, `*.kts`) → `kotlin-architecture.md` (structure, MVI, shared module), `kotlin-naming.md`, `kotlin-conventions.md` (style), `kotlin-testing.md` (test stack and what every change must test), plus `kotlin-deveng-core.md` when the project depends on deveng-core-kmp. Deep references live in `.pinq-doq/references/kotlin/` (architecture, data-layer, mvi-pattern, naming, shared-module, testing, …) and `.pinq-doq/references/kotlin/deveng-core-reference.md`, read on demand.
 - **C# / .NET** (`*.cs`, `*.csproj`, `*.sln`) → `dotnet-conventions.md`.
+- **Web** (`*.ts`, `*.tsx`, `*.js`, `*.jsx`) → `web-testing.md` (proving a web change in a browser with Playwright). Setup and examples: `.pinq-doq/references/web/e2e-playwright.md`.
 
 ---
 
