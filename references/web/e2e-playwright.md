@@ -22,7 +22,7 @@ build/
 Commit `.env.example` with the variable names from the rule and empty values:
 
 ```
-E2E_BASE_URL=http://localhost:5173
+E2E_BASE_URL=
 E2E_USERNAME=
 E2E_PASSWORD=
 E2E_OTP=
@@ -48,7 +48,8 @@ import dotenv from 'dotenv';
 
 dotenv.config({ quiet: true });
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:5173';
+const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173';
+const port = new URL(baseURL).port;
 const outputRoot = 'build/e2e/web';
 
 export default defineConfig({
@@ -77,7 +78,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --port 5173 --strictPort',
+    command: `npm run dev -- --port ${port} --strictPort`,
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,
@@ -117,8 +118,11 @@ setup('sign in', async ({ browser }) => {
   const username = process.env.E2E_USERNAME;
   const password = process.env.E2E_PASSWORD;
   const otp = process.env.E2E_OTP;
-  if (!username || !password || !otp) {
-    throw new Error('Saved sign-in expired. Run e2e/scripts/login.sh once, or set E2E_OTP in .env.');
+  if (!username || !password) {
+    throw new Error('E2E_USERNAME or E2E_PASSWORD is not set. Create .env from .env.example.');
+  }
+  if (!otp) {
+    throw new Error('No valid saved sign-in and no E2E_OTP. Run e2e/scripts/login.sh once, or set E2E_OTP in .env.');
   }
 
   const context = await browser.newContext();
@@ -168,10 +172,11 @@ if [ $# -lt 1 ]; then
 fi
 flow="$1"
 shift
+rm -rf "build/e2e/web/screenshots/${flow}"
 npx playwright test "e2e/flows/${flow}.spec.ts" --project=chromium "$@"
 ```
 
-Results land in `build/e2e/web/`: `junit.xml`, `report/index.html`, and per failing test a folder under `test-results/` with `trace.zip`, the failure screenshot and the video. Screenshots a flow takes itself land where the flow puts them (`build/e2e/web/screenshots/`).
+Results land in `build/e2e/web/`: `junit.xml`, `report/index.html`, and per failing test a folder under `test-results/` with `trace.zip`, the failure screenshot and the video. Playwright empties `test-results/` at the start of every run, so copy a failing run's `trace.zip` elsewhere before the next run. Screenshots a flow takes itself land in `build/e2e/web/screenshots/<flow>/`, which the script empties before the run.
 
 ---
 
@@ -195,7 +200,7 @@ export async function openOrders(page: Page) {
 import { test, expect } from '@playwright/test';
 import { openOrders } from '../subflows/open-orders';
 
-const screenshotDir = 'build/e2e/web/screenshots';
+const screenshotDir = 'build/e2e/web/screenshots/orders-filter';
 
 test('filter orders by status shows only matching rows', async ({ page }) => {
   await openOrders(page);

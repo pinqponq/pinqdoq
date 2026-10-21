@@ -25,6 +25,7 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 | `e2e/subflows/<name>.ts` | Shared steps as plain async functions that take a `Page` (open a menu, pick a date, wait for a table). |
 | `e2e/auth.setup.ts` | The only place that signs in. It saves the signed-in browser state to `e2e/.auth/state.json`. |
 | `e2e/scripts/run-flow.sh` | Runs one flow: `e2e/scripts/run-flow.sh <flow>`. |
+| `e2e/scripts/login.sh` | Lets a person sign in once by hand and saves the state, for a test environment without a fixed one-time code. |
 | `build/e2e/web/` | Screenshots, traces, the HTML report and `junit.xml`. Never committed. |
 
 `e2e/.auth/`, `build/` and `.env` are in `.gitignore`.
@@ -37,7 +38,7 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 - **Select what the user sees.** Use `getByRole` with the accessible name, `getByLabel`, `getByPlaceholder` or `getByText`. Use `getByTestId` only when one of those would need more than three conditions to find a single element. Never select by CSS class, DOM structure or index.
 - **Wait for state, not time.** Use web-first assertions (`await expect(locator).toBeVisible()`, `toHaveText`, `toHaveURL`). Never use `page.waitForTimeout` to wait for the app.
 - **Start signed in.** Every flow starts from the stored state that `auth.setup.ts` saved (`storageState` in the config). A flow never fills the sign-in form itself. A flow that tests signing in or signing out uses a fresh context (`test.use({ storageState: { cookies: [], origins: [] } })`) and stays the only flow that does so.
-- **Take a screenshot at each state the pull request shows** (`await page.screenshot({ path: … })` under `build/e2e/web/`), named after the state (`orders-filter-applied.png`).
+- **Take a screenshot at each state the pull request shows** (`await page.screenshot({ path: … })` under `build/e2e/web/screenshots/<flow>/`), named after the state (`orders-filter-applied.png`). `run-flow.sh` empties that folder before the run, so old screenshots never pass as new evidence.
 - **Same actions, same order as the issue.** A flow that proves a fix first fails on the old code, or shows the problem's footprint, and then passes on the fixed code.
 
 ---
