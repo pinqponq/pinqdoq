@@ -49,9 +49,13 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173';
-const port = new URL(baseURL).port;
-if (!port) throw new Error('E2E_BASE_URL must include the dev server port, for example http://localhost:5173.');
+const { hostname, port } = new URL(baseURL);
+const runsLocalDevServer = hostname === 'localhost' || hostname === '127.0.0.1';
+if (runsLocalDevServer && !port) {
+  throw new Error('E2E_BASE_URL must include the dev server port, for example http://localhost:5173.');
+}
 const outputRoot = 'build/e2e/web';
+const isProofRun = process.env.E2E_PROOF === '1';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -67,29 +71,39 @@ export default defineConfig({
     baseURL,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
-    video: 'retain-on-failure',
   },
   projects: [
-    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+      use: { screenshot: 'off', trace: 'off', video: 'off' },
+    },
     {
       name: 'chromium',
       testDir: 'e2e/flows',
       dependencies: ['setup'],
-      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/state.json' },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/state.json',
+        video: isProofRun ? 'on' : 'retain-on-failure',
+      },
     },
   ],
-  webServer: {
-    command: `npm run dev -- --port ${port} --strictPort`,
-    url: baseURL,
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
+  webServer: runsLocalDevServer
+    ? {
+        command: `npm run dev -- --port ${port} --strictPort`,
+        url: baseURL,
+        reuseExistingServer: false,
+        timeout: 120_000,
+      }
+    : undefined,
 });
 ```
 
 - `retries: 0` keeps a flaky flow visible. The runner reruns a failed flow by hand at most once and reports it as flaky when the rerun passes unchanged.
 - `trace: 'retain-on-failure'` keeps the trace only for failing runs, which is what the pull request needs.
-- `webServer` starts the dev server of the checkout the flows run in, so the flows test the code on the branch. `reuseExistingServer: false` and `--strictPort` make the run fail when the port is already taken, instead of testing a server started from another checkout or moving to another port. The port stays fixed because the saved sign-in belongs to one address (origin). Stop your own `npm run dev` before running the flows. When the flows should run against a deployed test environment instead, set `E2E_BASE_URL` to it and remove `webServer`.
+- `E2E_PROOF=1` (set by `run-flow.sh --proof`) turns the video on for every flow; a normal run keeps it only for a failing test. Playwright scales the video to fit 800×800, so it needs no shrinking. The `setup` project turns screenshots, traces and video off, because its screen and its trace show the test account and the typed values.
+- `webServer` starts the dev server of the checkout the flows run in, so the flows test the code on the branch. `reuseExistingServer: false` and `--strictPort` make the run fail when the port is already taken, instead of testing a server started from another checkout or moving to another port. The port stays fixed because the saved sign-in belongs to one address (origin). Stop your own `npm run dev` before running the flows. When `E2E_BASE_URL` points to a deployed test environment instead (for example `https://test.example.com`), the config starts no dev server and the flows run against that address. That environment runs what is deployed there, not the branch, so a branch change is proven against it only after it is deployed.
 
 ---
 
@@ -167,17 +181,32 @@ Sign in in the window that opens, type the code, wait for the first page after s
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+proof="${E2E_PROOF:-0}"
+if [ "${1:-}" = "--proof" ]; then
+  proof=1
+  shift
+fi
 if [ $# -lt 1 ]; then
-  echo "usage: e2e/scripts/run-flow.sh <flow> [playwright options]" >&2
+  echo "usage: e2e/scripts/run-flow.sh [--proof] <flow> [playwright options]" >&2
   exit 2
 fi
 flow="$1"
 shift
-rm -rf "build/e2e/web/screenshots/${flow}"
-npx playwright test "e2e/flows/${flow}.spec.ts" --project=chromium "$@"
+screenshot_dir="build/e2e/web/screenshots/${flow}"
+video_dir="build/e2e/web/videos/${flow}"
+rm -rf "$screenshot_dir" "$video_dir"
+status=0
+E2E_PROOF="$proof" npx playwright test "e2e/flows/${flow}.spec.ts" --project=chromium "$@" || status=$?
+if [ "$proof" = 1 ] && [ -d build/e2e/web/test-results ]; then
+  mkdir -p "$video_dir"
+  find build/e2e/web/test-results -name '*.webm' | while read -r video; do
+    cp "$video" "${video_dir}/$(basename "$(dirname "$video")").webm"
+  done
+fi
+exit "$status"
 ```
 
-Results land in `build/e2e/web/`: `junit.xml`, `report/index.html`, and per failing test a folder under `test-results/` with `trace.zip`, the failure screenshot and the video. Playwright empties `test-results/` at the start of every run, so copy a failing run's `trace.zip` elsewhere before the next run. Screenshots a flow takes itself land in `build/e2e/web/screenshots/<flow>/`, which the script empties before the run.
+Results land in `build/e2e/web/`: `junit.xml`, `report/index.html`, and per failing test a folder under `test-results/` with `trace.zip`, the failure screenshot and the video. Playwright empties `test-results/` at the start of every run, so copy a failing run's `trace.zip` elsewhere before the next run. Screenshots a flow takes itself land in `build/e2e/web/screenshots/<flow>/`. With `--proof` (or `E2E_PROOF=1`), the script copies every test's video to `build/e2e/web/videos/<flow>/<test folder>.webm` after the run, also when a test failed, and keeps Playwright's exit code. It empties both folders before the run, so old media never passes as new evidence.
 
 ---
 
@@ -216,7 +245,7 @@ test('filter orders by status shows only matching rows', async ({ page }) => {
 ## 7. Before and after for a bug fix
 
 1. Check out the default branch in its own folder, copy `.env` and `e2e/.auth/` next to it, and run the flow. It must fail or show the problem. Keep that run's `trace.zip` and screenshots as the "before".
-2. Run the same flow on the fix branch with the same `.env`. Keep the screenshots as the "after".
+2. Run the same flow on the fix branch with the same `.env`, as a proof run (`run-flow.sh --proof <flow>`). Keep its video and screenshots as the "after". Run the old code with `--proof` too when its video shows the problem better than the trace.
 3. If the old code passes the flow, the flow does not reproduce the problem yet. Change the flow before testing the fix.
 
 ---

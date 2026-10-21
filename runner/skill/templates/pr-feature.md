@@ -9,7 +9,7 @@ Closes #<n>
 ## Test videosu
 - Android: <link>
 - iOS: <link, if the change touches shared UI>
-- Web: <screenshots of the Playwright run, for a web project; a bug fix adds the old-code run's trace>
+- Web: <video link of the Playwright proof run, for a web project; a bug fix adds the old-code run's trace>
 
 ## Ekran görüntüleri
 <only the new/changed states; omit if the video covers it>

@@ -24,9 +24,9 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 | `e2e/flows/<name>.spec.ts` | One flow per user scenario (the counterpart of a Maestro flow). |
 | `e2e/subflows/<name>.ts` | Shared steps as plain async functions that take a `Page` (open a menu, pick a date, wait for a table). |
 | `e2e/auth.setup.ts` | The only place that signs in. It saves the signed-in browser state to `e2e/.auth/state.json`. |
-| `e2e/scripts/run-flow.sh` | Runs one flow: `e2e/scripts/run-flow.sh <flow>`. |
+| `e2e/scripts/run-flow.sh` | Runs one flow: `e2e/scripts/run-flow.sh [--proof] <flow>`. |
 | `e2e/scripts/login.sh` | Lets a person sign in once by hand and saves the state, for a test environment without a fixed one-time code. |
-| `build/e2e/web/` | Screenshots, traces, the HTML report and `junit.xml`. Never committed. |
+| `build/e2e/web/` | Screenshots, videos, traces, the HTML report and `junit.xml`. Never committed. |
 
 `e2e/.auth/`, `build/` and `.env` are in `.gitignore`.
 
@@ -40,6 +40,15 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 - **Start signed in.** Every flow starts from the stored state that `auth.setup.ts` saved (`storageState` in the config). A flow never fills the sign-in form itself. A flow that tests signing in or signing out uses a fresh context (`test.use({ storageState: { cookies: [], origins: [] } })`) and stays the only flow that does so.
 - **Take a screenshot at each state the pull request shows** (`await page.screenshot({ path: … })` under `build/e2e/web/screenshots/<flow>/`), named after the state (`orders-filter-applied.png`). `run-flow.sh` empties that folder before the run, so old screenshots never pass as new evidence.
 - **Same actions, same order as the issue.** A flow that proves a fix first fails on the old code, or shows the problem's footprint, and then passes on the fixed code.
+
+---
+
+## Proof runs
+
+- **MUST:** the run whose media goes into the pull request is a proof run: `e2e/scripts/run-flow.sh --proof <flow>`, or `E2E_PROOF=1` in the environment. A proof run records a video of every flow. The screenshots a flow takes are kept in every run.
+- A normal run keeps the video, the trace and a failure screenshot only for a failing test (`retain-on-failure`), so everyday runs stay fast and small.
+- The sign-in step (`auth.setup.ts`) never records a video, a trace or a screenshot, also in a proof run: its screen shows the test account.
+- `run-flow.sh` copies the proof videos to `build/e2e/web/videos/<flow>/` after the run and empties that folder before it, the same way it handles `screenshots/<flow>/`.
 
 ---
 
@@ -61,6 +70,6 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 
 ## What the pull request contains
 
-- The screenshots of the passing run for each state the change shows.
+- The video and the screenshots of the passing proof run, for each state the change shows.
 - For a bug fix, the run on the old code that shows the problem, and its trace (`trace.zip`, opened with `npx playwright show-trace`). For any other failing run the reviewer must see, its trace too. A trace holds the test environment's session cookies, so it is attached only in private repos; in a public repo the pull request shows the failing step and its screenshot instead.
 - The exact command that ran each flow and its result.
