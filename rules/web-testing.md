@@ -46,8 +46,8 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 ## Proof runs
 
 - **MUST:** the run whose media goes into the pull request is a proof run: `e2e/scripts/run-flow.sh --proof <flow>`, or `E2E_PROOF=1` in the environment. A proof run records a video of every flow. The screenshots a flow takes are kept in every run.
-- A normal run keeps the video, the trace and a failure screenshot only for a failing test (`retain-on-failure`), so everyday runs stay fast and small.
-- The sign-in step (`auth.setup.ts`) never records a video, a trace or a screenshot, also in a proof run: its screen shows the test account.
+- In every run, the trace and a failure screenshot are kept only for a failing test (`retain-on-failure`). A normal run also keeps the video only for a failing test, so everyday runs stay fast and small.
+- The sign-in step (`auth.setup.ts`) never records a video, a trace or a screenshot, even in a proof run: its screen shows the test account.
 - `run-flow.sh` copies the proof videos to `build/e2e/web/videos/<flow>/` after the run and empties that folder before it, the same way it handles `screenshots/<flow>/`.
 
 ---
@@ -71,5 +71,5 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 ## What the pull request contains
 
 - The video and the screenshots of the passing proof run, for each state the change shows.
-- For a bug fix, the run on the old code that shows the problem, and its trace (`trace.zip`, opened with `npx playwright show-trace`). For any other failing run the reviewer must see, its trace too. A trace holds the test environment's session cookies, so it is attached only in private repos; in a public repo the pull request shows the failing step and its screenshot instead.
+- For a bug fix, the proof run on the old code that shows the problem, and its trace when it failed (`trace.zip`, opened with `npx playwright show-trace`). For any other failing run the reviewer must see, its trace too. A trace holds the test environment's session cookies, so it is attached only in private repos; in a public repo the pull request shows the failing step and its screenshot instead.
 - The exact command that ran each flow and its result.

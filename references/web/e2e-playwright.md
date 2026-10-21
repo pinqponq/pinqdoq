@@ -194,19 +194,19 @@ flow="$1"
 shift
 screenshot_dir="build/e2e/web/screenshots/${flow}"
 video_dir="build/e2e/web/videos/${flow}"
-rm -rf "$screenshot_dir" "$video_dir"
+rm -rf "$screenshot_dir" "$video_dir" build/e2e/web/test-results
 status=0
 E2E_PROOF="$proof" npx playwright test "e2e/flows/${flow}.spec.ts" --project=chromium "$@" || status=$?
 if [ "$proof" = 1 ] && [ -d build/e2e/web/test-results ]; then
   mkdir -p "$video_dir"
   find build/e2e/web/test-results -name '*.webm' | while read -r video; do
-    cp "$video" "${video_dir}/$(basename "$(dirname "$video")").webm"
+    cp "$video" "${video_dir}/$(basename "$(dirname "$video")")-$(basename "$video")"
   done
 fi
 exit "$status"
 ```
 
-Results land in `build/e2e/web/`: `junit.xml`, `report/index.html`, and per failing test a folder under `test-results/` with `trace.zip`, the failure screenshot and the video. Playwright empties `test-results/` at the start of every run, so copy a failing run's `trace.zip` elsewhere before the next run. Screenshots a flow takes itself land in `build/e2e/web/screenshots/<flow>/`. With `--proof` (or `E2E_PROOF=1`), the script copies every test's video to `build/e2e/web/videos/<flow>/<test folder>.webm` after the run, also when a test failed, and keeps Playwright's exit code. It empties both folders before the run, so old media never passes as new evidence.
+Results land in `build/e2e/web/`: `junit.xml`, `report/index.html`, and per failing test a folder under `test-results/` with `trace.zip`, the failure screenshot and the video. Playwright empties `test-results/` at the start of every run, so copy a failing run's `trace.zip` elsewhere before the next run. Screenshots a flow takes itself land in `build/e2e/web/screenshots/<flow>/`. With `--proof` (or `E2E_PROOF=1`), the script copies every video of every test to `build/e2e/web/videos/<flow>/<test folder>-<video file>` after the run, also when a test failed, and keeps Playwright's exit code. A test that opens a second page has a second video (`video-1.webm`). The script empties both folders and `test-results/` before the run, so old media never passes as new evidence.
 
 ---
 
@@ -244,9 +244,9 @@ test('filter orders by status shows only matching rows', async ({ page }) => {
 
 ## 7. Before and after for a bug fix
 
-1. Check out the default branch in its own folder, copy `.env` and `e2e/.auth/` next to it, and run the flow. It must fail or show the problem. Keep that run's `trace.zip` and screenshots as the "before".
-2. Run the same flow on the fix branch with the same `.env`, as a proof run (`run-flow.sh --proof <flow>`). Keep its video and screenshots as the "after". Run the old code with `--proof` too when its video shows the problem better than the trace.
-3. If the old code passes the flow, the flow does not reproduce the problem yet. Change the flow before testing the fix.
+1. Check out the default branch in its own folder, copy `.env` and `e2e/.auth/` next to it, and run the flow as a proof run (`run-flow.sh --proof <flow>`). It must fail or show the problem. Its video and screenshots are the "before". When it fails, also keep its `trace.zip`; Playwright keeps a trace only for a failing test.
+2. Run the same flow on the fix branch with the same `.env`, also as a proof run. Its video and screenshots are the "after".
+3. If the old code passes the flow and its video and screenshots do not show the problem, the flow does not reproduce the problem yet. Change the flow before testing the fix.
 
 ---
 

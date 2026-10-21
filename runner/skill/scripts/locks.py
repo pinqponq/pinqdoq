@@ -8,8 +8,8 @@ There is no global run lock any more. Instead:
     session at a time under the housekeeping lock; other sessions skip them;
   - each device has its own lock (devices-android, devices-ios), because two sessions driving the same
     emulator crash each other's Maestro runs (2026-09-30); one session can test on Android while
-    another tests on iOS; devices-web is the browser for a web project's Playwright flows, whose dev server
-    uses one fixed port per project;
+    another tests on iOS; devices-web is the browser for a web project's Playwright flows: a local dev server
+    uses one fixed port per project, and every session signs in with the same test account;
   - both devices are signed into the same test couple (Android=test1, iOS=test2), so a flow that
     changes the couple's shared server state (unmatch/re-match, seeding or deleting shared media)
     also takes the devices-couple lock: an unmatch on one device changes what the other device sees.
