@@ -244,7 +244,7 @@ test('filter orders by status shows only matching rows', async ({ page }) => {
 
 ## 7. Before and after for a bug fix
 
-1. Check out the default branch in its own folder, copy `.env` and `e2e/.auth/` next to it, and run the flow as a proof run (`run-flow.sh --proof <flow>`). It must fail or show the problem. Its video and screenshots are the "before". When it fails, also keep its `trace.zip`; Playwright keeps a trace only for a failing test.
+1. Check out the default branch in its own folder. Copy `.env`, `e2e/.auth/`, the branch's `e2e/` folder and `playwright.config.ts` into it, so only the app code is old (the default branch may not have the new flow, `--proof` or `e2e/` at all). Run the flow there as a proof run (`run-flow.sh --proof <flow>`). It must fail or show the problem. Its video and screenshots are the "before". When it fails, also keep its `trace.zip`; Playwright keeps a trace only for a failing test.
 2. Run the same flow on the fix branch with the same `.env`, also as a proof run. Its video and screenshots are the "after".
 3. If the old code passes the flow and its video and screenshots do not show the problem, the flow does not reproduce the problem yet. Change the flow before testing the fix.
 

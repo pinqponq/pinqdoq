@@ -18,7 +18,7 @@ Closes #<n>
 ## Test videosu
 - Android: <link>
 - iOS: <link, if the change touches shared UI>
-- Web: <video link of the Playwright proof run, for a web project; also the old-code proof run, and its trace in a private repo (public repo: the failing step and its screenshot)>
+- Web: <video link of the Playwright proof run, for a web project; also the old-code proof run and, when it failed, its trace in a private repo (public repo: the failing step and its screenshot)>
 
 ## Ekran görüntüleri
 <only if they show something the video does not; otherwise omit this section>
