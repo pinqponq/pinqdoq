@@ -2,9 +2,11 @@
 """Diff-scoped StrykerJS mutation run for a web worktree (TypeScript/JavaScript, Vitest runner).
 
 Usage: run_stryker_js.py <worktree> <base-ref> [--project DIR] [--threshold 85] [--lock TASK_KEY]
-The web counterpart of run_pit.py, with the same JSON output. Mutates only the production files the branch changed
+The web counterpart of run_pit.py: the same score, killed, total, ignored_noise, threshold and survivors fields and the
+same exit codes. Mutates only the production files the branch changed
 (no tests, no type declarations, nothing under e2e/), counts only the mutants on changed lines, and prints one JSON
-summary; exit 1 when the score is below the threshold, 2 when Stryker could not run. --project is the folder with
+summary; exit 1 when the score is below the threshold, 2 when git or Stryker could not run or the report misses a
+changed file. --project is the folder with
 package.json and stryker.config.* (default: the worktree root). Stryker's incremental file in build/stryker keeps
 results, so a re-run after adding tests only re-tests mutants whose code or covering tests changed. The full Stryker
 output goes to build/runner-logs/; each run is recorded in timings.jsonl.
@@ -27,13 +29,24 @@ UNDETECTED = ("Survived", "NoCoverage")
 NOISE = ("CompileError", "RuntimeError", "Ignored")
 
 
-def sh(cmd, cwd, **kw):
-    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, **kw)
+class GitError(Exception):
+    pass
+
+
+def sh(cmd, cwd):
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+
+
+def git(arguments, worktree):
+    result = sh(["git"] + arguments, worktree)
+    if result.returncode != 0:
+        raise GitError(f"git {' '.join(arguments)}: {result.stderr.strip()}")
+    return result.stdout
 
 
 def diff_files(worktree, base, project):
     """Files the branch added or changed under the project folder, relative to it."""
-    files = sh(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"], worktree).stdout.split()
+    files = git(["diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"], worktree).split()
     prefix = "" if project in ("", ".") else project.rstrip("/") + "/"
     return [path[len(prefix):] for path in files if path.startswith(prefix)]
 
@@ -46,10 +59,10 @@ def changed_lines(worktree, base, project, files):
     result = {}
     for relative in files:
         path = os.path.join(project, relative) if project not in ("", ".") else relative
-        diff = sh(["git", "diff", "-U0", f"{base}...HEAD", "--", path], worktree).stdout
+        diff = git(["diff", "-U0", f"{base}...HEAD", "--", path], worktree)
         lines = set()
-        for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.M):
-            start, count = int(m.group(1)), int(m.group(2) or 1)
+        for hunk in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.M):
+            start, count = int(hunk.group(1)), int(hunk.group(2) or 1)
             lines |= set(range(start, start + count))
         if lines:
             result[relative] = lines
@@ -74,10 +87,19 @@ def run_stryker(project_dir, files):
 
 
 def report_files(report, project_dir):
-    """The report's files keyed by path relative to the project folder (Stryker writes relative or absolute keys)."""
+    """The report's files keyed by path relative to the project folder.
+
+    Stryker writes relative or absolute keys; an absolute key may be the resolved path of a worktree reached through a
+    symbolic link, so both sides are resolved before comparing.
+    """
     files = {}
-    for name, entry in json.load(open(report)).get("files", {}).items():
-        relative = os.path.relpath(name, project_dir) if os.path.isabs(name) else os.path.normpath(name)
+    with open(report) as report_file:
+        entries = json.load(report_file).get("files", {})
+    for name, entry in entries.items():
+        if os.path.isabs(name):
+            relative = os.path.relpath(os.path.realpath(name), os.path.realpath(project_dir))
+        else:
+            relative = os.path.normpath(name)
         files[relative] = entry
     return files
 
@@ -91,9 +113,12 @@ def describe(mutant, source_lines):
 
 
 def count_mutants(files, changed, counts, survivors):
+    """Counts the mutants on changed lines; returns the changed files the report does not contain."""
+    missing = []
     for path, lines in changed.items():
         entry = files.get(path)
-        if not entry:
+        if entry is None:
+            missing.append(path)
             continue
         source_lines = entry.get("source", "").splitlines()
         for mutant in entry.get("mutants", []):
@@ -108,6 +133,7 @@ def count_mutants(files, changed, counts, survivors):
             if status in UNDETECTED:
                 survivors.append({"file": path, "line": line, "status": status, "mutator": mutant["mutatorName"],
                                   "description": describe(mutant, source_lines)})
+    return sorted(missing)
 
 
 def main():
@@ -121,12 +147,17 @@ def main():
     worktree = os.path.abspath(args.worktree)
     project_dir = os.path.normpath(os.path.join(worktree, args.project))
 
-    files = diff_files(worktree, args.base, args.project)
-    changed = changed_lines(worktree, args.base, args.project, production_files(files))
+    try:
+        files = diff_files(worktree, args.base, args.project)
+        changed = changed_lines(worktree, args.base, args.project, production_files(files))
+    except GitError as error:
+        print(error, file=sys.stderr)
+        return 2
     if not changed:
         print(json.dumps({"skipped": "no changed production lines in TypeScript/JavaScript files", "project": args.project}))
         return 0
     if not any(os.path.exists(os.path.join(project_dir, name)) for name in CONFIG_FILES):
+        timings.record("pit", args.lock, worktree, ["run_stryker_js.py", args.base], START_SECONDS, time.time(), 2)
         print(f"No stryker.config.mjs in {args.project}: set it up as references/web/e2e-playwright.md describes.", file=sys.stderr)
         return 2
     report, log_path, error = run_stryker(project_dir, sorted(changed))
@@ -136,7 +167,11 @@ def main():
         return 2
 
     counts, survivors = collections.Counter(), []
-    count_mutants(report_files(report, project_dir), changed, counts, survivors)
+    missing = count_mutants(report_files(report, project_dir), changed, counts, survivors)
+    if missing:
+        timings.record("pit", args.lock, worktree, ["run_stryker_js.py", args.base], START_SECONDS, time.time(), 2)
+        print(f"The Stryker report has no entry for changed files {missing} (full output: {log_path}).", file=sys.stderr)
+        return 2
     killed = sum(counts[s] for s in DETECTED)
     total = killed + sum(counts[s] for s in UNDETECTED)
     score = round(100 * killed / total, 1) if total else 100.0
@@ -146,7 +181,7 @@ def main():
                       "threshold": args.threshold, "files": sorted(changed),
                       "changed_tests": any(TEST_FILE.search(path) for path in files),
                       "report": os.path.relpath(report, worktree), "log": os.path.relpath(log_path, worktree),
-                      "survivors": sorted(survivors, key=lambda s: (s["file"], s["line"]))}, indent=1, ensure_ascii=False))
+                      "survivors": sorted(survivors, key=lambda survivor: (survivor["file"], survivor["line"]))}, indent=1, ensure_ascii=False))
     return 0 if score >= args.threshold else 1
 
 

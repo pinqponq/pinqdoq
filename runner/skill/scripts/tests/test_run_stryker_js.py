@@ -33,7 +33,8 @@ class CountMutantsTest(unittest.TestCase):
     def count(self, mutants, changed_lines):
         files = {"src/price.ts": {"language": "typescript", "source": SOURCE, "mutants": mutants}}
         counts, survivors = collections.Counter(), []
-        run_stryker_js.count_mutants(files, {"src/price.ts": changed_lines}, counts, survivors)
+        missing = run_stryker_js.count_mutants(files, {"src/price.ts": changed_lines}, counts, survivors)
+        self.assertEqual([], missing)
         return counts, survivors
 
     def test_counts_only_mutants_on_changed_lines(self):
@@ -61,8 +62,35 @@ class CountMutantsTest(unittest.TestCase):
         self.assertEqual(1, counts["Timeout"])
         self.assertEqual(0, counts["noise"])
 
+    def test_changed_file_missing_from_the_report_is_returned(self):
+        missing = run_stryker_js.count_mutants({}, {"src/price.ts": {2}}, collections.Counter(), [])
+
+        self.assertEqual(["src/price.ts"], missing)
+
+
+class GitTest(unittest.TestCase):
+    def test_unknown_base_ref_raises(self):
+        with tempfile.TemporaryDirectory() as worktree:
+            run_stryker_js.sh(["git", "init", "-q"], worktree)
+
+            with self.assertRaises(run_stryker_js.GitError):
+                run_stryker_js.diff_files(worktree, "origin/no-such-branch", ".")
+
 
 class ReportFilesTest(unittest.TestCase):
+    def test_absolute_key_through_a_symbolic_link_matches(self):
+        with tempfile.TemporaryDirectory() as folder:
+            project = Path(folder, "project")
+            project.mkdir()
+            link = Path(folder, "link")
+            link.symlink_to(project)
+            report = Path(project, "mutation.json")
+            report.write_text(json.dumps({"files": {f"{project.resolve()}/src/a.ts": {"mutants": []}}}))
+
+            files = run_stryker_js.report_files(str(report), str(link))
+
+        self.assertEqual(["src/a.ts"], list(files))
+
     def test_absolute_and_relative_keys_become_project_relative(self):
         with tempfile.TemporaryDirectory() as project:
             report = Path(project, "mutation.json")

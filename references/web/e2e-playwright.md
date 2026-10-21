@@ -292,7 +292,7 @@ Run it on the changed files only, with `--incremental` so a second run after add
 npx stryker run --incremental --mutate "src/cart/price.ts,src/cart/CartTotal.tsx"
 ```
 
-Read the score for the lines the change touched, not the whole files: in `build/stryker/mutation.json`, keep the mutants whose `location.start.line` is a changed line. `Killed` and `Timeout` count as detected, `Survived` and `NoCoverage` as missed; `CompileError`, `RuntimeError` and `Ignored` are left out. The task runner does this with `run_stryker_js.py`, which prints the same JSON as its PIT script.
+Read the score for the lines the change touched, not the whole files: in `build/stryker/mutation.json`, keep the mutants whose `location.start.line` is a changed line. `Killed` and `Timeout` count as detected, `Survived` and `NoCoverage` as missed; `CompileError`, `RuntimeError` and `Ignored` are left out. The pinqloq task runner (the Claude Code routine that works on the board's tasks) does this with its `run_stryker_js.py` script.
 
 ---
 

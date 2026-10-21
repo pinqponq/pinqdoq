@@ -82,7 +82,7 @@ StrykerJS with the Vitest runner plays the role PIT plays for Kotlin and Stryker
 
 - **MUST:** every change to TypeScript or JavaScript production code proves that its tests can fail. Run StrykerJS on the changed files only (`--mutate` with the files of the diff, never the whole project), and count only the mutants on lines changed against the default branch.
 - **MUST:** the score on changed lines is at least **85%**, the same threshold as PIT. Below it, add or sharpen tests and run again. A mutant that still survives goes into the pull request with a one-line reason (an end-to-end flow covers it, unreachable defensive code, an equivalent change). A survivor on the main condition or branch the change adds is never acceptable.
-- Mutants the TypeScript checker rejects (`CompileError`), that crash the test run before any test starts (`RuntimeError`) or that the config ignores (`Ignored`) are invalid code, not missed tests: they are left out of the score and reported as a count.
+- Mutants the TypeScript checker rejects (`CompileError`), that crash the test run before any test starts (`RuntimeError`) or that the config ignores (`Ignored`) are invalid code or excluded on purpose, not missed tests: they are left out of the score and reported as a count.
 - Test files, type declarations (`.d.ts`), stories, `e2e/` and config files are never mutated.
 - The report goes to `build/stryker/` (`mutation.json`, `mutation.html`, the incremental file), never committed.
 - Hand-written mutants do not count as mutation testing.
