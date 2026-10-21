@@ -34,6 +34,8 @@ There is no line-count limit.
 
 **Never automatic**, whatever the risk: publishing (Maven, NuGet), Portainer or production deployment, and anything the owner said he will review himself. Say so in the note ("otomatik merge yok: <reason>").
 
+**Who merges:** the runner that did the task decides and merges, at the end of its own run, after step 11. When every gate is ✅, the risk is `düşük` and nothing is "never automatic": `gh pr merge <n> --squash` (add `--admin` only when the required-review policy is the sole blocker; use `GH_TOKEN=$(gh auth token --user pinq-ponq)` for Atakan's repos), wait for the merge, move the card to Done, and write "Otomatik merge edildi" with the gates and risk line in the run report and as a PR comment. When any gate fails, the risk is not low or the PR is never-automatic, do not merge: leave the PR open with the risk line in "Notlar" for the owner. A stacked or consumer PR that is bound by a composite waits for its shared release. After merging, check that CI on the base branch stays green; if it breaks, revert the merge and report it in "İnsan gerekiyor". The chat session does not re-evaluate runner PRs.
+
 Note format in "Notlar":
 ```
 Otomatik merge: kapılar ✅ taslak değil · ✅ CI · ✅ testler · ✅ PIT · ✅ pinq_code-review · ✅ cihaz · ✅ paylaşılan kod · ✅ taban · ✅ karar
