@@ -60,6 +60,7 @@ class ClaimWithFourRunnersTest(unittest.TestCase):
         processes = [self.start_claim("runner-%d-session" % number, light_only=number == 3) for number in range(1, 5)]
         claimed_keys = [self.claimed_key(process) for process in processes]
 
+        self.assertNotIn(None, claimed_keys)
         self.assertEqual(["org/repo#1", "org/repo#2", "org/repo#3", "org/repo#4"], sorted(claimed_keys))
 
     def test_a_fifth_session_finds_nothing_once_four_tasks_are_claimed(self):

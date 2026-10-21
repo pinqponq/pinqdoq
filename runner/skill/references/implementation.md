@@ -12,18 +12,18 @@ Open the PR only when **all** of these hold; otherwise push the branch, keep the
 - [ ] **Moves and replacements follow this order.** When the task moves code to a shared library or replaces a whole layer, first open the characterization tests as their own PR against the default branch (they must pass there without any of the new code; the testing standard is "Moving or Replacing Existing Code" in `rules/common.md`), then base the moving branch on that PR and run the whole suite. In the moving PR's description, list each removed piece, whether it had a test before and which test covers it now, and list any behavior change the new library makes possible with what changes, why it helps and which clients it can affect.
 
 ## Auto-merge rubric (every PR's "Notlar")
-The orchestrator merges a runner PR on its own only when the PR note says every gate passed and the risk is low. Write both into "Notlar" of every PR the runner opens or updates, Atakan's repos and consumer-repo version bumps included.
+The orchestrator (the Claude Code session the owner chats with, pinqponq/pinq-orchestrator) merges a runner PR on its own only when the PR note says every gate passed and the risk is low. Write both into "Notlar" of every PR the runner opens or updates, repos outside the pinqponq org (e.g. atakancelik/GlobalOtoparkPanel) and version bumps in consumer repos included.
 
 **Gates** (all required; list each as ✅ or ❌ with one short reason when ❌):
-- [ ] Not draft; mergeable and clean (blocked only by the required-review policy is fine: admin merge is allowed then).
-- [ ] CI green (or "CI yok" when the repo has no workflow).
-- [ ] Tests for every changed behaviour.
-- [ ] PIT / Stryker at the threshold, every survivor explained.
-- [ ] pin-review done on `origin/<default-branch>...HEAD`, no open findings.
-- [ ] Device proof for UI / Android work (or "UI değişikliği yok").
-- [ ] Shared-code PR: the consumers' composite-build proof is in place first.
-- [ ] Stacked PR: its base branch is already merged.
-- [ ] No decision waits for the owner (no `❓` decision).
+- Not draft; mergeable and clean (blocked only by the required-review policy is fine: admin merge is allowed then).
+- CI green (or "CI yok" when the repo has no workflow).
+- Tests for every changed behavior.
+- PIT / Stryker at the threshold, every survivor explained.
+- `pinq_code-review` on `origin/<default-branch>...HEAD` is clean (no open findings).
+- Device proof for UI / Android work (or "UI değişikliği yok").
+- Shared-code PR: the consumers' composite-build proof is in place first.
+- Stacked PR: its base branch is already merged.
+- No decision waits for the owner (no `❓` decision).
 
 **Risk:** `düşük` or `düşük değil: <reason>`. It is not low when the change:
 - touches authentication, authorization, payments, secrets, data migration, production config or security;
@@ -36,7 +36,7 @@ There is no line-count limit.
 
 Note format in "Notlar":
 ```
-Otomatik merge: kapılar ✅ taslak değil · ✅ CI · ✅ testler · ✅ PIT · ✅ pin-review · ✅ cihaz · ✅ paylaşılan kod · ✅ taban · ✅ karar
+Otomatik merge: kapılar ✅ taslak değil · ✅ CI · ✅ testler · ✅ PIT · ✅ pinq_code-review · ✅ cihaz · ✅ paylaşılan kod · ✅ taban · ✅ karar
 Risk: düşük
 ```
 
