@@ -50,6 +50,7 @@ dotenv.config({ quiet: true });
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:5173';
 const port = new URL(baseURL).port;
+if (!port) throw new Error('E2E_BASE_URL must include the dev server port, for example http://localhost:5173.');
 const outputRoot = 'build/e2e/web';
 
 export default defineConfig({
