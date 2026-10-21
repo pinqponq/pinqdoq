@@ -30,5 +30,7 @@ Closes #<n>
 
 ## Notlar
 <only if needed, one line each: scenario differences (table only when reality could not be matched), human follow-ups, `pinq_code-review origin/<base>...HEAD: <result>`>
+Otomatik merge: kapılar <✅/❌ her kapı, references/implementation.md → "Auto-merge rubric">
+Risk: <düşük | düşük değil: neden>
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

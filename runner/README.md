@@ -1,6 +1,6 @@
 # pinqloq task runner
 
-The autonomous task runner for the pinqponq Project #9 board: it proposes Todo cards to the team, implements the tasks the team selects in git worktrees, proves them with tests, PIT and Maestro device runs, and opens ready-for-review PRs. It runs as Claude Code routines (runner-1/2/3) on a Mac and is watched from the local web panel [pinqponq/pinqponq-agents](https://github.com/pinqponq/pinqponq-agents) (a separate repo).
+The autonomous task runner for the pinqponq Project #9 board: it proposes Todo cards to the team, implements the tasks the team selects in git worktrees, proves them with tests, PIT and Maestro device runs, and opens ready-for-review PRs. It runs as Claude Code routines (runner-1/2/3/4) on a Mac and is watched from the local web panel [pinqponq/pinqponq-agents](https://github.com/pinqponq/pinqponq-agents) (a separate repo).
 
 Unlike the rest of pinq-doq, nothing here is delivered into a project's `.claude/`: `deliver.py` copies only `rules/` and `skills/`. The runner is installed once per machine, as links from `~/.claude` into a pinq-doq checkout, so `git pull` updates it. Use a dedicated clone that stays on `main` (`~/StudioProjects/.pinqdoq-runner`), not the clone you edit pinq-doq in: the links follow whatever branch that checkout is on.
 
