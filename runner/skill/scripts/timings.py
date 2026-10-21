@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Appends one line per build/test/PIT/Maestro run to ~/.claude/pinqloq-task-runner/timings.jsonl.
 
-Used by run_build.py and run_pit.py; timing_report.py reads the file. A failed write never fails
+Used by run_build.py, run_pit.py and run_stryker_js.py; timing_report.py reads the file. A failed write never fails
 the run that called it.
 """
 import fcntl, json, os, re, sys, time

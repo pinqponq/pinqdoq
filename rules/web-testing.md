@@ -4,7 +4,7 @@ paths: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/playwright.config.*', 
 
 # Web — End-to-End Proof with Playwright
 
-Extends `common.md`. How a change in a web project (React, Vite, TypeScript and similar) is proven in a browser. Playwright plays the role Maestro plays for Android and iOS: a scripted flow runs the user's steps in a real browser, takes screenshots and fails when the screen does not show what it should. Setup recipe, config and script examples: `.pinq-doq/references/web/e2e-playwright.md`.
+Extends `common.md`. How a change in a web project (React, Vite, TypeScript and similar) is proven in a browser. Playwright plays the role Maestro plays for Android and iOS: a scripted flow runs the user's steps in a real browser, takes screenshots and fails when the screen does not show what it should. Setup recipe, config and script examples: `.pinq-doq/references/web/e2e-playwright.md`. The same file sets up mutation testing with StrykerJS (the last section of this rule).
 
 ---
 
@@ -73,3 +73,16 @@ Extends `common.md`. How a change in a web project (React, Vite, TypeScript and 
 - The video and the screenshots of the passing proof run, for each state the change shows.
 - For a bug fix, the proof run on the old code that shows the problem, and its trace when it failed (`trace.zip`, opened with `npx playwright show-trace`). For any other failing run the reviewer must see, its trace too. A trace holds the test environment's session cookies, so it is attached only in private repos; in a public repo the pull request shows the failing step and its screenshot instead.
 - The exact command that ran each flow and its result.
+
+---
+
+## Mutation testing
+
+StrykerJS with the Vitest runner plays the role PIT plays for Kotlin and Stryker.NET plays for .NET: it changes the code in small ways (mutants) and checks that a test fails for each change.
+
+- **MUST:** every change to TypeScript or JavaScript production code proves that its tests can fail. Run StrykerJS on the changed files only (`--mutate` with the files of the diff, never the whole project), and count only the mutants on lines changed against the default branch.
+- **MUST:** the score on changed lines is at least **85%**, the same threshold as PIT. Below it, add or sharpen tests and run again. A mutant that still survives goes into the pull request with a one-line reason (an end-to-end flow covers it, unreachable defensive code, an equivalent change). A survivor on the main condition or branch the change adds is never acceptable.
+- Mutants the TypeScript checker rejects (`CompileError`), that crash the test run before any test starts (`RuntimeError`) or that the config ignores (`Ignored`) are invalid code, not missed tests: they are left out of the score and reported as a count.
+- Test files, type declarations (`.d.ts`), stories, `e2e/` and config files are never mutated.
+- The report goes to `build/stryker/` (`mutation.json`, `mutation.html`, the incremental file), never committed.
+- Hand-written mutants do not count as mutation testing.

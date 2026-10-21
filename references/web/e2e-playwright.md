@@ -1,6 +1,6 @@
 # Web End-to-End Proof with Playwright — Setup and Examples
 
-The rule is `rules/web-testing.md`. This file shows how to set it up in a web project and gives copyable examples. The examples assume a Vite + React + TypeScript project with npm; change the dev server command for another tool.
+The rule is `rules/web-testing.md`. This file shows how to set it up in a web project and gives copyable examples, including mutation testing with StrykerJS (section 8). The examples assume a Vite + React + TypeScript project with npm; change the dev server command for another tool.
 
 ---
 
@@ -250,10 +250,57 @@ test('filter orders by status shows only matching rows', async ({ page }) => {
 
 ---
 
-## 8. Common mistakes
+## 8. Mutation testing with StrykerJS
+
+Install StrykerJS with the Vitest runner and the TypeScript checker:
+
+```bash
+npm install --save-dev @stryker-mutator/core @stryker-mutator/vitest-runner @stryker-mutator/typescript-checker
+```
+
+Add `stryker.config.mjs` at the project root:
+
+```js
+/** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
+export default {
+  testRunner: 'vitest',
+  checkers: ['typescript'],
+  tsconfigFile: 'tsconfig.json',
+  reporters: ['json', 'html', 'clear-text'],
+  jsonReporter: { fileName: 'build/stryker/mutation.json' },
+  htmlReporter: { fileName: 'build/stryker/mutation.html' },
+  tempDirName: 'build/stryker/tmp',
+  incrementalFile: 'build/stryker/incremental.json',
+  thresholds: { high: 90, low: 85, break: null },
+};
+```
+
+A Vite project whose app code is in `tsconfig.app.json` points `tsconfigFile` there. `break: null` leaves the pass or fail decision to the changed-lines score below, not to the whole files' score.
+
+Add the scripts to `package.json`:
+
+```json
+"scripts": {
+  "test": "vitest run",
+  "mutation": "stryker run"
+}
+```
+
+Run it on the changed files only, with `--incremental` so a second run after adding tests only re-tests the mutants whose code or covering tests changed:
+
+```bash
+npx stryker run --incremental --mutate "src/cart/price.ts,src/cart/CartTotal.tsx"
+```
+
+Read the score for the lines the change touched, not the whole files: in `build/stryker/mutation.json`, keep the mutants whose `location.start.line` is a changed line. `Killed` and `Timeout` count as detected, `Survived` and `NoCoverage` as missed; `CompileError`, `RuntimeError` and `Ignored` are left out. The task runner does this with `run_stryker_js.py`, which prints the same JSON as its PIT script.
+
+---
+
+## 9. Common mistakes
 
 - Signing in inside a flow. Every flow then depends on the one-time code and is slow; use the setup project.
 - `page.waitForTimeout(2000)` to wait for data. Wait for the element or the URL instead.
 - Selecting `.btn-primary` or `div > span:nth-child(2)`. These break on any style change; select by role and name.
 - Committing `e2e/.auth/state.json` or a `trace.zip`. Both hold session cookies.
 - Running the dev server on another port than the one the saved state was made for. The browser keeps the sign-in per address, so the flows land on the sign-in page.
+- Running StrykerJS on the whole project. It takes many times longer and its score says nothing about the change; pass the changed files with `--mutate`.
