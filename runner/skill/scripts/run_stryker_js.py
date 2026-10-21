@@ -151,6 +151,7 @@ def main():
         files = diff_files(worktree, args.base, args.project)
         changed = changed_lines(worktree, args.base, args.project, production_files(files))
     except GitError as error:
+        timings.record("pit", args.lock, worktree, ["run_stryker_js.py", args.base], START_SECONDS, time.time(), 2)
         print(error, file=sys.stderr)
         return 2
     if not changed:
@@ -172,8 +173,8 @@ def main():
         timings.record("pit", args.lock, worktree, ["run_stryker_js.py", args.base], START_SECONDS, time.time(), 2)
         print(f"The Stryker report has no entry for changed files {missing} (full output: {log_path}).", file=sys.stderr)
         return 2
-    killed = sum(counts[s] for s in DETECTED)
-    total = killed + sum(counts[s] for s in UNDETECTED)
+    killed = sum(counts[status] for status in DETECTED)
+    total = killed + sum(counts[status] for status in UNDETECTED)
     score = round(100 * killed / total, 1) if total else 100.0
     timings.record("pit", args.lock, worktree, ["run_stryker_js.py", args.base], START_SECONDS, time.time(),
                    0 if score >= args.threshold else 1, pit={"score": score, "killed": killed, "total": total})
