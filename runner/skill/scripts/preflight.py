@@ -243,7 +243,7 @@ def evaluate(light_only=False):
 
     housekeeping, task_work = ([], []) if role == runner_config.QUEUE_ONLY_ROLE else collect_housekeeping(state, tasks, errors)
     if light_only:
-        # Verification retries need device runs and the pinqloq backend; runner-3 leaves them to runners 1 and 2.
+        # Verification retries need device runs and the pinqloq backend; runner-3 leaves them to runners 1, 2 and 4.
         task_work = []
     claimable_task, claim_skips = find_claimable_task(light_only)
     if claimable_task:
