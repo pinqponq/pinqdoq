@@ -21,6 +21,7 @@ Turn Todo cards on the pinqponq Project #9 board into ready-for-review PRs, with
 ## Files
 - `scripts/preflight.py` — step 0b: decides cheaply whether the session has anything to do (JSON with `decision`, `housekeeping` reasons, `task_work`, `claimable`).
 - `scripts/locks.py` — task, housekeeping and device locks (`devices-android`, `devices-ios`, `devices-couple`) for parallel sessions (see "Parallel sessions"); `claimable` peeks without locking.
+- `scripts/pr_base.py` — the PR base (`develop` when it exists, else the default branch): `base`, `check` (refuses a wrong base) and `environment` (workflows that deploy on a push to the base); used in implementation.md step 10.
 - `scripts/state_tx.py` — the only way to read and change `state.json` (locked read-modify-write); `summary` is the compact view, finished tasks live in `state-archive.json`.
 - `scripts/board.py` — the Project #9 board: `items [--status Todo]`, `find <key>`, `move <key> "<column>"`. Use it instead of `gh project item-list` / `field-list` / `item-edit`: those fetch every field of every item and used up the GitHub GraphQL limit (5,000 points/hour) with parallel sessions on 2026-10-03. Its item list is cached for 5 minutes and shared by sessions; pass `--refresh` only right after you changed the board.
 - `scripts/cleanup.py` — end of housekeeping: archives finished tasks, removes their media and clean worktrees, prunes old backups/logs.
