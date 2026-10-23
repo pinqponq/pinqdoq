@@ -40,6 +40,9 @@ pinq-doq/
       e2e-playwright.md         Playwright setup for web projects: config, stored sign-in, run-flow script, examples
     templates/
       new-product-starter.md    mobile and backend templates, template.json manifest, product file
+    widget/
+      widget-setup.md           home screen widget setup with deveng-widget + production lessons
+      ios/                      Swift templates for the widget extension and the app's reload helper
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     agent/          knowledge pack of the Pinq Center agent: knowledge-index.md (topic → document table the agent searches), system map, task rules, troubleshooting
     projects/
