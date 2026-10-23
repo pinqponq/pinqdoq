@@ -77,6 +77,10 @@ if (Interlocked.Exchange(ref _isDisposed, 1) == 1)
 if (IsDisposeAlreadyStarted())
 ```
 
+- Code that waits (retry or reconnect delays, timeouts, scheduled work) takes a `TimeProvider` (`TryAddSingleton(TimeProvider.System)` at startup) and calls `Task.Delay(delay, timeProvider, token)`. Tests fire the wait themselves and never wait on real time, so the result does not depend on how fast the CI runner is.
+- A test that signals a waiting test with a `TaskCompletionSource` creates it with `TaskCreationOptions.RunContinuationsAsynchronously`; otherwise the test's next step runs inside the code under test, in the middle of its work.
+- A loop that stops on cancellation only lets `OperationCanceledException` through when its token is cancelled: `catch (Exception exception) when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)`. Filtering on the token alone lets a real failure that arrives during shutdown fault the hosted service.
+
 ---
 
 ## Guard Clauses
