@@ -154,14 +154,6 @@ PostgresErrorCodes.ForeignKeyViolation
 
 ---
 
-## Sign-in by Code
-
-- A service that only a few people use signs in only the addresses in its settings (an allow list). Nobody else gets a code or an account.
-- The answer must not show who has access: an address that is not allowed gets the same status and body as an allowed one, after the same minimum time, and checking a code for it fails like a wrong code.
-- Log a refused address only as a hash, never in clear text.
-
----
-
 ## Mutation Testing
 
 - Prove that new tests can fail with Stryker.NET, scoped to the changed files: from the test project, run `dotnet stryker -p <Project>.csproj -m "**/<ChangedFile>.cs"` for each changed production project.
