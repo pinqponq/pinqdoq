@@ -3,6 +3,7 @@
 
   pr_base.py base <owner/repo>                 print the base branch a PR must target
   pr_base.py check <owner/repo> <base>         exit 1 with a message when <base> is wrong
+                                               (another `task/…` branch of the repo is allowed: stacked PRs)
   pr_base.py environment <owner/repo> <base>   print the workflows that deploy on a push to <base>
 
 The base is `develop` when the repository has that branch, otherwise the default branch.
@@ -21,9 +22,10 @@ def choose_base(default_branch, has_develop):
     return INTEGRATION_BRANCH if has_develop else default_branch
 
 
-def base_problem(base, default_branch, has_develop):
-    """Returns the refusal message for a wrong base, or None when the base is right."""
-    if base == choose_base(default_branch, has_develop):
+def base_problem(base, default_branch, has_develop, is_task_branch=False):
+    """Returns the refusal message for a wrong base, or None when the base is right.
+    A stacked or moving PR may sit on another task branch of the same repository."""
+    if base == choose_base(default_branch, has_develop) or is_task_branch:
         return None
     if has_develop and base == default_branch:
         return (f"Refused: the repository has `{INTEGRATION_BRANCH}`, so a task PR must target "
@@ -32,41 +34,52 @@ def base_problem(base, default_branch, has_develop):
     return f"Refused: base `{base}` is not `{choose_base(default_branch, has_develop)}`."
 
 
-def push_branches(workflow_text):
-    """Branch names (or globs) listed under `on: push: branches:` in a workflow file."""
-    branches = []
-    lines = workflow_text.splitlines()
+def push_filter(workflow_text):
+    """What a workflow runs on: [] (no branch push), "any" (any branch, or a branches-ignore filter),
+    or the branch names/globs under `on: push: branches:`."""
+    text = re.sub(r"(?m)#.*$", "", workflow_text)
+    if re.search(r"(?m)^\s*on\s*:\s*\[?[^\n]*\bpush\b", text) and not re.search(r"(?m)^\s*push\s*:", text):
+        return "any"
+    lines = text.splitlines()
     in_push = False
     push_indent = 0
-    in_branches = False
-    branches_indent = 0
+    keys = {}
+    current = None
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
+        if not stripped:
             continue
         indent = len(line) - len(line.lstrip())
-        if in_branches:
-            if indent > branches_indent and stripped.startswith("-"):
-                branches.append(stripped[1:].split("#")[0].strip().strip("'\""))
-                continue
-            in_branches = False
         if in_push and indent <= push_indent:
             in_push = False
         if re.match(r"^push\s*:", stripped):
             in_push = True
             push_indent = indent
-            inline = re.match(r"^push\s*:\s*\{.*branches\s*:\s*\[([^\]]*)\]", stripped)
+            inline = re.match(r"^push\s*:\s*\{(.*)\}", stripped)
             if inline:
-                branches += [b.strip().strip("'\"") for b in inline.group(1).split(",") if b.strip()]
+                for key, value in re.findall(r"([\w-]+)\s*:\s*\[([^\]]*)\]", inline.group(1)):
+                    keys[key] = [v.strip().strip("'\"") for v in value.split(",") if v.strip()]
+            elif stripped != "push:":
+                return "any"
             continue
-        if in_push and re.match(r"^branches\s*:", stripped):
-            inline = re.match(r"^branches\s*:\s*\[([^\]]*)\]", stripped)
-            if inline:
-                branches += [b.strip().strip("'\"") for b in inline.group(1).split(",") if b.strip()]
-            else:
-                in_branches = True
-                branches_indent = indent
-    return branches
+        if not in_push:
+            continue
+        key_match = re.match(r"^([\w-]+)\s*:\s*(.*)$", stripped)
+        if key_match and not stripped.startswith("-"):
+            current = key_match.group(1)
+            value = key_match.group(2).strip()
+            keys.setdefault(current, [])
+            if value.startswith("["):
+                keys[current] += [v.strip().strip("'\"") for v in value.strip("[]").split(",") if v.strip()]
+        elif stripped.startswith("-") and current:
+            keys[current].append(stripped[1:].strip().strip("'\""))
+    if not in_push and not keys and not re.search(r"(?m)^\s*push\s*:", text):
+        return []
+    if "branches" in keys:
+        return keys["branches"]
+    if "tags" in keys and "branches-ignore" not in keys:
+        return []
+    return "any"
 
 
 def branch_matches(pattern, branch):
@@ -76,15 +89,20 @@ def branch_matches(pattern, branch):
 
 def deploying_workflows(workflows, base):
     """Names of the workflows (name -> text) that run on a push to `base`."""
-    return sorted(name for name, text in workflows.items()
-                  if any(branch_matches(pattern, base) for pattern in push_branches(text)))
+    names = []
+    for name, text in workflows.items():
+        pushed = push_filter(text)
+        if pushed == "any" or any(branch_matches(pattern, base) for pattern in pushed):
+            names.append(name)
+    return sorted(names)
 
 
 def environment_note(workflows, base):
     names = deploying_workflows(workflows, base)
     if not names:
         return f"A merge to `{base}` starts no workflow on push."
-    return f"A merge to `{base}` runs on push: {', '.join(names)}. Open each file and name the environment it reaches in the PR."
+    return (f"A merge to `{base}` may run on push: {', '.join(names)}. "
+            "Open each file and name the environment it reaches in the PR.")
 
 
 def gh_json(path):
@@ -94,12 +112,21 @@ def gh_json(path):
     return json.loads(result.stdout)
 
 
+def branch_exists(repo, branch):
+    """True or False; any failure other than 404 stops, so an outage never reads as "no develop"."""
+    result = subprocess.run(["gh", "api", f"repos/{repo}/branches/{branch}"], capture_output=True, text=True)
+    if result.returncode == 0:
+        return True
+    if "404" in result.stderr or "Not Found" in result.stderr:
+        return False
+    sys.exit(f"Could not read branch {branch} of {repo}: {result.stderr.strip()}")
+
+
 def repo_facts(repo):
     info = gh_json(f"repos/{repo}")
     if info is None:
         sys.exit(f"Could not read {repo} with gh.")
-    has_develop = gh_json(f"repos/{repo}/branches/{INTEGRATION_BRANCH}") is not None
-    return info["default_branch"], has_develop
+    return info["default_branch"], branch_exists(repo, INTEGRATION_BRANCH)
 
 
 def fetch_workflows(repo, ref):
@@ -131,7 +158,8 @@ def main():
     if args.command == "base":
         print(choose_base(default_branch, has_develop))
     elif args.command == "check":
-        problem = base_problem(args.base, default_branch, has_develop)
+        stacked = args.base.startswith("task/") and branch_exists(args.repo, args.base)
+        problem = base_problem(args.base, default_branch, has_develop, stacked)
         if problem:
             print(problem, file=sys.stderr)
             sys.exit(1)
