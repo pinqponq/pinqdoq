@@ -112,6 +112,14 @@ return new Response { HasNextPage = hasNextPage };
 
 ---
 
+## Client Address and Request Limits
+
+- A limit or log that uses the client's IP address reads `X-Forwarded-For` only when the request comes from an address listed in a trusted-proxy setting, because any client can send that header. Then the client is the right-most address in the header that is not a trusted proxy. Otherwise the client is the connection's remote address.
+- Validate the trusted-proxy list at startup: an entry that is not an IP address stops the start instead of being skipped.
+- A request without a known address is not counted under a shared placeholder such as `"unknown"`, because every such request would then share one limit.
+
+---
+
 ## Error Handling
 
 - Never pass only `ex.Message` — always pass the original exception to preserve the stack trace.
