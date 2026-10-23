@@ -22,16 +22,20 @@ and is replaced by the next contender.
   locks.py claim <session>                 pick the next task this session may work on, lock it and print its key
                                            (exit 4 and print the reasons when nothing is claimable)
   locks.py claimable                       print the task `claim` would pick, without locking it (exit 4 when none)
-  `claim` and `claimable` take `--light-only` (runner-3): only tasks with `weight: "light"` are picked
+  `claim` and `claimable` take a role (runner_config.RUNNER_ROLES): `--light-only` (runner-3) picks only tasks with
+                                           `weight: "light"`; `--role no-device` (runner-4) only tasks with `needs_device: false`;
+                                           `--role device` (runners 1 and 2) picks tasks that need a device (or whose need is
+                                           unknown) first and a task without a device only when no device task is claimable
   locks.py lock <task-key> <session>       lock one specific task (exit 3 when held)
   locks.py touch <task-key>                refresh a task lock
   locks.py release <task-key>              release a task lock
   locks.py housekeeping acquire <session>  exit 0 when acquired, 3 when another session is doing it
   locks.py housekeeping touch|release
-  locks.py devices acquire <session> [--platform android|ios|web|both] [--couple] [--task <task-key>] [--wait-minutes N]
+  locks.py devices acquire <session> [--platform android|ios|web|both|free] [--prefer android|ios] [--couple] [--task <task-key>] [--wait-minutes N]
                                            wait (default 90 min) until all requested locks are free, then take them
                                            together (all or nothing); --platform defaults to both (android and ios); touches the task
-                                           lock while waiting
+                                           lock while waiting; `free` takes whichever of Android and iOS is free (the
+                                           `--prefer` one, default android, when both are) and prints which one it took
   locks.py devices touch|release <session> [--platform android|ios|web|both] [--couple]
                                            touch/release only the device locks this session holds (all of them when
                                            neither --platform nor --couple is given)
@@ -45,6 +49,9 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import runner_config  # noqa: E402
 
 STATE_DIR = Path.home() / ".claude" / "pinqloq-task-runner"
 LOCK_DIR = STATE_DIR / "locks"
@@ -64,6 +71,32 @@ CLAIMABLE_STATUS_ORDER = ["changes_requested", "in_progress", "selected"]
 DEPENDENCY_READY_STATUSES = {"pr_open", "merged", "done"}
 LIGHT_WEIGHT = "light"
 LIGHT_ONLY_FLAG = "--light-only"
+ROLE_OPTION = "--role"
+FREE_PLATFORM = "free"
+DEFAULT_PREFERRED_PLATFORM = "android"
+
+
+def needs_device(task):
+    """A task whose need is unknown (no `needs_device` field) counts as needing a device."""
+    return task.get("needs_device") is not False
+
+
+def role_from_arguments(arguments):
+    """The claim role named on the command line: `--light-only` (kept for runner-3's routine) or `--role <role>`."""
+    if LIGHT_ONLY_FLAG in arguments:
+        return runner_config.LIGHT_ROLE
+    role = read_option(arguments, ROLE_OPTION, None)
+    if role not in (None, runner_config.DEVICE_ROLE, runner_config.NO_DEVICE_ROLE, runner_config.LIGHT_ROLE):
+        raise SystemExit("unknown role: %s" % role)
+    return role
+
+
+def role_skip_reason(role, task):
+    if role == runner_config.LIGHT_ROLE and task.get("weight") != LIGHT_WEIGHT:
+        return "not a light task (runner-3 takes only light tasks)"
+    if role == runner_config.NO_DEVICE_ROLE and needs_device(task):
+        return "needs a device (runner-4 takes only tasks marked needs_device: false)"
+    return None
 
 
 def lock_file_for(name):
@@ -171,26 +204,30 @@ def find_unready_dependency(task, task_statuses):
     return None
 
 
-def claim_order(task_item):
+def claim_order(task_item, role=None):
+    """Device runners put tasks that need a device first, so a task without one never takes their turn while
+    device work waits; after that the usual order: status, queue priority, age."""
     task_key, task = task_item
-    return (CLAIMABLE_STATUS_ORDER.index(task["status"]), task.get("queue_priority", 1000),
+    device_tier = 0 if role != runner_config.DEVICE_ROLE or needs_device(task) else 1
+    return (device_tier, CLAIMABLE_STATUS_ORDER.index(task["status"]), task.get("queue_priority", 1000),
             task.get("updated_at", ""), task_key)
 
 
-def find_claimable_candidates(light_only=False):
+def find_claimable_candidates(role=None):
     """Yield (task_key, None) for each claimable task in claim order, or (task_key, reason) when skipped.
-    light_only: runner-3 takes only tasks marked `weight: "light"`; an unmarked task counts as heavy."""
+    role: see runner_config.RUNNER_ROLES; an unmarked task counts as heavy and as needing a device."""
     tasks = read_tasks()
     task_statuses = read_task_statuses()
     candidates = sorted(
         ((key, task) for key, task in tasks.items() if task.get("status") in CLAIMABLE_STATUS_ORDER),
-        key=claim_order)
+        key=lambda task_item: claim_order(task_item, role))
     for task_key, task in candidates:
         if is_held(lock_file_for(task_lock_name(task_key))):
             yield task_key, "locked by another session"
             continue
-        if light_only and task.get("weight") != LIGHT_WEIGHT:
-            yield task_key, "not a light task (runner-3 takes only light tasks)"
+        role_reason = role_skip_reason(role, task)
+        if role_reason:
+            yield task_key, role_reason
             continue
         open_question_ids = [question.split(":", 1)[0].strip() for question in task.get("open_questions") or []]
         if open_question_ids:
@@ -203,9 +240,9 @@ def find_claimable_candidates(light_only=False):
         yield task_key, None
 
 
-def print_claimable(light_only=False):
+def print_claimable(role=None):
     skipped_reasons = []
-    for task_key, skip_reason in find_claimable_candidates(light_only):
+    for task_key, skip_reason in find_claimable_candidates(role):
         if skip_reason is None:
             print(task_key)
             return 0
@@ -216,17 +253,20 @@ def print_claimable(light_only=False):
     return EXIT_NOTHING_CLAIMABLE
 
 
-def claim(session, light_only=False):
+def claim(session, role=None):
     LOCK_DIR.mkdir(parents=True, exist_ok=True)
     with open(CLAIM_MUTEX_FILE, "a") as mutex_stream:
         fcntl.flock(mutex_stream, fcntl.LOCK_EX)
         skipped_reasons = []
-        for task_key, skip_reason in find_claimable_candidates(light_only):
+        for task_key, skip_reason in find_claimable_candidates(role):
             if skip_reason:
                 skipped_reasons.append("%s: %s" % (task_key, skip_reason))
                 continue
             if try_acquire(lock_file_for(task_lock_name(task_key)), session):
                 print(task_key)
+                if role == runner_config.DEVICE_ROLE and not needs_device(read_tasks()[task_key]):
+                    print("note: no device task is claimable; a device runner took a task without a device",
+                          file=sys.stderr)
                 for reason in skipped_reasons:
                     print("skipped " + reason, file=sys.stderr)
                 return 0
@@ -235,6 +275,14 @@ def claim(session, light_only=False):
     for reason in skipped_reasons:
         print("skipped " + reason)
     return EXIT_NOTHING_CLAIMABLE
+
+
+def free_device_alternatives(preferred_platform, include_couple):
+    """Lock sets to try in order for `--platform free`: the preferred device first, then the other one."""
+    if preferred_platform not in ("android", "ios"):
+        raise SystemExit("unknown preferred platform: %s" % preferred_platform)
+    other_platform = "ios" if preferred_platform == "android" else "android"
+    return [requested_device_lock_names(platform, include_couple) for platform in (preferred_platform, other_platform)]
 
 
 def requested_device_lock_names(platform, include_couple):
@@ -277,15 +325,20 @@ def release_quietly(lock_file):
     lock_file.unlink(missing_ok=True)
 
 
-def acquire_devices(session, lock_names, task_key, wait_minutes):
+def acquire_devices(session, alternatives, task_key, wait_minutes):
+    """alternatives: lock sets in order of preference; the first set that is entirely free is taken."""
     deadline = time.time() + wait_minutes * 60
     while True:
-        blocking_lock_file = try_acquire_all(lock_names, session)
-        if blocking_lock_file is None:
-            print("acquired %s" % " ".join(lock_names))
-            return 0
+        blocking_lock_files = []
+        for lock_names in alternatives:
+            blocking_lock_file = try_acquire_all(lock_names, session)
+            if blocking_lock_file is None:
+                print("acquired %s" % " ".join(lock_names))
+                return 0
+            blocking_lock_files.append(blocking_lock_file)
         if time.time() >= deadline:
-            print("held %s (%s)" % (blocking_lock_file.name, describe_holder(blocking_lock_file)))
+            print("held " + ", ".join("%s (%s)" % (lock_file.name, describe_holder(lock_file))
+                                      for lock_file in blocking_lock_files))
             return EXIT_LOCK_HELD
         task_lock_file = lock_file_for(task_lock_name(task_key)) if task_key else None
         if task_lock_file and task_lock_file.exists():
@@ -330,7 +383,10 @@ def print_status():
 
 def read_option(arguments, option_name, default_value):
     if option_name in arguments:
-        return arguments[arguments.index(option_name) + 1]
+        value_index = arguments.index(option_name) + 1
+        if value_index >= len(arguments):
+            raise SystemExit("%s needs a value" % option_name)
+        return arguments[value_index]
     return default_value
 
 
@@ -342,9 +398,13 @@ def run_devices_command(arguments):
     if action == "acquire":
         if session is None:
             raise SystemExit("devices acquire needs a session")
-        lock_names = requested_device_lock_names(platform_option or "both", include_couple)
+        if platform_option == FREE_PLATFORM:
+            alternatives = free_device_alternatives(read_option(arguments, "--prefer", DEFAULT_PREFERRED_PLATFORM),
+                                                    include_couple)
+        else:
+            alternatives = [requested_device_lock_names(platform_option or "both", include_couple)]
         wait_minutes = float(read_option(arguments, "--wait-minutes", DEFAULT_DEVICE_WAIT_MINUTES))
-        return acquire_devices(session, lock_names, read_option(arguments, "--task", None), wait_minutes)
+        return acquire_devices(session, alternatives, read_option(arguments, "--task", None), wait_minutes)
     if action in ("touch", "release"):
         if platform_option is not None:
             lock_names = requested_device_lock_names(platform_option, include_couple)
@@ -360,12 +420,15 @@ def main():
     arguments = sys.argv[1:]
     command = arguments[0] if arguments else ""
 
-    light_only = LIGHT_ONLY_FLAG in arguments
+    role = role_from_arguments(arguments)
+    if ROLE_OPTION in arguments:
+        role_index = arguments.index(ROLE_OPTION)
+        arguments = arguments[:role_index] + arguments[role_index + 2:]
     arguments = [argument for argument in arguments if argument != LIGHT_ONLY_FLAG]
     if command == "claim" and len(arguments) == 2:
-        sys.exit(claim(arguments[1], light_only))
+        sys.exit(claim(arguments[1], role))
     if command == "claimable" and len(arguments) == 1:
-        sys.exit(print_claimable(light_only))
+        sys.exit(print_claimable(role))
     if command == "lock" and len(arguments) == 3:
         lock_file = lock_file_for(task_lock_name(arguments[1]))
         if try_acquire(lock_file, arguments[2]):

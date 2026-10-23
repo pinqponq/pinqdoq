@@ -201,10 +201,10 @@ def check_verification_retries(tasks, waiting_on_backend):
     return task_work
 
 
-def find_claimable_task(light_only):
+def find_claimable_task(role):
     captured_output = io.StringIO()
     with contextlib.redirect_stdout(captured_output):
-        exit_code = locks.print_claimable(light_only)
+        exit_code = locks.print_claimable(role)
     lines = captured_output.getvalue().splitlines()
     return (lines[0] if exit_code == 0 else None), lines[1:]
 
@@ -234,7 +234,7 @@ def collect_housekeeping(state, tasks, errors):
     return housekeeping, task_work
 
 
-def evaluate(light_only=False):
+def evaluate(claim_role=None):
     errors = []
     with state_tx.locked_state():
         state = state_tx.read_state()
@@ -242,10 +242,10 @@ def evaluate(light_only=False):
     role = runner_config.read_machine_config()["role"]
 
     housekeeping, task_work = ([], []) if role == runner_config.QUEUE_ONLY_ROLE else collect_housekeeping(state, tasks, errors)
-    if light_only:
-        # Verification retries need device runs and the pinqloq backend; runner-3 leaves them to runners 1, 2 and 4.
+    if claim_role in (runner_config.LIGHT_ROLE, runner_config.NO_DEVICE_ROLE):
+        # Verification retries need device runs and the pinqloq backend; runners 3 and 4 leave them to runners 1 and 2.
         task_work = []
-    claimable_task, claim_skips = find_claimable_task(light_only)
+    claimable_task, claim_skips = find_claimable_task(claim_role)
     if claimable_task:
         task_work.insert(0, "claimable task: " + claimable_task)
 
@@ -262,6 +262,7 @@ def evaluate(light_only=False):
         "claim_skips": claim_skips,
         "housekeeping_held_by_other": housekeeping_held_by_other,
         "role": role,
+        "claim_role": claim_role,
         "errors": errors,
     }
 
@@ -270,7 +271,9 @@ def append_idle_log(session, result):
     details = "; ".join(result["claim_skips"] + result["errors"]) or "nothing to do"
     if result["housekeeping_held_by_other"]:
         details = "housekeeping held by another session; " + details
-    line = "%s %s: preflight idle (%s)\n" % (now_utc().strftime("%Y-%m-%dT%H:%M:%SZ"), session, details)
+    claim_role = result["claim_role"]
+    role_label = " [%s]" % claim_role if claim_role else ""
+    line = "%s %s%s: preflight idle (%s)\n" % (now_utc().strftime("%Y-%m-%dT%H:%M:%SZ"), session, role_label, details)
     with open(RUNS_LOG_FILE, "a") as runs_log:
         runs_log.write(line)
 
@@ -303,7 +306,7 @@ def main():
         session = reserve_session_id(session_prefix)
     elif "--log-idle" in arguments:
         session = arguments[arguments.index("--log-idle") + 1]
-    result = evaluate(locks.LIGHT_ONLY_FLAG in arguments)
+    result = evaluate(locks.role_from_arguments(arguments))
     if session:
         result = {"session": session, **result}
     print(json.dumps(result, ensure_ascii=False, indent=1))

@@ -37,11 +37,21 @@ ROUTINES = [("pinqloq-task-runner", "runner-1", "scheduled"),
             ("pinqloq-task-runner-2", "runner-2", "manual"),
             ("pinqloq-task-runner-3", "runner-3", "manual"),
             ("pinqloq-task-runner-4", "runner-4", "manual")]
-LIGHT_ONLY_RUNNERS = {"runner-3"}
+LIGHT_ONLY_RUNNERS = {label for label, configured in runner_config.RUNNER_ROLES.items()
+                      if configured["role"] == runner_config.LIGHT_ROLE}
 LIGHT_ONLY_NOTE = (
     "- You are a light-only runner (owner, 2026-10-12): preflight already looks only at tasks marked `weight: \"light\"`, "
     "and you claim with `locks.py claim <session> --light-only`. Never claim, start or resume any other task, never "
     "build a feature from scratch and never take verification retries; runners 1, 2 and 4 do that.\n")
+NO_DEVICE_NOTE = (
+    "- You are a no-device runner (owner, 2026-10-23): preflight already looks only at tasks marked `needs_device: false`, "
+    "and you claim with `locks.py claim <session> --role no-device`. Never claim, start or resume a task that needs a "
+    "device (a task without `needs_device` counts as needing one) and never take verification retries; runners 1 and 2 do that.\n")
+DEVICE_NOTE_TEMPLATE = (
+    "- You are a device runner (owner, 2026-10-23), device {DEVICE_PLATFORM} first: preflight and `locks.py claim <session> "
+    "--role device` give you tasks that need a device (or whose need is unknown) before any task without one. Take the "
+    "device lock with `locks.py devices acquire <session> --platform free --prefer {DEVICE_PLATFORM}` when the change touches "
+    "only shared code (see implementation.md), and the platform the change needs otherwise.\n")
 RUNNER_FOLDER_README = """# pinqloq-runner
 
 Working folder for the pinqloq task runner routines (runner-1/2/3/4). Installed by pinqdoq
@@ -139,11 +149,23 @@ def write_runner_folder(machine, dry_run):
     return results
 
 
+def role_flag_and_note(runner_label):
+    configured = runner_config.RUNNER_ROLES.get(runner_label, {"role": None, "device_platform": None})
+    if configured["role"] == runner_config.LIGHT_ROLE:
+        return " --light-only", LIGHT_ONLY_NOTE
+    if configured["role"] == runner_config.NO_DEVICE_ROLE:
+        return " --role no-device", NO_DEVICE_NOTE
+    if configured["role"] == runner_config.DEVICE_ROLE:
+        return " --role device", DEVICE_NOTE_TEMPLATE.replace("{DEVICE_PLATFORM}", configured["device_platform"])
+    return "", ""
+
+
 def render_routine_prompt(template_text, task_id, runner_label, session_prefix, workspace_dir):
-    is_light_only = runner_label in LIGHT_ONLY_RUNNERS
-    return (template_text.replace("{TASK_ID}", task_id).replace("{RUNNER_LABEL}", runner_label)
-            .replace("{LIGHT_ONLY_FLAG}", " --light-only" if is_light_only else "")
-            .replace("{LIGHT_ONLY_NOTE}", LIGHT_ONLY_NOTE if is_light_only else "")
+    role_flag, role_note = role_flag_and_note(runner_label)
+    return (template_text.replace("{TASK_ID}", task_id)
+            .replace("{RUNNER_LABEL}", runner_config.runner_display_label(runner_label))
+            .replace("{ROLE_FLAG}", role_flag)
+            .replace("{ROLE_NOTE}", role_note)
             .replace("{SESSION_PREFIX}", session_prefix).replace("{WORKSPACE_DIR}", str(workspace_dir)))
 
 

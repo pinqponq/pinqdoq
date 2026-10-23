@@ -36,6 +36,35 @@ DEFAULT_MACHINE_CONFIG = {
     "runner_dir": "~/StudioProjects/pinqloq-runner",
     "pinq_center": None,
 }
+# Runner roles (owner, 2026-10-23). The single place that says which runner takes which tasks:
+# - "device": tasks that need an emulator or simulator, taken first (`needs_device`; unknown counts as needing one);
+#   without such a task waiting, the runner takes a task without a device instead of idling.
+# - "no-device": only tasks marked `needs_device: false`.
+# - "light": only tasks marked `weight: "light"` (runner-3, owner 2026-10-12).
+# - None: every task.
+# `device_platform` is the device a device runner tries first; the other one is its fallback for shared-code proof.
+# The scheduled task names (first column of install.ROUTINES) stay as they are: the panel, the start script and the
+# watchers use them. Only the display label carries the role.
+DEVICE_ROLE = "device"
+NO_DEVICE_ROLE = "no-device"
+LIGHT_ROLE = "light"
+RUNNER_ROLES = {
+    "runner-1": {"role": DEVICE_ROLE, "device_platform": "android"},
+    "runner-2": {"role": DEVICE_ROLE, "device_platform": "ios"},
+    "runner-3": {"role": LIGHT_ROLE, "device_platform": None},
+    "runner-4": {"role": NO_DEVICE_ROLE, "device_platform": None},
+}
+
+
+def runner_display_label(runner_label):
+    """`runner-1` -> `runner-1 (device, android)`; a runner without a configured role keeps its label."""
+    configured = RUNNER_ROLES.get(runner_label)
+    if configured is None:
+        return runner_label
+    parts = [configured["role"]] + ([configured["device_platform"]] if configured["device_platform"] else [])
+    return "%s (%s)" % (runner_label, ", ".join(parts))
+
+
 PATH_KEYS = ("workspace_dir", "worktrees_dir", "runner_dir")
 # Keys older machine.json files still carry; mail_cc lost its use when the runner stopped mailing (2026-10-11).
 RETIRED_KEYS = {"mail_cc"}
