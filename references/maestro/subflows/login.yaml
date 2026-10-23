@@ -1,0 +1,44 @@
+appId: ${APP_ID}
+---
+# Signs in with e-mail + one-time code. TEST_EMAIL / TEST_OTP come from with-test-account.sh; the
+# screen texts come from the app's own login wrapper subflow (see maestro-kit.md), never from here.
+#   LOGIN_EMAIL_ENTRY_TEXT   button that opens the e-mail form and submits it
+#   LOGIN_EMAIL_FIELD_TEXT   label of the e-mail field
+#   LOGIN_CHANGE_EMAIL_TEXT  link that clears a remembered address on the code screen
+#   LOGIN_CODE_SCREEN_TEXT   text that marks the code screen (often its submit button)
+#   LOGIN_CODE_FIELD_POINT   point that focuses the code input, e.g. "50%,27%"
+#   LOGIN_SIGNED_IN_TEXT     text or accessibility label only the signed-in home shows
+- runFlow:
+    when:
+      visible: ${LOGIN_CHANGE_EMAIL_TEXT}
+    commands:
+      - tapOn: ${LOGIN_CHANGE_EMAIL_TEXT}
+- runFlow:
+    when:
+      notVisible: ${LOGIN_EMAIL_FIELD_TEXT}
+    commands:
+      - tapOn: ${LOGIN_EMAIL_ENTRY_TEXT}
+# A leftover address submits straight to the code screen; go back so the field starts empty.
+- runFlow:
+    when:
+      visible: ${LOGIN_CHANGE_EMAIL_TEXT}
+    commands:
+      - tapOn: ${LOGIN_CHANGE_EMAIL_TEXT}
+- tapOn: ${LOGIN_EMAIL_FIELD_TEXT}
+- inputText: ${TEST_EMAIL}
+- tapOn: ${LOGIN_EMAIL_ENTRY_TEXT}
+- extendedWaitUntil:
+    visible: ${LOGIN_CODE_SCREEN_TEXT}
+    timeout: 20000
+# Code boxes usually share one hidden input; tapping the row focuses it.
+- tapOn:
+    point: ${LOGIN_CODE_FIELD_POINT}
+- inputText: ${TEST_OTP}
+- runFlow:
+    when:
+      visible: ${LOGIN_CODE_SCREEN_TEXT}
+    commands:
+      - tapOn: ${LOGIN_CODE_SCREEN_TEXT}
+- extendedWaitUntil:
+    visible: ${LOGIN_SIGNED_IN_TEXT}
+    timeout: 30000
