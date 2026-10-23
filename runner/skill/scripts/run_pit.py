@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Diff-scoped PIT mutation run for a KMP worktree (desktop/JVM tests).
 
-Usage: run_pit.py <worktree> <base-ref> [--threshold 85] [--lock TASK_KEY]
+Usage: run_pit.py <worktree> <base-ref> [--threshold PERCENT] [--lock TASK_KEY]
 Finds every Gradle module whose commonMain/desktopMain/jvmMain Kotlin changed (e.g. composeApp in an app,
 deveng-core in deveng-core-kmp), runs PIT per module against that module's changed tests and prints one JSON
 summary over all of them. Results are kept per module in build/pit-history, so a re-run after adding tests only re-tests
@@ -13,6 +13,7 @@ import xml.etree.ElementTree as ET
 
 import android_sdk
 import timings
+import verification_profile
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PIT_DIR = os.path.expanduser("~/.cache/pinq-pit")
@@ -199,10 +200,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("worktree")
     parser.add_argument("base")
-    parser.add_argument("--threshold", type=float, default=85)
+    parser.add_argument("--threshold", type=float, help="defaults to the verification profile's mutation_threshold")
     parser.add_argument("--lock")
     args = parser.parse_args()
     worktree = os.path.abspath(args.worktree)
+    args.threshold = verification_profile.mutation_threshold(worktree, args.threshold)
     android_sdk.ensure_android_sdk_environment()
     ensure_jars()
 

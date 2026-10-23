@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Diff-scoped StrykerJS mutation run for a web worktree (TypeScript/JavaScript, Vitest runner).
 
-Usage: run_stryker_js.py <worktree> <base-ref> [--project DIR] [--threshold 85] [--lock TASK_KEY]
+Usage: run_stryker_js.py <worktree> <base-ref> [--project DIR] [--threshold PERCENT] [--lock TASK_KEY]
 The web counterpart of run_pit.py: the same score, killed, total, ignored_noise, threshold and survivors fields and the
 same exit codes. Mutates only the production files the branch changed
 (no tests, no type declarations, nothing under e2e/), counts only the mutants on changed lines, and prints one JSON
@@ -14,6 +14,7 @@ output goes to build/runner-logs/; each run is recorded in timings.jsonl.
 import argparse, collections, json, os, re, subprocess, sys, time
 
 import timings
+import verification_profile
 
 SOURCE_EXTENSIONS = (".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs")
 NOT_PRODUCTION = re.compile(r"(\.d\.[mc]?ts$|\.(test|spec|stories)\.[^.]+$|(^|/)(e2e|__tests__|__mocks__|test|tests)/"
@@ -141,10 +142,11 @@ def main():
     parser.add_argument("worktree")
     parser.add_argument("base")
     parser.add_argument("--project", default=".")
-    parser.add_argument("--threshold", type=float, default=85)
+    parser.add_argument("--threshold", type=float, help="defaults to the verification profile's mutation_threshold")
     parser.add_argument("--lock")
     args = parser.parse_args()
     worktree = os.path.abspath(args.worktree)
+    args.threshold = verification_profile.mutation_threshold(worktree, args.threshold)
     project_dir = os.path.normpath(os.path.join(worktree, args.project))
 
     try:
