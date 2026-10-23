@@ -153,6 +153,14 @@ RabbitMQService(rabbitOptions)
 
 ---
 
+## Integrating Shared Services
+
+- Before integrating a shared service (chat, logging, push, identity) into a product, read how a product that already uses it does so: the client setup, the backend endpoint that issues its tokens, deep links and notifications. Follow the same flow.
+- Check the service's response shapes in the service's own source, not only in a consumer: a consumer can read a shape the service no longer sends.
+- Add to the shared library only what the new product needs and no existing product has.
+
+---
+
 ## Moving or Replacing Existing Code
 
 When a change moves code to a shared library or replaces a whole layer (error handling, logging, paging, data access), prove with tests written against the old code that the behavior stays the same.
