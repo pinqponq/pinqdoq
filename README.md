@@ -40,6 +40,7 @@ pinq-doq/
     templates/
       new-product-starter.md    mobile and backend templates, template.json manifest, product file
   context/        → NOT copied; read on demand by skills (organizational knowledge)
+    agent/          knowledge pack of the Pinq Center agent: knowledge-index.md (topic → document table the agent searches), system map, task rules, troubleshooting
     projects/
       deveng-group-proje-portfoyu.md   project portfolio, business model, inter-project relations
     team/           (add members.md here for assignee suggestions)
