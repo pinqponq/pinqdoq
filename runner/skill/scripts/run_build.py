@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Runs a build/test command with its full output in a log file and prints only a short summary.
 
-Usage: run_build.py [--cwd DIR] [--log PATH] [--lock TASK_KEY] [--tail 40] -- <command> [args...]
+Usage: run_build.py [--cwd DIR] [--log PATH] [--lock TASK_KEY] [--heartbeat COMMAND] [--tail 40] -- <command> [args...]
   run_build.py --cwd <worktree> --lock rindle-cmp#402 -- ./gradlew :composeApp:desktopTest
+
+--heartbeat runs COMMAND before the build, every 10 minutes while it runs and once after it, so a
+caller can keep its own lock or watchdog fresh. --lock alone means `locks.py touch TASK_KEY` as the
+heartbeat (the pinqloq task runner's lock); without either, nothing runs besides the command.
 
 Summary: exit code, duration, test counts and failed tests (from JUnit XML / TRX files written
 during the run), compiler errors, Gradle's "What went wrong" block; the log tail only when nothing
 else explains a failure. Exit code is the command's exit code.
 Every run is also recorded in timings.jsonl (timings.py); Maestro runs record each flow's result.
 """
-import argparse, glob, os, re, subprocess, sys, threading, time
+import argparse, glob, os, re, shlex, subprocess, sys, threading, time
 import xml.etree.ElementTree as ET
 
 import android_sdk
@@ -17,7 +21,7 @@ import timings
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCKS_SCRIPT = os.path.join(SCRIPT_DIR, "locks.py")
-LOCK_TOUCH_INTERVAL_SECONDS = 10 * 60
+HEARTBEAT_INTERVAL_SECONDS = 10 * 60
 MAX_LISTED_ITEMS = 10
 MAX_MESSAGE_LENGTH = 300
 JUNIT_PATTERNS = ("**/build/test-results/**/*.xml",)
@@ -32,6 +36,7 @@ def parse_arguments():
     parser.add_argument("--cwd", default=os.getcwd())
     parser.add_argument("--log")
     parser.add_argument("--lock")
+    parser.add_argument("--heartbeat")
     parser.add_argument("--tail", type=int, default=40)
     parser.add_argument("command", nargs=argparse.REMAINDER)
     arguments = parser.parse_args()
@@ -48,25 +53,40 @@ def default_log_path(working_directory, command):
     return os.path.join(working_directory, "build", "runner-logs", f"{step_name}-{timestamp}.log")
 
 
-def touch_lock(task_key):
-    subprocess.run([sys.executable, LOCKS_SCRIPT, "touch", task_key], capture_output=True)
-
-
-def keep_lock_fresh(task_key, finished_event):
-    while not finished_event.wait(LOCK_TOUCH_INTERVAL_SECONDS):
-        touch_lock(task_key)
-
-
-def run_command(command, working_directory, log_path, task_key):
-    finished_event = threading.Event()
+def heartbeat_command(heartbeat, task_key):
+    if heartbeat:
+        return shlex.split(heartbeat)
     if task_key:
-        touch_lock(task_key)
-        threading.Thread(target=keep_lock_fresh, args=(task_key, finished_event), daemon=True).start()
+        return [sys.executable, LOCKS_SCRIPT, "touch", task_key]
+    return None
+
+
+def send_heartbeat(heartbeat):
+    try:
+        result = subprocess.run(heartbeat, capture_output=True, text=True)
+    except OSError as error:
+        print(f"HEARTBEAT FAILED: {' '.join(heartbeat)}: {error}", file=sys.stderr)
+        return
+    if result.returncode != 0:
+        output = shorten((result.stdout + result.stderr).strip())
+        print(f"HEARTBEAT FAILED: {' '.join(heartbeat)} exited {result.returncode}: {output}", file=sys.stderr)
+
+
+def keep_heartbeat(heartbeat, finished_event):
+    while not finished_event.wait(HEARTBEAT_INTERVAL_SECONDS):
+        send_heartbeat(heartbeat)
+
+
+def run_command(command, working_directory, log_path, heartbeat):
+    finished_event = threading.Event()
+    if heartbeat:
+        send_heartbeat(heartbeat)
+        threading.Thread(target=keep_heartbeat, args=(heartbeat, finished_event), daemon=True).start()
     with open(log_path, "w") as log_file:
         exit_code = subprocess.run(command, cwd=working_directory, stdout=log_file, stderr=subprocess.STDOUT).returncode
     finished_event.set()
-    if task_key:
-        touch_lock(task_key)
+    if heartbeat:
+        send_heartbeat(heartbeat)
     return exit_code
 
 
@@ -168,7 +188,8 @@ def main():
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
     start_time = time.time()
-    exit_code = run_command(arguments.command, working_directory, log_path, arguments.lock)
+    heartbeat = heartbeat_command(arguments.heartbeat, arguments.lock)
+    exit_code = run_command(arguments.command, working_directory, log_path, heartbeat)
     duration_seconds = time.time() - start_time
 
     junit_totals, junit_failures = read_junit_results(files_written_since(working_directory, JUNIT_PATTERNS, start_time))
