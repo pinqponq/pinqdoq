@@ -107,6 +107,10 @@ class EnvironmentNoteTest(unittest.TestCase):
     def test_unfiltered_push_workflow_is_listed(self):
         self.assertIn("ci.yml", pr_base.environment_note({"ci.yml": "on: push\n"}, "develop"))
 
+    def test_patterns_the_script_cannot_read_count_as_matching(self):
+        workflow = "on:\n  push:\n    branches: ['!wip', 'main?']\n"
+        self.assertEqual(pr_base.deploying_workflows({"x.yml": workflow}, "main"), ["x.yml"])
+
     def test_says_when_nothing_deploys(self):
         self.assertIn("starts no workflow", pr_base.environment_note({"ci.yml": PULL_REQUEST_ONLY}, "main"))
 

@@ -83,6 +83,8 @@ def push_filter(workflow_text):
 
 
 def branch_matches(pattern, branch):
+    if re.search(r"[!?+\[]", pattern):
+        return True
     regex = re.escape(pattern).replace(r"\*\*", ".*").replace(r"\*", "[^/]*")
     return re.fullmatch(regex, branch) is not None
 
@@ -130,15 +132,21 @@ def repo_facts(repo):
 
 
 def fetch_workflows(repo, ref):
-    listing = gh_json(f"repos/{repo}/contents/.github/workflows?ref={ref}") or []
+    listing = subprocess.run(["gh", "api", f"repos/{repo}/contents/.github/workflows?ref={ref}"],
+                             capture_output=True, text=True)
+    if listing.returncode != 0:
+        if "404" in listing.stderr or "Not Found" in listing.stderr:
+            return {}
+        sys.exit(f"Could not list the workflows of {repo}: {listing.stderr.strip()}")
     workflows = {}
-    for entry in listing:
+    for entry in json.loads(listing.stdout):
         if not entry["name"].endswith((".yml", ".yaml")):
             continue
         raw = subprocess.run(["gh", "api", "-H", "Accept: application/vnd.github.raw", entry["url"]],
                              capture_output=True, text=True)
-        if raw.returncode == 0:
-            workflows[entry["name"]] = raw.stdout
+        if raw.returncode != 0:
+            sys.exit(f"Could not read workflow {entry['name']} of {repo}: {raw.stderr.strip()}")
+        workflows[entry["name"]] = raw.stdout
     return workflows
 
 
