@@ -27,6 +27,7 @@ pinq-doq/
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
     new-product/                start a new product from kmp-app-template + the backend template (via scripts/new_product.py)
   scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault, new_product.py for templates)
+    verification/   build, test and mutation wrappers behind the pin-test subagent (usable without the runner)
   references/     → NOT copied; read on demand by path
     kotlin/
       deveng-core-reference.md  full deveng-core-kmp API map

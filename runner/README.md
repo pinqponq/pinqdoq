@@ -10,7 +10,7 @@ Unlike the rest of pinq-doq, nothing here is delivered into a project's `.claude
 runner/
   skill/        → linked as ~/.claude/skills/pinqloq-task-runner (SKILL.md, references/, scripts/, templates/)
     config.json     team configuration (board, lesson PR reviewer); public, no personal data
-    scripts/        state, locks, board, run reports, build/PIT wrappers, preflight, install.py, doctor.py
+    scripts/        state, locks, board, run reports, preflight, install.py, doctor.py; the build/PIT wrappers forward to scripts/verification/
   agents/       → linked as ~/.claude/agents/pin-test.md, pin-review.md, pin-device.md
   templates/    routine prompt and the runner folder's settings.local.json, rendered by install.py
 ```

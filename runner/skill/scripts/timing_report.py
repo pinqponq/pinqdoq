@@ -7,12 +7,15 @@ Usage: timing_report.py [--task rindle-cmp#354] [--days 7] [--top 5] [--brief] [
   --from-logs  also read older runs from <worktree>/build/runner-logs/*.log (start from the file name,
                end from the file's last write; marked "~" as approximate)
 """
-import argparse, glob, json, os, re, time
+import argparse, glob, json, os, re, sys, time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import runner_config
-import timings
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts" / "verification"))
+import timings  # noqa: E402
 
 WORKTREES_DIR = str(runner_config.read_machine_config()["worktrees_dir"])
 LOG_TIMESTAMP = re.compile(r"(\d{8}T\d{6}Z)\.log$")

@@ -177,3 +177,19 @@ The settings files are edited as text: only the moved keys disappear and the `Va
 - `--accept-differences <keys>`: `verify` accepts differences made on purpose (a setting moved to a new place, an unused section dropped). They are still listed.
 - `--test-from local`: only if the test server really needs the developer-machine values.
 - `--help` lists everything else.
+
+## `verification/`
+
+Build, test and mutation wrappers. The `pin-test` subagent runs them, but they need neither the task runner nor its state, so any project can call them directly. Defaults match the pinqloq task runner; a project overrides them in its own `verification-profile.json`.
+
+| Script | Purpose |
+|---|---|
+| `run_build.py` | Runs a build/test command with full output in `build/runner-logs/` and prints only status, duration, test counts, failures and compiler errors. `--heartbeat '<command>'` keeps a caller's lock fresh; `--lock <key>` alone touches the task runner's lock. |
+| `run_pit.py` | Diff-scoped PIT mutation run for Kotlin modules (JSON score and survivors on changed lines). |
+| `run_stryker_js.py` | Diff-scoped StrykerJS run for TypeScript/JavaScript, same output and exit codes as `run_pit.py`. |
+| `verification_profile.py` | Prints the project's `mutation_threshold`, `baseline_branch` and `dotnet_root` (defaults merged with `verification-profile.json`). |
+| `shrink_images.py` | Small JPEG copies of screenshots for reading. |
+| `clean_build_output.py` | Deletes build output only under `build/` or `_small/`. |
+| `timings.py`, `android_sdk.py`, `pit.init.gradle` | Helpers for the scripts above (run timings in `~/.claude/pinqloq-task-runner/timings.jsonl`, `ANDROID_HOME` fallback, PIT classpath). |
+
+The task runner keeps forwarding files with the same names in `runner/skill/scripts/`, so its existing paths keep working. Tests: `python3 -m unittest discover -s scripts/verification/tests`.
