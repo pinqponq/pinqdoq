@@ -7,7 +7,8 @@ Two files:
 - `<skill>/config.json` (in pinqdoq, public): the team's board coordinates and settings that hold
   on every machine. No personal addresses.
 - `~/.claude/pinqloq-task-runner/machine.json` (local, never committed): this machine's role,
-  folders. `install.py` creates it; every key has a default, so a missing
+  folders and the Pinq Center service token (`pinq_center`: `api_url`, `runner_token`; never printed).
+  `install.py` creates it; every key has a default, so a missing
   file means "primary runner with the default folders".
 
 Roles:
@@ -33,6 +34,7 @@ DEFAULT_MACHINE_CONFIG = {
     "workspace_dir": "~/StudioProjects",
     "worktrees_dir": "~/StudioProjects/.task-runner-worktrees",
     "runner_dir": "~/StudioProjects/pinqloq-runner",
+    "pinq_center": None,
 }
 PATH_KEYS = ("workspace_dir", "worktrees_dir", "runner_dir")
 # Keys older machine.json files still carry; mail_cc lost its use when the runner stopped mailing (2026-10-11).
@@ -65,6 +67,8 @@ def transcript_dir_for(runner_dir):
 def main():
     machine = read_machine_config()
     printable_machine = {key: str(value) if key in PATH_KEYS else value for key, value in machine.items()}
+    if printable_machine["pinq_center"]:
+        printable_machine["pinq_center"] = {**printable_machine["pinq_center"], "runner_token": "<hidden>"}
     print(json.dumps({"team": read_team_config(), "machine": printable_machine,
                       "machine_config_file": str(MACHINE_CONFIG_FILE),
                       "machine_config_exists": MACHINE_CONFIG_FILE.exists()}, ensure_ascii=False, indent=1))
