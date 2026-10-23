@@ -190,6 +190,15 @@ Build, test and mutation wrappers. The `pin-test` subagent runs them, but they n
 | `verification_profile.py` | Prints the project's `mutation_threshold`, `baseline_branch` and `dotnet_root` (defaults merged with `verification-profile.json`). |
 | `shrink_images.py` | Small JPEG copies of screenshots for reading. |
 | `clean_build_output.py` | Deletes build output only under `build/` or `_small/`. |
+| `agent-template.md`, `render_agent.py` | The subagent that drives these scripts. `render_agent.py pinqloq` produces `runner/agents/pin-test.md`; `render_agent.py generic --scripts-dir <folder>` produces the same agent without the task runner's lock and state. |
 | `timings.py`, `android_sdk.py`, `pit.init.gradle` | Helpers for the scripts above (run timings in `~/.claude/pinqloq-task-runner/timings.jsonl`, `ANDROID_HOME` fallback, PIT classpath). |
 
 The task runner keeps forwarding files with the same names in `runner/skill/scripts/`, so its existing paths keep working. Tests: `python3 -m unittest discover -s scripts/verification/tests`.
+
+To use the subagent outside the task runner, render it into the project's (or your own) agents folder, pointing at wherever these scripts are on that machine:
+
+```bash
+python3 .pinq-doq/scripts/verification/render_agent.py generic --scripts-dir .pinq-doq/scripts/verification --out .claude/agents/verification-runner.md
+```
+
+`pin-test.md` is generated: change `agent-template.md`, then run `python3 scripts/verification/render_agent.py pinqloq --out runner/agents/pin-test.md`. A test fails while the two differ.
