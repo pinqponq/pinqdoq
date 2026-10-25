@@ -85,6 +85,9 @@ class ChatService(private val module: Module) {
     suspend fun createSession(): Session =
         module.send(endpoint = "session")
 
+    suspend fun getOrCreateConversation(): Conversation =
+        mapper.mapToDomain(module.send(endpoint = "conversation"))
+
     suspend fun load(cached: Boolean): Session = if (cached) session else module.send(endpoint = "load")
 }
 """
@@ -151,9 +154,11 @@ class GeneratedConditionalTest(unittest.TestCase):
         counts, _ = count_in(SCREEN_SOURCE, [
             conditional("ChatService", "createSession", line, signature=SUSPEND),
             conditional("ChatViewModel$open$1", "invokeSuspend", line, signature="(Ljava/lang/Object;)Ljava/lang/Object;"),
+            conditional("ChatService", "getOrCreateConversation", screen_line("fun getOrCreateConversation("), signature=SUSPEND),
+            conditional("ChatService", "getOrCreateConversation", screen_line("mapToDomain("), signature=SUSPEND),
         ])
 
-        self.assertEqual(2, counts["noise"])
+        self.assertEqual(4, counts["noise"])
 
     def test_removed_calls_in_composables_still_count(self):
         counts, _ = count_in(SCREEN_SOURCE, [mutation("ChatScreenKt", "ChatScreen", screen_line('"a == b"'),

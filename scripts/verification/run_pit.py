@@ -42,10 +42,14 @@ KILLED_STATUSES = ("KILLED", "TIMED_OUT")
 SOURCE_CONDITION = re.compile(
     r"\b(if|else|when|while|for|do|is|in|takeIf|takeUnless|check|checkNotNull|require|requireNotNull)\b|\bas\?"
     r"|->|\?:|\?\.|&&|\|\||!!|==|!=|<=|>=|\s<\s|\s>\s|!\s*[\w(]"
-    r"|\b(filter\w*|map\w*|flatMap\w*|forEach\w*|onEach\w*|any|all|none|first\w*|last\w*|find\w*|single\w*|count|sumOf"
-    r"|maxBy\w*|minBy\w*|maxOf\w*|minOf\w*|sorted\w*|groupBy|associate\w*|partition|takeWhile|dropWhile|indexOf\w*"
-    r"|distinctBy|repeat|reduce\w*|fold\w*|zip\w*|use|orEmpty|isNull\w*|isNot\w*|if(Empty|Blank)|getOr\w*"
-    r"|isEmpty|isBlank|recover\w*|onSuccess|onFailure|exceptionOrNull)\s*[({]")
+    r"|\b(filter|filterNot|filterNotNull|filterIsInstance|filterIndexed|filterKeys|filterValues|filterTo|map|mapNotNull"
+    r"|mapIndexed|mapIndexedNotNull|mapKeys|mapValues|mapTo|mapNotNullTo|flatMap|forEach|forEachIndexed|onEach|onEachIndexed"
+    r"|any|all|none|first|firstOrNull|firstNotNullOf|firstNotNullOfOrNull|last|lastOrNull|find|findLast|single|singleOrNull"
+    r"|count|sumOf|maxBy|maxByOrNull|minBy|minByOrNull|maxOf|maxOfOrNull|minOf|minOfOrNull|sortedBy|sortedByDescending"
+    r"|sortedWith|groupBy|associate|associateBy|associateWith|partition|takeWhile|dropWhile|indexOfFirst|indexOfLast"
+    r"|distinctBy|repeat|reduce|reduceOrNull|reduceIndexed|fold|foldIndexed|zip|use|orEmpty|isEmpty|isBlank|isNotEmpty"
+    r"|isNotBlank|isNullOrEmpty|isNullOrBlank|ifEmpty|ifBlank|getOrElse|getOrPut|getOrDefault|getOrNull|getOrThrow"
+    r"|recover|recoverCatching|onSuccess|onFailure|exceptionOrNull)\s*[({]")
 CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
 STRING_TEMPLATE_EXPRESSION = "${"
 CHAR_LITERAL = re.compile(r"'(?:[^'\\]|\\.)'")
