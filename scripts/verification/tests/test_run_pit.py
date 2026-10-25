@@ -116,7 +116,7 @@ def count_in(source, mutations):
         report = Path(worktree, "mutations.xml")
         report.write_text("<mutations>" + "".join(mutations) + "</mutations>")
         counts, survivors = collections.Counter(), []
-        run_pit.count_mutations(worktree, str(report), {"src/Sample.kt": set(range(1, 40))}, counts, survivors)
+        run_pit.count_mutations(worktree, str(report), {"src/Sample.kt": set(range(1, len(source.splitlines()) + 1))}, counts, survivors)
         return counts, survivors
 
 
