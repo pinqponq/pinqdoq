@@ -113,6 +113,21 @@ Implementation: **core.data.temp** — `TempFileRepositoryImpl(dirProvider, file
 
 ---
 
+## Push notifications (`core.push`)
+
+| Situation | Use |
+|-----------|-----|
+| Push permission status, the app's own request (soft ask) and its cadence, system prompt or settings | `PushNotifications` (`resolvePermissionStatus`, `softAsk`, `isSystemPromptShownDirectly`, `enableNotifications`) with `PushNotificationOptions` / `SoftAskPolicy` |
+| Register the device token with the backend (once per token, again after a rotation) | `PushNotifications.registerTokenIfPermitted` / `handleNewToken` / `registerTokenUpdates`; backend call as `PushTokenRegistrar` |
+| Remove the device token on sign-out | `PushNotifications.unregisterToken`; backend call as `PushTokenUnregistrar` |
+| Remember whether the system prompt was shown and the ask count | `NotificationPermissionStorage` / `NotificationPermissionStorageImpl` |
+| The platform push token | `PlatformPushTokenSource` (Android FCM; iOS from Swift through `IosPushTokenBridge.updateToken`) |
+| Android FCM service (channel, notification, tap deep link, token rotation) | subclass `PushNotificationMessagingService`; override `resolveDeepLink` / `handleDataMessage` |
+
+**Do not:** Write your own FirebaseMessagingService, token registration use case, permission status or soft-ask logic for push notifications. Setup steps (manifest, AppDelegate): deveng-core-kmp README "Push Notifications".
+
+---
+
 ## Pagination
 
 | Situation                                                                              | Use                                                           |
@@ -146,7 +161,7 @@ Implementation: **core.data.temp** — `TempFileRepositoryImpl(dirProvider, file
 | Switch with label                             | `LabeledSwitch`                                                                                                                                                                                                                                                                                                                                                       |
 | Label + content slot                          | `LabeledSlot`                                                                                                                                                                                                                                                                                                                                                         |
 | Rating UI                                     | `RatingRow`, `RatingIcon`                                                                                                                                                                                                                                                                                                                                             |
-| Navigation (collapsed/expanded/horizontal)    | `NavigationMenu`, `NavigationMenuContentCollapsed`, `NavigationMenuContentExpanded`, `NavigationMenuContentHorizontal` + item composables                                                                                                                                                                                                                             |
+| Navigation (collapsed/expanded/horizontal, bottom/side bar) | `NavigationMenu` (`MenuMode.Vertical`, `Horizontal`, `BottomBar`, `SideBar`), `NavigationMenuIndicator` (sliding selection indicator), `barItemContent` slot + `NavigationMenuBarItemIcon`, `isBarItemRippleEnabled` (press ripple on/off, default on), `NavigationBarPlacement` / `currentNavigationBarPlacement()` (bottom vs. side from window size, `contentPadding(barThickness)` for screen content), `NavigationMenuContentCollapsed`, `NavigationMenuContentExpanded`, `NavigationMenuContentHorizontal` + item composables |
 | Scrollbar tied to scroll state                | `scrollbarWithScrollState`, `scrollbarWithLazyListState`                                                                                                                                                                                                                                                                                                              |
 | Rounded surface                               | `RoundedSurface`                                                                                                                                                                                                                                                                                                                                                      |
 | Progress bars                                 | `ProgressIndicatorBars`                                                                                                                                                                                                                                                                                                                                               |
@@ -157,6 +172,24 @@ Implementation: **core.data.temp** — `TempFileRepositoryImpl(dirProvider, file
 | Swipeable card stack (Tinder-style)           | `SwipeCards`, `SwipeCardsState`, `rememberSwipeCardsState`, `SwipeCardsScope` (`items` / `itemsIndexed`, `onSwiping` / `onSwiped`); optional overlay icon buttons: `showSwipeButtons` + `negativeButtonIcon` / `positiveButtonIcon` / `revertButtonIcon`. **Theme:** `ComponentTheme` → `swipeCards` (`SwipeCardsTheme` in `core.presentation.theme` / `ComponentTheme.kt`): `buttonBackgroundColor`, `buttonIconTint`, `buttonSize`, `buttonShadowElevation`, and swipe-direction highlights `negativeSwipeHighlightColor`, `positiveSwipeHighlightColor`, `swipeHighlightIconTintBlend` (tint while dragging left/right). **Revert:** `state.canRevert` + `animateBackSwipe`, or **`pendingRevertKey`** if the list changed and internal revert state was lost. **Optional:** `SwipeCardsState.swipeNegativeButtonHighlight` / `swipePositiveButtonHighlight` (0..1) for custom UI tied to drag progress. |
 
 Use these instead of reimplementing equivalent generic components.
+
+---
+
+## Motion, press feedback, shimmer and haptics (`core.presentation.motion`)
+
+| Situation                                                  | Use                                                                                                   |
+|------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Animation durations, easings, springs                      | `MotionTokens` (`DURATION_*_MILLIS`, `StandardEasing`, `Emphasized*Easing`, `defaultSpring`, `bouncySpring`, `pressSpring`) |
+| A tween that must become instant under reduce motion       | `MotionTokens.tweenOrSnap(isReduceMotionEnabled)`                                                     |
+| Small scale-down while a clickable is pressed              | `Modifier.pressScale(interactionSource)` (same `interactionSource` as the `clickable`)                |
+| Skeleton / loading placeholder                             | `ShimmerBox` (`core.presentation.component.shimmer`) or `Modifier.shimmer()`; theme: `ComponentTheme.shimmer` (`ShimmerTheme`) |
+| NavHost / AnimatedContent screen transitions               | `NavTransitions.enter` / `exit` / `popEnter` / `popExit(isReduceMotionEnabled)`                       |
+| Whether the user turned on reduce motion                   | `LocalReduceMotion` (provided by `AppTheme` from the system setting; `AppTheme(reduceMotion = …)` overrides) |
+| Tap / success / warning haptics                            | `rememberAppHaptics()` → `tap()`, `success()`, `warning()` (`core.presentation.haptics`)              |
+
+Every new animation reads `LocalReduceMotion.current` and switches to no animation or an instant change when it is true.
+
+**Do not:** Hardcode animation durations or easings per screen, write a custom shimmer/skeleton, or call `LocalHapticFeedback` with ad-hoc types when these fit.
 
 ---
 
@@ -175,6 +208,7 @@ Use these instead of reimplementing equivalent generic components.
 | Text width in Dp                                   | `calculateTextWidthAsDp`                                                                                                                                             |
 | Logging                                            | `CustomLogger`                                                                                                                                                       |
 | String formatting (e.g. placeholders)              | `StringFormatter`                                                                                                                                                    |
+| Window size category (phone/tablet/desktop)       | `DeviceScreenType`, `currentDeviceScreenType()` (`core.util`, from `WindowSizeClass`)                                                                              |
 
 ---
 
@@ -189,3 +223,17 @@ Use these instead of reimplementing equivalent generic components.
 
 When vibecoding, match the current task to a row above and use the indicated core API rather than
 generating equivalent logic in the app.
+
+---
+
+## Home screen widget (`deveng-widget`, `global.deveng:widget-kmp`)
+
+| Situation | Use |
+|---|---|
+| Widget needs to call the API without the app session | `HomeScreenWidgetSessionStorageImpl` + `InitializeHomeScreenWidgetSessionUseCase` / `EndHomeScreenWidgetSessionUseCase` (app implements `HomeScreenWidgetTokenRepository`) |
+| A widget request with the widget token (forget it on 401) | `SendWidgetTokenRequestUseCase` + `WidgetTokenRejectedException` |
+| Redraw widgets after a change | `HomeScreenWidgetReloader` / `RefreshHomeScreenWidgetsUseCase`; Android `AndroidHomeScreenWidgetRefreshScheduler`, iOS `IosHomeScreenWidgetReloader`, others `DisabledHomeScreenWidgetReloader` |
+| Update the widget from a push (Android) | `ApplyHomeScreenWidgetPushUseCase` + `HomeScreenWidgetSessionlessDrawer` |
+| Store / draw the widget image (Android) | `HomeScreenWidgetImageStore`, `HomeScreenWidgetBitmaps` |
+
+Setup, iOS templates and production lessons: `references/widget/widget-setup.md`.

@@ -2,6 +2,8 @@
 
 Run these steps when asked to **integrate pinq-doq** into a project (first-time setup).
 
+Every new PinqPonq repository gets this in its first pull request, also a repository that was not generated with `pinq_new-product` (a service, a scripts folder). A repository without it has no rules, so its code drifts from the standards unnoticed.
+
 pinq-doq is delivered by **copy**, not as a live submodule mounted at `.claude/rules`. The repo is mounted once at a neutral path (`.pinq-doq/`), and its `rules/` and `skills/` are **copied** into the project's `.claude/` and committed (so they travel with the repo on a fresh clone — no submodule init needed to get the rules). `references/` and `scripts/` are used **in place** from the mount.
 
 > Team note: copy delivery is used because some teammates are on Windows (no symlinks). The committed copies + a version stamp make staleness detectable.

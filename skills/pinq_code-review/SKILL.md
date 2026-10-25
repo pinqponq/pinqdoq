@@ -157,6 +157,8 @@ Read the files with the file-read tool. Do not reconstruct rule content from mem
 - SHOULD review only added/changed lines, but MAY flag a nearby pre-existing violation that the change directly interacts with â€” clearly labeled as pre-existing.
 - SHOULD consult a deep reference (step 4) before asserting a deveng-core or architecture/data-layer violation that depends on it.
 - SHOULD state the default-scope assumption in the Scope line when no scope was given.
+- SHOULD check every function the diff adds or renames for doing two jobs (common.md#Separation of Concerns & Single Responsibility): a name joining two actions with "And" (`saveAndClose`) is a **Warning**, even when the body is short.
+- SHOULD check that every production behavior the diff changes is reached by a test in the same diff or an existing test (kotlin-testing.md#What every change must test): a changed branch, a new temp file or resource without a cleanup test on success and failure, or a rewrite meant to keep the output without a test comparing it to the old output, is a **Warning** naming the untested line.
 
 ### SHOULD / MAY (style)
 

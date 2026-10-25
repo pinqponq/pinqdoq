@@ -1,0 +1,21 @@
+// Prints the JVM test runtime classpath (plus compiled outputs) of one KMP module for run_pit.py.
+// The module comes from -PpitModule (default :composeApp); the JVM target is "desktop" when present, else the first JVM target.
+def pitModule = gradle.startParameter.projectProperties.get('pitModule') ?: ':composeApp'
+allprojects {
+    if (path == pitModule) {
+        afterEvaluate {
+            def kmp = project.extensions.getByName('kotlin')
+            def jvmTarget = kmp.targets.findByName('desktop') ?: kmp.targets.find { it.platformType.name() == 'jvm' }
+            if (jvmTarget == null) throw new GradleException("${path} has no JVM target for PIT")
+            // Only file collections are captured, so the task also works where the configuration cache is on.
+            def compiledOutputs = files(jvmTarget.compilations.collect { it.output.allOutputs })
+            def testRuntimeClasspath = configurations.getByName("${jvmTarget.name}TestRuntimeClasspath")
+            tasks.register('printPitClasspath') {
+                dependsOn "${jvmTarget.name}TestClasses"
+                doLast {
+                    println 'PITCP=' + (compiledOutputs.files + testRuntimeClasspath.files).join(':')
+                }
+            }
+        }
+    }
+}
