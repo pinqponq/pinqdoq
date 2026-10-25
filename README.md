@@ -26,7 +26,7 @@ pinq-doq/
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
     vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
-    r2-upload-setup/            photo and video upload through Cloudflare R2 (presign, direct upload, commit, signed links): bucket, Vault, .NET backend, KMP client, checks
+    r2-upload-setup/            photo and video upload through Cloudflare R2: bucket, Vault, .NET backend, KMP client, checks
     new-product/                start a new product from kmp-app-template + the backend template (via scripts/new_product.py)
   scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py and storage_keys.py for Vault, new_product.py for templates)
     verification/   build, test and mutation wrappers behind the pin-test subagent (usable without the runner)

@@ -89,6 +89,8 @@ def main():
     path = data_path(args.mount, args.product, args.env, args.service)
     record = read_record(args.vault_bin, path)
     existing = record.get(SECTION) or {}
+    if not isinstance(existing, dict):
+        sys.exit("Storage in the record is not an object; fix it in Vault first.")
 
     values = {key: ask(existing, key, args.replace) for key in ("BucketName", "AccountId", "AccessKey", "SecretKey")}
     if not all(values.values()):
