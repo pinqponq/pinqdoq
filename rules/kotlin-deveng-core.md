@@ -83,6 +83,7 @@ This guide ensures that when building or vibecoding an app that depends on **dev
 - Implement permission request/check/settings navigation without using PermissionsController or core Permissions.
 - Implement infinite-scroll paginated lists with custom state and list UI when PaginatedFlowLoader + PaginatedListView fit.
 - Duplicate core presentation components (e.g. custom “theme” or “generic button” that mirrors AppTheme/CustomButton) without reason.
+- Build a new dialog on Compose `androidx.compose.ui.window.Dialog` / `AlertDialog`; wrap it in core **CustomDialog** (or **CustomAlertDialog** for title + buttons). An existing dialog in the app that uses the raw Compose `Dialog` is legacy, not a pattern to copy.
 
 ## Reference
 
@@ -93,3 +94,20 @@ See **`references/kotlin/deveng-core-reference.md`** (in the pinq-doq mount, e.g
 Core uses a **domain + data** split for camera temp storage: repository interface in **core.domain.camera.temp** (`CameraTempPhotoRepository`, `TempPhotoItem`), implementation and file/dir abstractions in **core.data.camera.temp** (`CameraTempPhotoRepositoryImpl`, `CameraTempDirProvider`, `CameraTempFileOps`). Apps depend on the interface and register platform-specific `CameraTempDirProvider` in DI.
 
 **Sample app:** The `sample:composeApp` **ThemingDemo** screen includes a **SwipeCards** example at the top of the main lazy column for manual testing.
+
+## Changing the core library (definition of done)
+
+A change to the public surface of deveng-core-kmp (new component, new parameter, new API, new server-driven capability) is complete only when it also contains:
+
+1. **A sample:** a working example in `sample/composeApp` showing each new public piece in its main states (new demo screen reachable from the main list, or a section in an existing demo). The sample must build on Android and desktop.
+2. **Documentation:** the `README.MD` section added or updated, with a link to deeper docs when they exist.
+3. **The PR says where:** a "Sample" line in the PR body naming the demo screen.
+
+Internal refactors and bug fixes without public surface may skip the sample; say so in the PR. Do not defer the sample to a later task.
+
+## Versions of our libraries that depend on core
+
+pinqponq-chat-kmp, deveng-networking-kmp and other libraries of ours are published already compiled against one core-kmp (or networking-kmp) version. A theme or config `data class` that gains a parameter changes its default-argument constructor, so a library compiled against the older version crashes in the app with `NoSuchMethodError` (Android) or SIGABRT (iOS) the first time that code runs. The build stays green.
+
+- When you add or bump one of these libraries, or bump core-kmp or networking-kmp in an app that uses them, check the core-kmp and networking-kmp versions in the library's published `.pom`. They must be the versions the app uses. If they differ, rebuild the library against the app's versions and release it first (one version line and a patch bump in the library's `gradle/libs.versions.toml`). Do not downgrade the app to the older core.
+- Every page or component the app embeds from such a library needs a UI test that draws it, so a mismatch fails a test instead of the app.

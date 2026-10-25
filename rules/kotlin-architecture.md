@@ -12,6 +12,7 @@ Extends `common.md`. The structural rules for Android and Kotlin Multiplatform f
 
 - Features split into `data/` + `domain/` + `presentation/`. Application depends only on Domain; Domain depends on nothing outward (see `common.md`).
 - Presentation is MVI: one `[Feature]Contract.kt` per feature holding `Event` / `State` / `Effect`; the ViewModel is the only writer of state.
+- The Screen holds no decisions. It collects effects and makes the platform call an effect asks for (navigate, open a URL, copy to the clipboard, show a snackbar). When such a call fails, the Screen sends the failure as an `Event` (e.g. `HandleExternalUrlOpenFailure(url)`), and the ViewModel decides what happens next through new effects, so the decision has a ViewModel test.
 - Full package skeleton, data-layer recipe, and Screen/ScreenContent/ViewModel split: `.pinq-doq/references/kotlin/architecture.md`, `.pinq-doq/references/kotlin/data-layer.md`, `.pinq-doq/references/kotlin/mvi-pattern.md`, `.pinq-doq/references/kotlin/viewmodel-patterns.md`.
 
 ---
@@ -21,6 +22,7 @@ Extends `common.md`. The structural rules for Android and Kotlin Multiplatform f
 Every feature's `data/` has the same shape — no improvisation:
 - `[Feature]Service` — concrete class (no interface), inline endpoint strings, returns the response DTO directly. No `Result<T>`/`Flow<T>`/custom wrappers; let exceptions propagate.
 - DTOs — `@Serializable` `data class`, suffix `Request` / `Response` (never `Dto`). Nullable fields default to `null`, list fields to `emptyList()`; never a sentinel string. `@SerialName` only on backend-name mismatch.
+- A `Request` field the server needs (an id, a type such as `messageType`) never has a default value: `kotlinx.serialization` leaves default values out of the JSON unless `encodeDefaults` is on, so the field silently disappears. Pass it at the call site. A test of what is sent reads the raw JSON, not a decode back through the same `Request` class, which would fill the default in again.
 - Mappers — a **class** with `mapToDomain(response): Domain` (not a top-level extension); compose by injecting the inner mapper. Convert nullable DTO fields to non-null domain defaults here.
 - Repository — `[Feature]RepositoryImpl` implements a `domain/` interface; takes service + mappers only (no Dispatcher/Scope/Settings); returns domain types. No retries/caching/fallbacks.
 - No `local/` datasource in a feature — persisted state lives in a shared `core` key-value store.
