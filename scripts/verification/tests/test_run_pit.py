@@ -38,28 +38,140 @@ suspend fun Receiver.enableAndLog(
 ) {
     enable(controller) ?: return
 }
+
+class Initialize(private val other: Other) {
+    suspend operator fun invoke() {
+        other.connect()
+    }
+}
 """
 
 
-def mutation(xml_class, method, line, status="SURVIVED", description=None, signature=SUSPEND):
+COMPOSABLE = "(Lfeature/chat/ChatViewModel;Landroidx/compose/runtime/Composer;II)V"
+COMPOSABLE_LAMBDA = "(Landroidx/compose/runtime/Composer;I)Lkotlin/Unit;"
+NEGATED = "org.pitest.mutationtest.engine.gregor.mutators.NegateConditionalsMutator"
+VOID_CALL = "org.pitest.mutationtest.engine.gregor.mutators.VoidMethodCallMutator"
+NULL_RETURN = "org.pitest.mutationtest.engine.gregor.mutators.returns.NullReturnValsMutator"
+SCREEN_SOURCE = """
+@Composable
+fun ChatScreen(
+    viewModel: ChatViewModel = koinViewModel()
+) {
+    val state = viewModel.getState()
+    if (!state.isVisible) return
+    StateLayout(state = state, onClose = { viewModel.close() }) {
+        ChatContent(state = state.uiState)
+    }
+    val names = state.items.filter { it.isActive }
+    val label = state.title ?: "fallback // not a comment"
+    Text(text = "a == b")
+}
+
+class ChatService(private val module: Module) {
+    suspend fun createSession(): Session =
+        module.send(endpoint = "session")
+}
+"""
+
+
+def mutation(xml_class, method, line, status="SURVIVED", description=None, signature=SUSPEND, mutator=NULL_RETURN):
     description = description or f"replaced return value with null for {xml_class.replace('.', '/')}::{method}"
     return (f'<mutation detected="false" status="{status}"><sourceFile>Sample.kt</sourceFile>'
             f"<mutatedClass>{xml_class}</mutatedClass><mutatedMethod>{method}</mutatedMethod>"
             f"<methodDescription>{signature}</methodDescription><lineNumber>{line}</lineNumber>"
-            f"<mutator>org.pitest.mutationtest.engine.gregor.mutators.returns.NullReturnValsMutator</mutator>"
+            f"<mutator>{mutator}</mutator>"
             f"<description>{description}</description></mutation>")
+
+
+def conditional(xml_class, method, line, signature=COMPOSABLE, status="SURVIVED"):
+    return mutation(xml_class, method, line, status=status, description="negated conditional", signature=signature, mutator=NEGATED)
+
+
+def count_in(source, mutations):
+    with tempfile.TemporaryDirectory() as worktree:
+        Path(worktree, "src").mkdir()
+        Path(worktree, "src/Sample.kt").write_text(source)
+        report = Path(worktree, "mutations.xml")
+        report.write_text("<mutations>" + "".join(mutations) + "</mutations>")
+        counts, survivors = collections.Counter(), []
+        run_pit.count_mutations(worktree, str(report), {"src/Sample.kt": set(range(1, 40))}, counts, survivors)
+        return counts, survivors
+
+
+class GeneratedConditionalTest(unittest.TestCase):
+    def test_conditionals_on_composable_lines_without_a_source_condition_are_noise(self):
+        counts, survivors = count_in(SCREEN_SOURCE, [
+            conditional("ChatScreenKt", "ChatScreen", 3),
+            conditional("ChatScreenKt", "ChatScreen", 5, status="KILLED"),
+            conditional("ChatScreenKt", "ChatScreen", 8),
+            conditional("ChatScreenKt", "ChatScreen$lambda$3", 9, signature=COMPOSABLE_LAMBDA),
+            conditional("ChatScreenKt", "ChatScreen", 13),
+        ])
+
+        self.assertEqual(5, counts["noise"])
+        self.assertEqual([], survivors)
+
+    def test_conditionals_on_lines_with_a_source_condition_still_count(self):
+        counts, survivors = count_in(SCREEN_SOURCE, [
+            conditional("ChatScreenKt", "ChatScreen", 7),
+            conditional("ChatScreenKt", "ChatScreen", 11),
+            conditional("ChatScreenKt", "ChatScreen", 12),
+        ])
+
+        self.assertEqual(0, counts["noise"])
+        self.assertEqual([7, 11, 12], [s["line"] for s in survivors])
+
+    def test_conditionals_outside_composable_and_suspend_functions_still_count(self):
+        counts, _ = count_in(SCREEN_SOURCE, [conditional("ChatService", "plain", 18, signature="()V")])
+
+        self.assertEqual(0, counts["noise"])
+        self.assertEqual(1, counts["SURVIVED"])
+
+    def test_conditionals_in_suspend_state_machines_without_a_source_condition_are_noise(self):
+        counts, _ = count_in(SCREEN_SOURCE, [
+            conditional("ChatService", "createSession", 18, signature=SUSPEND),
+            conditional("ChatViewModel$open$1", "invokeSuspend", 18, signature="(Ljava/lang/Object;)Ljava/lang/Object;"),
+        ])
+
+        self.assertEqual(2, counts["noise"])
+
+    def test_removed_calls_in_composables_still_count(self):
+        counts, _ = count_in(SCREEN_SOURCE, [mutation("ChatScreenKt", "ChatScreen", 13, description="removed call to Text",
+                                                      signature=COMPOSABLE, mutator=VOID_CALL)])
+
+        self.assertEqual(0, counts["noise"])
+        self.assertEqual(1, counts["SURVIVED"])
+
+
+class SuspendReturnCopyTest(unittest.TestCase):
+    def test_uncovered_copies_of_a_killed_suspend_return_are_noise(self):
+        counts, survivors = count_in(SCREEN_SOURCE, [
+            mutation("ChatService", "createSession", 17, status="KILLED"),
+            mutation("ChatService", "createSession", 17, status="NO_COVERAGE"),
+            mutation("ChatService", "createSession", 17, status="NO_COVERAGE"),
+        ])
+
+        self.assertEqual((1, 2), (counts["KILLED"], counts["noise"]))
+        self.assertEqual([], survivors)
+
+    def test_uncovered_suspend_return_without_a_killed_copy_still_counts(self):
+        counts, survivors = count_in(SCREEN_SOURCE, [mutation("ChatService", "createSession", 17, status="NO_COVERAGE")])
+
+        self.assertEqual(0, counts["noise"])
+        self.assertEqual(["NO_COVERAGE"], [s["status"] for s in survivors])
+
+    def test_surviving_copy_of_a_killed_suspend_return_still_counts(self):
+        counts, _ = count_in(SCREEN_SOURCE, [
+            mutation("ChatService", "createSession", 17, status="KILLED"),
+            mutation("ChatService", "createSession", 17, status="SURVIVED"),
+        ])
+
+        self.assertEqual((0, 1), (counts["noise"], counts["SURVIVED"]))
 
 
 class UnitSuspendNullReturnTest(unittest.TestCase):
     def count(self, *mutations):
-        with tempfile.TemporaryDirectory() as worktree:
-            Path(worktree, "src").mkdir()
-            Path(worktree, "src/Sample.kt").write_text(SOURCE)
-            report = Path(worktree, "mutations.xml")
-            report.write_text("<mutations>" + "".join(mutations) + "</mutations>")
-            counts, survivors = collections.Counter(), []
-            run_pit.count_mutations(worktree, str(report), {"src/Sample.kt": set(range(1, 40))}, counts, survivors)
-            return counts, survivors
+        return count_in(SOURCE, mutations)
 
     def test_null_return_from_unit_suspend_functions_is_noise(self):
         counts, survivors = self.count(
@@ -95,8 +207,14 @@ class UnitSuspendNullReturnTest(unittest.TestCase):
         self.assertEqual(0, counts["noise"])
         self.assertEqual(1, counts["SURVIVED"])
 
+    def test_null_return_from_unit_suspend_operator_function_is_noise(self):
+        counts, survivors = self.count(mutation("Sample", "invoke", 30), mutation("Sample", "invoke", 31, status="NO_COVERAGE"))
+
+        self.assertEqual(2, counts["noise"])
+        self.assertEqual([], survivors)
+
     def test_other_mutators_on_unit_suspend_functions_still_count(self):
-        counts, _ = self.count(mutation("Sample", "unregisterToken", 4, description="negated conditional"))
+        counts, _ = self.count(mutation("SampleKt", "enableAndLog", 27, description="negated conditional"))
 
         self.assertEqual(0, counts["noise"])
         self.assertEqual(1, counts["SURVIVED"])
