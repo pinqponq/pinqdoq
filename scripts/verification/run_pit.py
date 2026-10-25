@@ -45,9 +45,10 @@ SOURCE_CONDITION = re.compile(
     r"|\b(filter\w*|map\w*|flatMap\w*|forEach\w*|onEach\w*|any|all|none|first\w*|last\w*|find\w*|single\w*|count|sumOf"
     r"|maxBy\w*|minBy\w*|maxOf\w*|minOf\w*|sorted\w*|groupBy|associate\w*|partition|takeWhile|dropWhile|indexOf\w*"
     r"|distinctBy|repeat|reduce\w*|fold\w*|zip\w*|use|orEmpty|isNull\w*|isNot\w*|if(Empty|Blank)|getOr\w*"
-    r"|onSuccess|onFailure|exceptionOrNull)\s*[({]")
+    r"|isEmpty|isBlank|recover\w*|onSuccess|onFailure|exceptionOrNull)\s*[({]")
 CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
 STRING_TEMPLATE_EXPRESSION = "${"
+CHAR_LITERAL = re.compile(r"'(?:[^'\\]|\\.)'")
 STRING_LITERAL = re.compile(r'"(?:[^"\\]|\\.)*"')
 LINE_COMMENT = re.compile(r"//.*$")
 SERIALIZER_CLASS_SUFFIX = "$$serializer"
@@ -160,7 +161,7 @@ def killed_suspend_returns(root):
 
 
 def code_without_strings_and_comments(text):
-    return LINE_COMMENT.sub("", STRING_LITERAL.sub('""', text))
+    return LINE_COMMENT.sub("", STRING_LITERAL.sub('""', CHAR_LITERAL.sub("''", text)))
 
 
 def source_line_has_condition(source, line):
