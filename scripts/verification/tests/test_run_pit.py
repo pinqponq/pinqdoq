@@ -78,11 +78,14 @@ fun ChatScreen(
     val empty = name.isEmpty()
     val value = result.recover { 0 }
     Text(quote = '"', size = if (large) 2 else 1, label = "z")
+    val hidden = !(state.isVisible)
 }
 
 class ChatService(private val module: Module) {
     suspend fun createSession(): Session =
         module.send(endpoint = "session")
+
+    suspend fun load(cached: Boolean): Session = if (cached) session else module.send(endpoint = "load")
 }
 """
 
@@ -131,7 +134,7 @@ class GeneratedConditionalTest(unittest.TestCase):
     def test_conditionals_on_lines_with_a_source_condition_still_count(self):
         lines = [screen_line(text) for text in (
             "if (!state.isVisible)", "filter {", "?: \"fallback", "Count $count", "as? User", "orEmpty()",
-            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host", "isEmpty()", "recover {", "quote = '\"'")]
+            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host", "isEmpty()", "recover {", "quote = '\"'", "!(state")]
         counts, survivors = count_in(SCREEN_SOURCE, [conditional("ChatScreenKt", "ChatScreen", line) for line in lines])
 
         self.assertEqual(0, counts["noise"])
@@ -187,6 +190,16 @@ class SuspendReturnCopyTest(unittest.TestCase):
         ])
 
         self.assertEqual((0, 1), (counts["noise"], counts["SURVIVED"]))
+
+    def test_uncovered_return_on_a_line_with_a_condition_still_counts(self):
+        line = screen_line("suspend fun load(")
+        counts, survivors = count_in(SCREEN_SOURCE, [
+            mutation("ChatService", "load", line, status="KILLED"),
+            mutation("ChatService", "load", line, status="NO_COVERAGE"),
+        ])
+
+        self.assertEqual(0, counts["noise"])
+        self.assertEqual(["NO_COVERAGE"], [s["status"] for s in survivors])
 
 
 class UnitSuspendNullReturnTest(unittest.TestCase):

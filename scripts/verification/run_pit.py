@@ -41,7 +41,7 @@ SUSPEND_STATE_MACHINE_METHOD = "invokeSuspend"
 KILLED_STATUSES = ("KILLED", "TIMED_OUT")
 SOURCE_CONDITION = re.compile(
     r"\b(if|else|when|while|for|do|is|in|takeIf|takeUnless|check|checkNotNull|require|requireNotNull)\b|\bas\?"
-    r"|->|\?:|\?\.|&&|\|\||!!|==|!=|<=|>=|\s<\s|\s>\s|!\w"
+    r"|->|\?:|\?\.|&&|\|\||!!|==|!=|<=|>=|\s<\s|\s>\s|!\s*[\w(]"
     r"|\b(filter\w*|map\w*|flatMap\w*|forEach\w*|onEach\w*|any|all|none|first\w*|last\w*|find\w*|single\w*|count|sumOf"
     r"|maxBy\w*|minBy\w*|maxOf\w*|minOf\w*|sorted\w*|groupBy|associate\w*|partition|takeWhile|dropWhile|indexOf\w*"
     r"|distinctBy|repeat|reduce\w*|fold\w*|zip\w*|use|orEmpty|isNull\w*|isNot\w*|if(Empty|Blank)|getOr\w*"
@@ -191,12 +191,15 @@ def is_generated_conditional(m, description, composables, source):
     return in_generated_frame and not source_line_has_condition(source, int(m.findtext("lineNumber")))
 
 
-def is_uncovered_suspend_return_copy(m, killed_returns):
+def is_uncovered_suspend_return_copy(m, killed_returns, source):
     """An uncovered copy of a suspend function's null-return mutation whose covered copy a test killed.
 
     The coroutine compiler writes one return per suspension path; the returned value is already proven by the killed copy.
+    A line with a condition can hold returns a person wrote, so its copies still count.
     """
-    return m.get("status") == "NO_COVERAGE" and mutation_key(m) in killed_returns
+    if m.get("status") != "NO_COVERAGE" or mutation_key(m) not in killed_returns or source is None:
+        return False
+    return not source_line_has_condition(source, int(m.findtext("lineNumber")))
 
 
 def declares_only_unit_suspend_functions(source, name):
@@ -230,7 +233,7 @@ def is_unit_suspend_null_return(m, description, source):
 def is_compiler_generated(m, description, composables, source=None, killed_returns=frozenset()):
     """Mutations in code the Kotlin/Compose compiler writes, or that change nothing a caller can see:
     nothing a test can meaningfully kill."""
-    if is_generated_conditional(m, description, composables, source) or is_uncovered_suspend_return_copy(m, killed_returns):
+    if is_generated_conditional(m, description, composables, source) or is_uncovered_suspend_return_copy(m, killed_returns, source):
         return True
     mutated_class = m.findtext("mutatedClass") or ""
     mutated_method = m.findtext("mutatedMethod") or ""
