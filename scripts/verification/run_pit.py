@@ -49,7 +49,7 @@ SOURCE_CONDITION = re.compile(
     r"|sortedWith|groupBy|associate|associateBy|associateWith|partition|takeWhile|dropWhile|indexOfFirst|indexOfLast"
     r"|distinctBy|repeat|reduce|reduceOrNull|reduceIndexed|fold|foldIndexed|zip|use|orEmpty|isEmpty|isBlank|isNotEmpty"
     r"|isNotBlank|isNullOrEmpty|isNullOrBlank|ifEmpty|ifBlank|getOrElse|getOrPut|getOrDefault|getOrNull|getOrThrow"
-    r"|recover|recoverCatching|onSuccess|onFailure|exceptionOrNull)\s*[({]")
+    r"|recover|recoverCatching|mapCatching|onSuccess|onFailure|exceptionOrNull)\s*(?:<[^>]*>)?\s*[({]")
 CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
 STRING_TEMPLATE_EXPRESSION = "${"
 CHAR_LITERAL = re.compile(r"'(?:[^'\\]|\\.)'")
@@ -149,19 +149,20 @@ def composable_methods(root):
             or COMPOSER_PARAMETER in (m.findtext("methodDescription") or "")}
 
 
-def is_suspend_method(m):
-    return (m.findtext("mutatedMethod") == SUSPEND_STATE_MACHINE_METHOD
-            or (m.findtext("methodDescription") or "").endswith(SUSPEND_SIGNATURE_SUFFIX))
+def is_suspend_method(mutation):
+    return (mutation.findtext("mutatedMethod") == SUSPEND_STATE_MACHINE_METHOD
+            or (mutation.findtext("methodDescription") or "").endswith(SUSPEND_SIGNATURE_SUFFIX))
 
 
-def mutation_key(m):
-    return (m.findtext("mutatedClass"), m.findtext("mutatedMethod"), m.findtext("lineNumber"), m.findtext("description"))
+def mutation_key(mutation):
+    return tuple(mutation.findtext(field) for field in ("mutatedClass", "mutatedMethod", "lineNumber", "description"))
 
 
 def killed_suspend_returns(root):
     """Null-return mutations of suspend functions that a test killed, keyed by class, method, line and description."""
-    return {mutation_key(m) for m in root
-            if m.get("status") in KILLED_STATUSES and NULL_RETURN_MUTATOR in (m.findtext("mutator") or "") and is_suspend_method(m)}
+    return {mutation_key(mutation) for mutation in root
+            if mutation.get("status") in KILLED_STATUSES and NULL_RETURN_MUTATOR in (mutation.findtext("mutator") or "")
+            and is_suspend_method(mutation)}
 
 
 def code_without_strings_and_comments(text):
@@ -181,7 +182,7 @@ def source_line_has_condition(source, line):
     return bool(SOURCE_CONDITION.search(code_without_strings_and_comments(text)) or CONTINUED_CONDITION.search(previous_code))
 
 
-def is_generated_conditional(m, description, composables, source):
+def is_generated_conditional(mutation, description, composables, source):
     """A negated conditional on a line of a composable or suspend function whose source has no condition.
 
     The Compose compiler adds $changed/$default/skipping checks and the coroutine compiler adds COROUTINE_SUSPENDED and
@@ -191,19 +192,19 @@ def is_generated_conditional(m, description, composables, source):
     """
     if NEGATED_CONDITIONAL not in description or source is None:
         return False
-    in_generated_frame = (m.findtext("mutatedClass"), m.findtext("mutatedMethod")) in composables or is_suspend_method(m)
-    return in_generated_frame and not source_line_has_condition(source, int(m.findtext("lineNumber")))
+    in_generated_frame = (mutation.findtext("mutatedClass"), mutation.findtext("mutatedMethod")) in composables or is_suspend_method(mutation)
+    return in_generated_frame and not source_line_has_condition(source, int(mutation.findtext("lineNumber")))
 
 
-def is_uncovered_suspend_return_copy(m, killed_returns, source):
+def is_uncovered_suspend_return_copy(mutation, killed_returns, source):
     """An uncovered copy of a suspend function's null-return mutation whose covered copy a test killed.
 
     The coroutine compiler writes one return per suspension path; the returned value is already proven by the killed copy.
     A line with a condition can hold returns a person wrote, so its copies still count.
     """
-    if m.get("status") != "NO_COVERAGE" or mutation_key(m) not in killed_returns or source is None:
+    if mutation.get("status") != "NO_COVERAGE" or mutation_key(mutation) not in killed_returns or source is None:
         return False
-    return not source_line_has_condition(source, int(m.findtext("lineNumber")))
+    return not source_line_has_condition(source, int(mutation.findtext("lineNumber")))
 
 
 def declares_only_unit_suspend_functions(source, name):
