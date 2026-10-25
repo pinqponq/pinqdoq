@@ -23,6 +23,7 @@ pinq-doq/
     kmp-theme-setup/            colors / typography / AppTheme wiring for deveng-core-kmp
     code-review/                review a diff against rules/ (no external services)
     handoff/                    write a curated session checkpoint to .claude/handoffs/ (gitignored)
+    release-notes/              App Store + Play release notes from the commits since the last release
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
     vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
