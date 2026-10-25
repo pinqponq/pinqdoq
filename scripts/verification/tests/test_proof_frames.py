@@ -27,6 +27,11 @@ class FrameTimesTest(unittest.TestCase):
     def test_a_short_video_still_gets_its_first_frame(self):
         self.assertEqual([0], proof_frames.frame_times(1.0, 2))
 
+    def test_interval_below_the_minimum_is_rejected(self):
+        for interval in (0, -1, 0.05):
+            with self.assertRaises(ValueError):
+                proof_frames.frame_times(5.0, interval)
+
     def test_empty_video_has_no_frames(self):
         self.assertEqual([], proof_frames.frame_times(0, 2))
 
@@ -85,6 +90,38 @@ class EndToEndTest(unittest.TestCase):
             for sheet in video["sheets"]:
                 self.assertTrue(Path(sheet["path"]).stat().st_size > 0)
             self.assertTrue(Path(manifest["images"][0]["path"]).exists())
+
+    def test_a_sheet_with_one_frame_is_written(self):
+        with tempfile.TemporaryDirectory() as directory:
+            video_path = self.make_video(directory, 1)
+            output = Path(directory) / "out"
+            captured = io.StringIO()
+            with mock.patch.object(sys, "argv", ["proof_frames.py", video_path, "--out", str(output)]), contextlib.redirect_stdout(captured):
+                proof_frames.main()
+            sheet = json.loads(captured.getvalue())["videos"][0]["sheets"][0]
+            self.assertEqual([0], sheet["seconds"])
+            self.assertTrue(Path(sheet["path"]).stat().st_size > 0)
+
+    def test_same_named_files_in_different_folders_do_not_overwrite_each_other(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = []
+            for folder in ("a", "b"):
+                (Path(directory) / folder).mkdir()
+                path = Path(directory) / folder / "shot.png"
+                path.write_bytes(folder.encode())
+                paths.append(str(path))
+            captured = io.StringIO()
+            with mock.patch.object(sys, "argv", ["proof_frames.py"] + paths + ["--out", str(Path(directory) / "out")]), contextlib.redirect_stdout(captured):
+                proof_frames.main()
+            copies = [Path(image["path"]) for image in json.loads(captured.getvalue())["images"]]
+            self.assertEqual([b"a", b"b"], [copy.read_bytes() for copy in copies])
+
+    def test_exits_2_for_an_interval_below_the_minimum(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(sys, "argv", ["proof_frames.py", directory, "--out", directory, "--interval", "0"]):
+                with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                    proof_frames.main()
+        self.assertEqual(2, raised.exception.code)
 
     def test_exits_1_when_nothing_to_process(self):
         with tempfile.TemporaryDirectory() as directory:

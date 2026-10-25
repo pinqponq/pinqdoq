@@ -17,11 +17,14 @@ import sys
 VIDEO_EXTENSIONS = (".mp4", ".webm", ".mov")
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg")
 DEFAULT_INTERVAL_SECONDS = 2.0
+MINIMUM_INTERVAL_SECONDS = 0.1
 JPEG_QUALITY = "3"
 
 
 def frame_times(duration_seconds, interval_seconds):
     """Seconds at which frames are taken: 0, interval, 2*interval, ... and always one near the end."""
+    if interval_seconds < MINIMUM_INTERVAL_SECONDS:
+        raise ValueError("interval must be at least %s seconds" % MINIMUM_INTERVAL_SECONDS)
     if duration_seconds <= 0:
         return []
     times = []
@@ -70,6 +73,12 @@ def extract_frame(video_path, second, target_path):
 
 
 def build_sheet(frame_paths, columns, rows, sheet_width, target_path):
+    if len(frame_paths) == 1:
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", "-i", frame_paths[0], "-vf", "scale=%d:-1" % sheet_width, "-frames:v", "1", "-q:v", JPEG_QUALITY, target_path],
+            check=True, capture_output=True,
+        )
+        return
     command = ["ffmpeg", "-y", "-v", "error"]
     for frame_path in frame_paths:
         command += ["-i", frame_path]
@@ -92,8 +101,8 @@ def xstack_layout(frame_count, columns):
     return "|".join(positions)
 
 
-def process_video(video_path, output_directory, interval, columns, rows, sheet_width):
-    name = os.path.splitext(os.path.basename(video_path))[0]
+def process_video(video_path, output_directory, interval, columns, rows, sheet_width, number):
+    name = "%d-%s" % (number, os.path.splitext(os.path.basename(video_path))[0])
     frames_directory = os.path.join(output_directory, "frames", name)
     sheets_directory = os.path.join(output_directory, "sheets")
     os.makedirs(frames_directory, exist_ok=True)
@@ -119,10 +128,10 @@ def process_video(video_path, output_directory, interval, columns, rows, sheet_w
     }
 
 
-def copy_image(image_path, output_directory):
+def copy_image(image_path, output_directory, number):
     images_directory = os.path.join(output_directory, "images")
     os.makedirs(images_directory, exist_ok=True)
-    target_path = os.path.join(images_directory, os.path.basename(image_path))
+    target_path = os.path.join(images_directory, "%d-%s" % (number, os.path.basename(image_path)))
     shutil.copyfile(image_path, target_path)
     return {"image": image_path, "path": target_path}
 
@@ -136,6 +145,8 @@ def main():
     parser.add_argument("--rows", type=int, default=3)
     parser.add_argument("--sheet-width", type=int, default=360)
     arguments = parser.parse_args()
+    if arguments.interval < MINIMUM_INTERVAL_SECONDS:
+        parser.error("--interval must be at least %s seconds" % MINIMUM_INTERVAL_SECONDS)
     inputs = list(collect_inputs(arguments.paths))
     if not inputs:
         print("no videos or images found", file=sys.stderr)
@@ -144,12 +155,12 @@ def main():
         print("ffmpeg and ffprobe are required", file=sys.stderr)
         sys.exit(2)
     manifest = {"videos": [], "images": []}
-    for input_path in inputs:
+    for number, input_path in enumerate(inputs, start=1):
         if input_path.lower().endswith(VIDEO_EXTENSIONS):
             manifest["videos"].append(process_video(
-                input_path, arguments.out, arguments.interval, arguments.columns, arguments.rows, arguments.sheet_width))
+                input_path, arguments.out, arguments.interval, arguments.columns, arguments.rows, arguments.sheet_width, number))
         else:
-            manifest["images"].append(copy_image(input_path, arguments.out))
+            manifest["images"].append(copy_image(input_path, arguments.out, number))
     print(json.dumps(manifest, indent=1))
 
 

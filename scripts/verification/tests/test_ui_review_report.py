@@ -100,6 +100,25 @@ class CheckIdsStayInSyncTest(unittest.TestCase):
         self.assertEqual(list(ui_review_report.CHECK_IDS), re.findall(r"^\| `([A-Z_]+)` ", rule, re.M))
 
 
+class ReplyShapeTest(unittest.TestCase):
+    def test_defect_without_a_check_id_is_a_problem(self):
+        parsed = ui_review_report.parse_reply(reply("DEFECTS:\n- [major] frame 2 s — the menu is flat blue"))
+        self.assertTrue(any("unreadable defect line" in problem for problem in parsed["problems"]))
+
+    def test_defect_with_an_unknown_check_id_is_a_problem(self):
+        parsed = ui_review_report.parse_reply(reply("DEFECTS:\n- [major] frame 2 s — the menu is flat blue (check: SOUND)"))
+        self.assertIn("defect names an unknown check id: SOUND", parsed["problems"])
+
+    def test_reply_wrapped_in_a_code_fence_is_read(self):
+        parsed = ui_review_report.parse_reply("```\n" + reply("DEFECTS: none") + "```\n")
+        self.assertEqual([], parsed["problems"])
+
+    def test_pipes_in_a_description_do_not_break_the_table(self):
+        defect = "- [major] frame 2 s — shows a | b in one cell (check: COLOURS)"
+        parsed = ui_review_report.parse_reply(reply("DEFECTS:\n" + defect, COLOURS_DEFECT))
+        self.assertIn("shows a \\| b in one cell", ui_review_report.render_section(parsed, 1, "fix_and_review_again"))
+
+
 class DecideTest(unittest.TestCase):
     def parsed(self, defects_block, overrides=None):
         return ui_review_report.parse_reply(reply(defects_block, overrides))

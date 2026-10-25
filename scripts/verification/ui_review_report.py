@@ -29,7 +29,8 @@ MAX_ROUNDS = 3
 MINIMUM_NOTE_WORDS = 3
 
 CHECK_LINE = re.compile(r"^\s*[-*]\s*([A-Z_]+)\s*:\s*(ok|defect|not-shown)\s*[—–-]+\s*(.*\S)\s*$")
-DEFECT_LINE = re.compile(r"^\s*[-*]\s*\[(major|minor)\]\s*(.+?)\s*[—–]\s*(.+?)(?:\s*\(check:\s*([A-Z_]+)\))?\s*$")
+DEFECT_LINE = re.compile(r"^\s*[-*]\s*\[(major|minor)\]\s*(.+?)\s*[—–]\s*(.+?)\s*\(check:\s*([A-Z_]+)\)\s*$")
+CODE_FENCE = re.compile(r"^\s*```")
 
 
 def parse_reply(text):
@@ -40,6 +41,8 @@ def parse_reply(text):
     defects_none = False
     for line in text.splitlines():
         stripped = line.strip()
+        if CODE_FENCE.match(line):
+            continue
         if re.match(r"^CHECKED:\s*$", stripped):
             section = "checked"
             continue
@@ -70,6 +73,9 @@ def parse_reply(text):
                 problems.append("unreadable defect line: %s" % stripped)
                 continue
             severity, frame, description, check_id = match.groups()
+            if check_id not in CHECK_IDS:
+                problems.append("defect names an unknown check id: %s" % check_id)
+                continue
             defects.append({"severity": severity, "frame": frame, "description": description, "check": check_id})
     if "CHECKED:" not in text:
         problems.append("CHECKED section is missing")
@@ -114,7 +120,8 @@ def render_section(parsed, round_number, decision):
     if parsed["defects"]:
         lines += ["", "| Önem | Kare | Sorun | Kontrol |", "|---|---|---|---|"]
         for defect in majors + minors:
-            lines.append("| %s | %s | %s | %s |" % (defect["severity"], defect["frame"], defect["description"], defect["check"] or "-"))
+            lines.append("| %s | %s | %s | %s |" % tuple(
+                cell.replace("|", "\\|") for cell in (defect["severity"], defect["frame"], defect["description"], defect["check"])))
     lines.append("")
     lines.append("Bakılan kontroller: %d/%d." % (len(parsed["checks"]), len(CHECK_IDS)))
     if not_shown:
