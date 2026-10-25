@@ -80,6 +80,7 @@ fun ChatScreen(
     Text(quote = '"', size = if (large) 2 else 1, label = "z")
     val hidden = !(state.isVisible)
     val photos = items.filterIsInstance<Photo>()
+    val maps = items.filterIsInstance<Map<String, Int>>()
     val parsed = result.mapCatching { it.size }
 }
 
@@ -139,7 +140,7 @@ class GeneratedConditionalTest(unittest.TestCase):
     def test_conditionals_on_lines_with_a_source_condition_still_count(self):
         lines = [screen_line(text) for text in (
             "if (!state.isVisible)", "filter {", "?: \"fallback", "Count $count", "as? User", "orEmpty()",
-            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host", "isEmpty()", "recover {", "quote = '\"'", "!(state", "filterIsInstance<", "mapCatching {")]
+            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host", "isEmpty()", "recover {", "quote = '\"'", "!(state", "filterIsInstance<Photo", "filterIsInstance<Map", "mapCatching {")]
         counts, survivors = count_in(SCREEN_SOURCE, [conditional("ChatScreenKt", "ChatScreen", line) for line in lines])
 
         self.assertEqual(0, counts["noise"])

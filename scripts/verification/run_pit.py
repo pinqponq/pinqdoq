@@ -49,7 +49,7 @@ SOURCE_CONDITION = re.compile(
     r"|sortedWith|groupBy|associate|associateBy|associateWith|partition|takeWhile|dropWhile|indexOfFirst|indexOfLast"
     r"|distinctBy|repeat|reduce|reduceOrNull|reduceIndexed|fold|foldIndexed|zip|use|orEmpty|isEmpty|isBlank|isNotEmpty"
     r"|isNotBlank|isNullOrEmpty|isNullOrBlank|ifEmpty|ifBlank|getOrElse|getOrPut|getOrDefault|getOrNull|getOrThrow"
-    r"|recover|recoverCatching|mapCatching|onSuccess|onFailure|exceptionOrNull)\s*(?:<[^>]*>)?\s*[({]")
+    r"|recover|recoverCatching|mapCatching|onSuccess|onFailure|exceptionOrNull)\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*[({]")
 CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
 STRING_TEMPLATE_EXPRESSION = "${"
 CHAR_LITERAL = re.compile(r"'(?:[^'\\]|\\.)'")
