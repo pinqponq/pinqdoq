@@ -23,6 +23,9 @@ Closes #<n>
 ## Ekran görüntüleri
 <only if they show something the video does not; otherwise omit this section>
 
+## UI inceleme
+<UI change only; omit otherwise. Paste the output of `ui_review_report.py section` from the last round.>
+
 ## Testler
 - `<TestClass>`: <what it proves, one line each>
 - `<exact command>` → <result>

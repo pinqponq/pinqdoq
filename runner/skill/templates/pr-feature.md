@@ -17,6 +17,9 @@ Closes #<n>
 ## pinqloq
 <the new flow's requests/events on the device run window, one table, max 5 rows; errors = 0 or explained>
 
+## UI inceleme
+<UI change only; omit otherwise. Paste the output of `ui_review_report.py section` from the last round.>
+
 ## Testler
 - `<TestClass>`: <what it proves, one line each>
 - `<exact command>` → <result>
