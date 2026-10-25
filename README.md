@@ -26,8 +26,9 @@ pinq-doq/
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
     vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
+    r2-upload-setup/            photo and video upload through Cloudflare R2: bucket, Vault, .NET backend, KMP client, checks
     new-product/                start a new product from kmp-app-template + the backend template (via scripts/new_product.py)
-  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault, new_product.py for templates)
+  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py and storage_keys.py for Vault, new_product.py for templates)
     verification/   build, test and mutation wrappers behind the pin-test subagent (usable without the runner)
   references/     → NOT copied; read on demand by path
     kotlin/
@@ -75,6 +76,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "mailimi kontrol et", "bu maili gönderebilir miyim", "check my email before sending" | `executive-mail-review` |
 | "move secrets to Vault", "read appsettings from Vault", "set up Vault configuration for this project" | `vault-config-setup` |
 | "vault hesabım var, projeyi ayağa kaldırmak istiyorum", "run this project locally", "vault login", "Vault rejected the token" | `vault-dev-setup` |
+| "add photo upload", "video upload", "R2 upload", "presign", "foto ve video yükleme" | `r2-upload-setup` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 

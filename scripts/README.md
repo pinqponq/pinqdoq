@@ -58,6 +58,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 | `deliver.py` | Delivery helper — copies `rules/`+`skills/` into a consumer (driven by `tasks/`, not run by hand). |
 | `path_utils.py` | Shared helper (no `main`); imported by the generators. Must stay alongside them. |
 | `vault_config.py` | Moves a .NET project's secrets and per-reader settings into Vault records (see [below](#vault_configpy)). |
+| `storage_keys.py` | Writes the Cloudflare R2 `Storage` section of one Vault record with hidden input (see [below](#storage_keyspy)). |
 | `new_product.py` | Turns a template repo into a new product: identity, keys, modules, theme (see [below](#new_productpy)). |
 
 ## Configuration — `config.json`
@@ -206,3 +207,14 @@ python3 .pinq-doq/scripts/verification/render_agent.py generic --agent device --
 ```
 
 `pin-test.md` and `pin-device.md` are generated: change the template, then run `python3 scripts/verification/render_agent.py pinqloq --agent test --out runner/agents/pin-test.md` (or `--agent device --out runner/agents/pin-device.md`). A test fails while a file and its template differ.
+
+## `storage_keys.py`
+
+Writes the `Storage` section (`BucketName`, `AccountId`, `AccessKey`, `SecretKey`) of one Vault record for Cloudflare R2, with the secrets typed hidden. The `r2-upload-setup` skill hands it to the owner; it keeps every other key of the record and prints only the bucket name and the character counts (expected 32, 32 and 64).
+
+```bash
+export VAULT_ADDR=<vault address>
+python .pinq-doq/scripts/storage_keys.py --product <product> --env test --service <service>
+```
+
+Tests: `python3 -m unittest discover -s scripts/tests`.
