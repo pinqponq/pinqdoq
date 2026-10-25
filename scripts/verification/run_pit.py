@@ -34,6 +34,27 @@ SUSPEND_SIGNATURE_SUFFIX = "Lkotlin/coroutines/Continuation;)Ljava/lang/Object;"
 FLOW_COLLECTOR_EMIT = "emit"
 COMPOSE_RUNTIME_CALL = "removed call to androidx/compose/runtime/"
 COMPOSE_MASK_OPERATION = re.compile(r"Replaced (bitwise (AND|OR)|Shift (Left|Right))")
+COMPOSER_PARAMETER = "Landroidx/compose/runtime/Composer;"
+NEGATED_CONDITIONAL = "negated conditional"
+NULL_RETURN_MUTATOR = "NullReturnValsMutator"
+SUSPEND_STATE_MACHINE_METHOD = "invokeSuspend"
+KILLED_STATUSES = ("KILLED", "TIMED_OUT")
+SOURCE_CONDITION = re.compile(
+    r"\b(if|else|when|while|for|do|is|in|takeIf|takeUnless|check|checkNotNull|require|requireNotNull)\b|\bas\?"
+    r"|->|\?:|\?\.|&&|\|\||!!|==|!=|<=|>=|\s<\s|\s>\s|!\s*[\w(]"
+    r"|\b(filter|filterNot|filterNotNull|filterIsInstance|filterIndexed|filterKeys|filterValues|filterTo|map|mapNotNull"
+    r"|mapIndexed|mapIndexedNotNull|mapKeys|mapValues|mapTo|mapNotNullTo|flatMap|forEach|forEachIndexed|onEach|onEachIndexed"
+    r"|any|all|none|first|firstOrNull|firstNotNullOf|firstNotNullOfOrNull|last|lastOrNull|find|findLast|single|singleOrNull"
+    r"|count|sumOf|maxBy|maxByOrNull|minBy|minByOrNull|maxOf|maxOfOrNull|minOf|minOfOrNull|sortedBy|sortedByDescending"
+    r"|sortedWith|groupBy|associate|associateBy|associateWith|partition|takeWhile|dropWhile|indexOfFirst|indexOfLast"
+    r"|distinctBy|repeat|reduce|reduceOrNull|reduceIndexed|fold|foldIndexed|zip|use|orEmpty|isEmpty|isBlank|isNotEmpty"
+    r"|isNotBlank|isNullOrEmpty|isNullOrBlank|ifEmpty|ifBlank|getOrElse|getOrPut|getOrDefault|getOrNull|getOrThrow"
+    r"|recover|recoverCatching|mapCatching|onSuccess|onFailure|exceptionOrNull)\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*[({]")
+CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
+STRING_TEMPLATE_EXPRESSION = "${"
+CHAR_LITERAL = re.compile(r"'(?:[^'\\]|\\.)'")
+STRING_LITERAL = re.compile(r'"(?:[^"\\]|\\.)*"')
+LINE_COMMENT = re.compile(r"//.*$")
 SERIALIZER_CLASS_SUFFIX = "$$serializer"
 SERIALIZER_METHOD_PREFIX = "write$Self"
 MAIN_SOURCE_SETS = ("commonMain", "desktopMain", "jvmMain")
@@ -123,14 +144,73 @@ def run_module(worktree, module_dir, changed, tests, report_dir):
 
 def composable_methods(root):
     """(class, method) pairs the Compose compiler instrumented; they carry its generated changed/default mask arithmetic."""
-    return {(m.findtext("mutatedClass"), m.findtext("mutatedMethod"))
-            for m in root if COMPOSE_RUNTIME_CALL in (m.findtext("description") or "")}
+    return {(m.findtext("mutatedClass"), m.findtext("mutatedMethod")) for m in root
+            if COMPOSE_RUNTIME_CALL in (m.findtext("description") or "")
+            or COMPOSER_PARAMETER in (m.findtext("methodDescription") or "")}
+
+
+def is_suspend_method(mutation):
+    return (mutation.findtext("mutatedMethod") == SUSPEND_STATE_MACHINE_METHOD
+            or (mutation.findtext("methodDescription") or "").endswith(SUSPEND_SIGNATURE_SUFFIX))
+
+
+def mutation_key(mutation):
+    return tuple(mutation.findtext(field) for field in ("mutatedClass", "mutatedMethod", "lineNumber", "description"))
+
+
+def killed_suspend_returns(root):
+    """Null-return mutations of suspend functions that a test killed, keyed by class, method, line and description."""
+    return {mutation_key(mutation) for mutation in root
+            if mutation.get("status") in KILLED_STATUSES and NULL_RETURN_MUTATOR in (mutation.findtext("mutator") or "")
+            and is_suspend_method(mutation)}
+
+
+def code_without_strings_and_comments(text):
+    return LINE_COMMENT.sub("", STRING_LITERAL.sub('""', CHAR_LITERAL.sub("''", text)))
+
+
+def source_line_has_condition(source, line):
+    """True when the person-written code on the line can branch: a condition, a safe call, a comparison, an inline call
+    that branches, a string template expression, or the rest of a condition the previous line started."""
+    lines = source.splitlines()
+    if not 0 < line <= len(lines):
+        return True
+    text = lines[line - 1]
+    if STRING_TEMPLATE_EXPRESSION in text:
+        return True
+    previous_code = code_without_strings_and_comments(lines[line - 2]) if line > 1 else ""
+    return bool(SOURCE_CONDITION.search(code_without_strings_and_comments(text)) or CONTINUED_CONDITION.search(previous_code))
+
+
+def is_generated_conditional(mutation, description, composables, source):
+    """A negated conditional on a line of a composable or suspend function whose source has no condition.
+
+    The Compose compiler adds $changed/$default/skipping checks and the coroutine compiler adds COROUTINE_SUSPENDED and
+    label checks to such lines. A condition a person wrote shows up on the line PIT reports, or on the line before it
+    when that line ends with `&&`, `||`, `?:` or an open `if (`/`when (`/`while (`; a condition split in another way is
+    not recognised.
+    """
+    if NEGATED_CONDITIONAL not in description or source is None:
+        return False
+    in_generated_frame = (mutation.findtext("mutatedClass"), mutation.findtext("mutatedMethod")) in composables or is_suspend_method(mutation)
+    return in_generated_frame and not source_line_has_condition(source, int(mutation.findtext("lineNumber")))
+
+
+def is_uncovered_suspend_return_copy(mutation, killed_returns, source):
+    """An uncovered copy of a suspend function's null-return mutation whose covered copy a test killed.
+
+    The coroutine compiler writes one return per suspension path; the returned value is already proven by the killed copy.
+    A line with a condition can hold returns a person wrote, so its copies still count.
+    """
+    if mutation.get("status") != "NO_COVERAGE" or mutation_key(mutation) not in killed_returns or source is None:
+        return False
+    return not source_line_has_condition(source, int(mutation.findtext("lineNumber")))
 
 
 def declares_only_unit_suspend_functions(source, name):
     """True when every `suspend fun <name>` in the Kotlin source has no return type, or `: Unit`, before its `{` body."""
     found = False
-    for match in re.finditer(r"\bsuspend\s+fun\s+(?:<[^>]*>\s*)?(?:[\w.<>?, ]+\.)?" + re.escape(name) + r"\s*\(", source):
+    for match in re.finditer(r"\bsuspend\s+(?:[a-z]+\s+)*fun\s+(?:<[^>]*>\s*)?(?:[\w.<>?, ]+\.)?" + re.escape(name) + r"\s*\(", source):
         depth, index = 1, match.end()
         while depth and index < len(source):
             depth += {"(": 1, ")": -1}.get(source[index], 0)
@@ -155,9 +235,11 @@ def is_unit_suspend_null_return(m, description, source):
     return name == FLOW_COLLECTOR_EMIT or (source is not None and declares_only_unit_suspend_functions(source, name))
 
 
-def is_compiler_generated(m, description, composables, source=None):
+def is_compiler_generated(m, description, composables, source=None, killed_returns=frozenset()):
     """Mutations in code the Kotlin/Compose compiler writes, or that change nothing a caller can see:
     nothing a test can meaningfully kill."""
+    if is_generated_conditional(m, description, composables, source) or is_uncovered_suspend_return_copy(m, killed_returns, source):
+        return True
     mutated_class = m.findtext("mutatedClass") or ""
     mutated_method = m.findtext("mutatedMethod") or ""
     if any(noise in description for noise in NOISE) or UNIT_LAMBDA.search(description) or SUSPEND_RETURN.search(description):
@@ -177,6 +259,7 @@ def count_mutations(worktree, mutations, changed, counts, survivors):
     sources = {}
     root = ET.parse(mutations).getroot()
     composables = composable_methods(root)
+    killed_returns = killed_suspend_returns(root)
     for m in root:
         source = m.findtext("sourceFile")
         line = int(m.findtext("lineNumber"))
@@ -186,7 +269,7 @@ def count_mutations(worktree, mutations, changed, counts, survivors):
             with open(paths[source]) as file:
                 sources[source] = file.read()
         description = m.findtext("description") or ""
-        if is_compiler_generated(m, description, composables, sources[source]):
+        if is_compiler_generated(m, description, composables, sources[source], killed_returns):
             counts["noise"] += 1
             continue
         status = m.get("status")
