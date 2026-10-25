@@ -112,6 +112,8 @@ Any placeholder or `__KEY__` token left after generation fails the run, and noth
 
 The file can hold keys: keep it outside both repos and delete it after the run.
 
+A backend under `pinqponq.io` gets host names one level below it: `api-test-<product>.pinqponq.io` for test and `api-<product>.pinqponq.io` for prod, never `api-test.<product>.pinqponq.io`. The Cloudflare certificate of `pinqponq.io` covers only one level.
+
 ## 5. Order of work
 
 The templates are built last, once the shared parts they use are released (pinqponq/org#215). Until then:

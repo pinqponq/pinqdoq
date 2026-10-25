@@ -14,6 +14,7 @@ pinq-doq/
     kotlin-deveng-core.md     paths: ['**/*.kt','**/*.kts'] — cites references/kotlin/deveng-core-reference.md
     kotlin-testing.md         paths: ['**/*.kt','**/*.kts'] — test stack, what every change must test, device proof
     dotnet-conventions.md     paths: ['**/*.cs','**/*.csproj','**/*.sln']
+    ui-proof-review.md        paths: ['**/*.kt','**/*.ts', …, 'maestro/**','e2e/**'] — independent review of UI proof recordings, checklist
     web-testing.md            paths: ['**/*.ts','**/*.tsx','**/*.js','**/*.jsx', …] — web end-to-end proof with Playwright
   skills/         → COPIED into a consumer's .claude/skills/  (intent-discovered)
     add-feature/                orchestrates a whole feature: presentation + API, then connects them
@@ -25,14 +26,17 @@ pinq-doq/
     executive-mail-review/      check a draft email against the executive mail standard + writing guide (report only)
     vault-config-setup/         move a .NET project's secrets and per-reader settings into Vault records (via scripts/vault_config.py)
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
+    r2-upload-setup/            photo and video upload through Cloudflare R2: bucket, Vault, .NET backend, KMP client, checks
     new-product/                start a new product from kmp-app-template + the backend template (via scripts/new_product.py)
-  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py for Vault, new_product.py for templates)
+  scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py and storage_keys.py for Vault, new_product.py for templates)
     verification/   build, test and mutation wrappers behind the pin-test subagent (usable without the runner)
   references/     → NOT copied; read on demand by path
     kotlin/
       deveng-core-reference.md  full deveng-core-kmp API map
       deep dives: architecture.md, data-layer.md, mvi-pattern.md, viewmodel-patterns.md,
       naming.md, error-handling.md, fake-data.md, formatting.md, shared-module.md, testing.md
+    maestro/
+      maestro-kit.md            Maestro scripts + subflows to copy into an app (no product values)
     dotnet/
       vault-configuration.md    the Vault configuration standard: readers, record layout, tokens, pitfalls
       vault-cli-setup.md        developer machine setup: install the CLI, log in, troubleshoot
@@ -40,6 +44,9 @@ pinq-doq/
       e2e-playwright.md         Playwright setup for web projects: config, stored sign-in, run-flow script, examples
     templates/
       new-product-starter.md    mobile and backend templates, template.json manifest, product file
+    widget/
+      widget-setup.md           home screen widget setup with deveng-widget + production lessons
+      ios/                      Swift templates for the widget extension and the app's reload helper
   context/        → NOT copied; read on demand by skills (organizational knowledge)
     agent/          knowledge pack of the Pinq Center agent: knowledge-index.md (topic → document table the agent searches), system map, task rules, troubleshooting
     projects/
@@ -69,6 +76,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "mailimi kontrol et", "bu maili gönderebilir miyim", "check my email before sending" | `executive-mail-review` |
 | "move secrets to Vault", "read appsettings from Vault", "set up Vault configuration for this project" | `vault-config-setup` |
 | "vault hesabım var, projeyi ayağa kaldırmak istiyorum", "run this project locally", "vault login", "Vault rejected the token" | `vault-dev-setup` |
+| "add photo upload", "video upload", "R2 upload", "presign", "foto ve video yükleme" | `r2-upload-setup` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
@@ -104,7 +112,7 @@ Claude runs [`tasks/update.md`](tasks/update.md): pulls the latest pinq-doq, re-
 Claude Code auto-loads **every** `.md` directly under a project's `.claude/rules/` into every session at startup. Because `integrate`/`update` copy `pinq-doq/rules/` into `.claude/rules/`, those rule files — and only those — auto-load in consumers. Control loading per file with `paths:` YAML frontmatter:
 
 - **Universal rules** (`common.md`) — no frontmatter, so they always load. `common.md` also carries a short pointer to the stack-specific files so Claude knows they exist before one triggers.
-- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `kotlin-testing.md`, `dotnet-conventions.md`, `web-testing.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
+- **Stack-specific rules** (`kotlin-architecture.md`, `kotlin-naming.md`, `kotlin-conventions.md`, `kotlin-deveng-core.md`, `kotlin-testing.md`, `dotnet-conventions.md`, `web-testing.md`, `ui-proof-review.md`) — scoped with `paths:` so they load only when Claude touches a matching file (Kotlin rules stay out of a C# project, and vice versa):
 
   ```yaml
   ---

@@ -23,13 +23,16 @@ Closes #<n>
 ## Ekran görüntüleri
 <only if they show something the video does not; otherwise omit this section>
 
+## UI inceleme
+<UI change only; omit otherwise. Paste the output of `ui_review_report.py section` from the last round.>
+
 ## Testler
 - `<TestClass>`: <what it proves, one line each>
 - `<exact command>` → <result>
 - Mutation (PIT, değişen satırlar): <skor>% (<öldürülen>/<toplam>); kalan: <dosya:satır → tek satır gerekçe, yoksa "yok">
 
 ## Notlar
-<only if needed, one line each: scenario differences (table only when reality could not be matched), human follow-ups, `pinq_code-review origin/<base>...HEAD: <result>`>
+<only if needed, one line each: scenario differences (table only when reality could not be matched), human follow-ups, `Merge ortamı: <environment the base deploys to on push>` when the repository deploys from the base, `pinq_code-review origin/<base>...HEAD: <result>`>
 Otomatik merge: kapılar <✅/❌ her kapı, references/implementation.md → "Auto-merge rubric">
 Risk: <düşük | düşük değil: neden>
 

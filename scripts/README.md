@@ -58,6 +58,7 @@ They are **not** copied into a consumer; they run in place from the pinq-doq mou
 | `deliver.py` | Delivery helper — copies `rules/`+`skills/` into a consumer (driven by `tasks/`, not run by hand). |
 | `path_utils.py` | Shared helper (no `main`); imported by the generators. Must stay alongside them. |
 | `vault_config.py` | Moves a .NET project's secrets and per-reader settings into Vault records (see [below](#vault_configpy)). |
+| `storage_keys.py` | Writes the Cloudflare R2 `Storage` section of one Vault record with hidden input (see [below](#storage_keyspy)). |
 | `new_product.py` | Turns a template repo into a new product: identity, keys, modules, theme (see [below](#new_productpy)). |
 
 ## Configuration — `config.json`
@@ -190,6 +191,30 @@ Build, test and mutation wrappers. The `pin-test` subagent runs them, but they n
 | `verification_profile.py` | Prints the project's `mutation_threshold`, `baseline_branch` and `dotnet_root` (defaults merged with `verification-profile.json`). |
 | `shrink_images.py` | Small JPEG copies of screenshots for reading. |
 | `clean_build_output.py` | Deletes build output only under `build/` or `_small/`. |
+| `test-agent-template.md`, `device-agent-template.md`, `render_agent.py` | The subagents that drive these scripts: `--agent test` (builds, tests, mutation) and `--agent device` (Maestro and Playwright flows). `render_agent.py pinqloq` produces `runner/agents/pin-test.md` and `pin-device.md`; `render_agent.py generic --scripts-dir <folder>` produces the same agents without the task runner's locks and state or PinqPonq's log service. |
 | `timings.py`, `android_sdk.py`, `pit.init.gradle` | Helpers for the scripts above (run timings in `~/.claude/pinqloq-task-runner/timings.jsonl`, `ANDROID_HOME` fallback, PIT classpath). |
 
 The task runner keeps forwarding files with the same names in `runner/skill/scripts/`, so its existing paths keep working. Tests: `python3 -m unittest discover -s scripts/verification/tests`.
+
+To use the subagent outside the task runner, render it into the project's (or your own) agents folder, pointing at wherever these scripts are on that machine:
+
+```bash
+python3 .pinq-doq/scripts/verification/render_agent.py generic --scripts-dir .pinq-doq/scripts/verification --out .claude/agents/verification-runner.md
+```
+
+```bash
+python3 .pinq-doq/scripts/verification/render_agent.py generic --agent device --scripts-dir .pinq-doq/scripts/verification --out .claude/agents/device-runner.md
+```
+
+`pin-test.md` and `pin-device.md` are generated: change the template, then run `python3 scripts/verification/render_agent.py pinqloq --agent test --out runner/agents/pin-test.md` (or `--agent device --out runner/agents/pin-device.md`). A test fails while a file and its template differ.
+
+## `storage_keys.py`
+
+Writes the `Storage` section (`BucketName`, `AccountId`, `AccessKey`, `SecretKey`) of one Vault record for Cloudflare R2, with the secrets typed hidden. The `r2-upload-setup` skill hands it to the owner; it keeps every other key of the record and prints only the bucket name and the character counts (expected 32, 32 and 64).
+
+```bash
+export VAULT_ADDR=<vault address>
+python .pinq-doq/scripts/storage_keys.py --product <product> --env test --service <service>
+```
+
+Tests: `python3 -m unittest discover -s scripts/tests`.

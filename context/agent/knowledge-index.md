@@ -15,6 +15,7 @@ Tablo biçimi: her satır `| Konu | Anahtar kelimeler | Yol | Özet |` sütunlar
 | .NET kuralları | dotnet, c#, backend, controller, servis, api, hata yönetimi | rules/dotnet-conventions.md | .NET backend kod standartları |
 | Kotlin mimarisi | kotlin, mimari, mvi, katman, viewmodel, mobil, kmp, cmp | rules/kotlin-architecture.md | Kotlin projelerinde katmanlar ve MVI düzeni |
 | Kotlin test kuralları | kotlin, test, mutasyon, pit, ekran görüntüsü, maestro, cihaz | rules/kotlin-testing.md | Her değişikliğin neyi test etmesi gerektiği ve cihaz kanıtı |
+| UI kanıt incelemesi | ui, ekran, kanıt, video, inceleme, kontrol listesi, dokunma hedefi, kontrast | rules/ui-proof-review.md | UI PR'ından önce kanıt kayıtlarının bağımsız incelemesi |
 | Web test kuralları | web, playwright, typescript, uçtan uca, e2e | rules/web-testing.md | Web projelerinde Playwright ile kanıt |
 | Vault yapılandırması | vault, gizli anahtar, yapılandırma, secret, appsettings, token | references/dotnet/vault-configuration.md | .NET projelerinde gizli ayarların Vault'tan okunması |
 | Vault kurulumu | vault, cli, giriş, kurulum, geliştirici makinesi | references/dotnet/vault-cli-setup.md | Vault CLI kurulumu ve sorun giderme |

@@ -27,7 +27,7 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 - `commonTest` — ViewModels, use cases, repositories, mappers, fakes. Must stay platform-free so it runs on every target.
 - `desktopTest` (JVM) — Compose UI behavior tests, screenshot tests, and tests needing JVM-only APIs. It is the fast, default target (`./gradlew :<module>:desktopTest`).
 - Test packages mirror the code under test. Fakes go in `<package>.fake`, named `Fake<Interface>` (e.g. `feature.login.fake.FakeLoginRepository`).
-- Shared test infrastructure (ViewModel environment, core fakes) lives in `commonTest` under `core.testing`.
+- Shared test infrastructure comes from deveng-core-kmp: the `global.deveng.testing` Gradle plugin turns it on with one line and adds `global.deveng:core-testing-kmp` (ViewModel environment, fakes for core interfaces, robot base, screenshot defaults, string escape check). Never copy those into a project; only project-specific helpers (e.g. a Koin wrapper around the environment) live in `commonTest` under `core.testing`. Setup: `.pinq-doq/references/kotlin/testing.md` § 1.
 
 ---
 
@@ -51,7 +51,7 @@ Extends `common.md`. How Android and Kotlin Multiplatform code is tested: the st
 - Build the real use cases around fake repositories; fake only the boundary (repository interfaces, storages, platform seams).
 - Inject `CoroutineDispatcher` only where the class already takes one (e.g. `@Dispatcher(IO)`); pass the test dispatcher there. Don't add dispatcher parameters just for tests to ViewModels using `viewModelScope`.
 - Compose tests: match by semantics (text from `getString(Res.string.…)`, roles, `hasSetTextAction()`); fall back to `testTag` only when a matcher would need more than three conditions.
-- Use a **robot** (`<Screen>Robot`) once a screen has three or more UI tests or shared interaction steps; every robot function returns `this`.
+- Use a **robot** (`<Screen>Robot`, extending `core.testing.ScreenRobot`) once a screen has three or more UI tests or shared interaction steps; every robot function returns `this`.
 - Screenshot baselines are committed. Re-record them only for an intended UI change and say so in the PR.
 
 ---
@@ -63,3 +63,4 @@ Tests are required but not sufficient for UI work: run the change on an Android 
 Android is the default platform for this proof: one Android run is enough for shared code. When the change touches only shared code (`commonMain`, no `expect`/`actual`, no `androidMain`, no iOS-only code), the proof may be taken on whichever device is free, Android preferred; an iOS run is then as good as an Android run. A change to Android-only code, an `expect`/`actual` pair or iOS-only code needs the proof on that platform, whichever device is free. So does a concrete reason to suspect iOS behaves differently (platform APIs, file or memory handling, permission prompts, rendering). Say in the pull request which device ran and why; do not repeat every Android check on iOS by habit.
 
 This also applies when the change is in a library or the data layer but its result shows on a screen (a count, a message, a saved item): record the same steps on the old build and on the new one. Never write "the change is not visible" without running it. In the PR, say in one line what each recording proves. When the real proof cannot be seen on screen (files left behind, memory, request counts), put it in a before/after table next to the recordings.
+- Maestro flows start from the shared kit (run script, test-account wrapper, slow-network proxy, login/logout/interstitial/notification-prompt subflows): `.pinq-doq/references/maestro/maestro-kit.md`.

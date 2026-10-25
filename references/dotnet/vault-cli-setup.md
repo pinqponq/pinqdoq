@@ -64,6 +64,14 @@ dotnet run --project <worker project>
 
 Open the Vault UI (http://10.0.0.1:8200), sign in with the **Username** method and your account, then go to `apps` > `pinqponq` > `local` (or `test`) > the service. Choose **Create new version**, change the value, save, and restart the service.
 
+To change one key from the terminal, send only that key as JSON with `vault kv patch -method=patch`. Vault merges it into the record, also inside a section, so the other keys stay. A list is replaced as a whole, so write the full new list:
+
+```bash
+echo '{"Section": {"Key": "new value"}}' | vault kv patch -address=http://10.0.0.1:8200 -mount=apps -method=patch <path> -
+```
+
+Keep `-method=patch`. Without it, a token that may not patch makes the command read the record and write it back, and then it replaces the whole section, with every other key in it. Restart the service afterwards.
+
 Every save is a new version and the version history shows who made it. Older versions stay, so a wrong edit is undone by restoring the previous version.
 
 Never edit the `prod` folder without agreeing it with the team lead first.

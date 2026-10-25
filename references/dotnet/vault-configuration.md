@@ -129,6 +129,7 @@ People get a policy that covers the records they maintain. Turn on a Vault audit
 - **Developer addresses in the shared record.** Putting `localhost` or `10.0.0.1` into the record the test server reads breaks service-to-service calls inside containers. That is the reason for the separate `local` record.
 - **Empty strings do not hide a value.** An empty string left in a Development file overrides the real value of `appsettings.json`. Remove keys when they move; do not blank them.
 - **A removed secret is still in git history.** Moving a secret to Vault does not make the old value safe. Rotate it separately.
+- **Seeding from another project's record by guess.** A script that fills a new project's record from an existing project's record was written against the keys that project's code binds, not against the keys its record holds; some of those values lived in its `appsettings.json` and the script stopped. Before writing such a script, list the record's key names, never its values (`vault kv get -format=json -mount=apps <path> | jq '.data.data | map_values(keys)'`). Copy only what the record holds, ask for the rest, and never copy a key that identifies the other project, such as its pinqloq key: the new project's logs would land in the other project.
 - **Package caching.** When the package is rebuilt locally with the same version number, NuGet keeps serving the cached copy. Clear `~/.nuget/packages/pinqponq.configuration.vault` after repacking.
 
 ## Rolling it out to a project

@@ -104,3 +104,10 @@ A change to the public surface of deveng-core-kmp (new component, new parameter,
 3. **The PR says where:** a "Sample" line in the PR body naming the demo screen.
 
 Internal refactors and bug fixes without public surface may skip the sample; say so in the PR. Do not defer the sample to a later task.
+
+## Versions of our libraries that depend on core
+
+pinqponq-chat-kmp, deveng-networking-kmp and other libraries of ours are published already compiled against one core-kmp (or networking-kmp) version. A theme or config `data class` that gains a parameter changes its default-argument constructor, so a library compiled against the older version crashes in the app with `NoSuchMethodError` (Android) or SIGABRT (iOS) the first time that code runs. The build stays green.
+
+- When you add or bump one of these libraries, or bump core-kmp or networking-kmp in an app that uses them, check the core-kmp and networking-kmp versions in the library's published `.pom`. They must be the versions the app uses. If they differ, rebuild the library against the app's versions and release it first (one version line and a patch bump in the library's `gradle/libs.versions.toml`). Do not downgrade the app to the older core.
+- Every page or component the app embeds from such a library needs a UI test that draws it, so a mismatch fails a test instead of the app.

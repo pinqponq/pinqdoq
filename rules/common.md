@@ -153,10 +153,19 @@ RabbitMQService(rabbitOptions)
 
 ---
 
+## Integrating Shared Services
+
+- Before integrating a shared service (chat, logging, push, identity) into a product, read how a product that already uses it does so: the client setup, the backend endpoint that issues its tokens, deep links and notifications. Follow the same flow.
+- Check the service's response shapes in the service's own source, not only in a consumer: a consumer can read a shape the service no longer sends.
+- Add to the shared library only what the new product needs and no existing product has.
+
+---
+
 ## Moving or Replacing Existing Code
 
 When a change moves code to a shared library or replaces a whole layer (error handling, logging, paging, data access), prove with tests written against the old code that the behavior stays the same.
 
 - A characterization test records what the old code does today. Test through public behavior (HTTP responses, logs sent, values a service returns), not through the classes that will be removed, so the same tests still compile after the move. Keep the code that names the old classes in one test helper.
 - These tests must pass on the old code without any of the new code, and they must still pass after the move. A test that passed before and fails after is a regression, so fix the code.
+- Before the old code is removed, list the open pull requests that change it (`gh pr list --state open` in every repo that holds it). Port what they add to the new code, or say in both pull requests which one must follow the other. Example: a bridge rewritten in Kotlin while a .NET bridge pull request added a tool; the tool was lost and nothing could publish the list.
 - A move changes no behavior, and the move does not change any expected result of these tests. If the new library behaves differently, keep the old behavior in the code that uses it (a resolver, writer, middleware or small wrapper). A behavior change that the new library makes possible is made separately after the move, with a note on what changes, why it helps and which clients it can affect.

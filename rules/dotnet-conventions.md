@@ -77,6 +77,10 @@ if (Interlocked.Exchange(ref _isDisposed, 1) == 1)
 if (IsDisposeAlreadyStarted())
 ```
 
+- Code that waits (retry or reconnect delays, timeouts, scheduled work) takes a `TimeProvider` (`TryAddSingleton(TimeProvider.System)` at startup) and calls `Task.Delay(delay, timeProvider, token)`. Tests fire the wait themselves and never wait on real time, so the result does not depend on how fast the CI runner is.
+- A test that signals a waiting test with a `TaskCompletionSource` creates it with `TaskCreationOptions.RunContinuationsAsynchronously`; otherwise the test's next step runs inside the code under test, in the middle of its work.
+- A loop that stops on cancellation only lets `OperationCanceledException` through when its token is cancelled: `catch (Exception exception) when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)`. Filtering on the token alone lets a real failure that arrives during shutdown fault the hosted service.
+
 ---
 
 ## Guard Clauses
@@ -105,6 +109,14 @@ return new Response { HasNextPage = hasNextPage };
 - Records are `apps/<project>/<prod|test|local>/<service>`. The test server runs with `DOTNET_ENVIRONMENT=Test`, never `Development`.
 - Define a list setting (a JSON array) in one settings file only: .NET merges the same list from two settings files element by element, so the leftover elements of the longer one leak through.
 - Moving a project onto this standard: use the `pinq_vault-config-setup` skill. Details: `.pinq-doq/references/dotnet/vault-configuration.md`; developer machine setup: `.pinq-doq/references/dotnet/vault-cli-setup.md` or the `pinq_vault-dev-setup` skill (run a moved project locally).
+
+---
+
+## Client Address and Request Limits
+
+- A limit or log that uses the client's IP address reads `X-Forwarded-For` only when the request comes from an address listed in a trusted-proxy setting, because any client can send that header. Then the client is the right-most address in the header that is not a trusted proxy. Otherwise the client is the connection's remote address.
+- Validate the trusted-proxy list at startup: an entry that is not an IP address stops the start instead of being skipped.
+- A request without a known address is not counted under a shared placeholder such as `"unknown"`, because every such request would then share one limit.
 
 ---
 

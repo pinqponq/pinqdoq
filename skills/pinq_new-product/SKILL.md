@@ -95,15 +95,16 @@ The template layout, the `template.json` manifest and the product file are descr
    ```
    The backend product file has the same identity fields and only the backend's keys and modules. An error → stop with it.
 2. **Generate.** Run the same commands without `--dry-run`. Keep the JSON summaries for the report.
-3. **Theme.** If the user gave a font or component styling, follow `pinq_kmp-theme-setup` in `dest_app`; the color tokens are already set by the script.
-4. **Verify.** In `dest_app`: `./gradlew :composeApp:allTests :composeApp:assembleDebug`. In `dest_backend`: `dotnet build` and `dotnet test`. A failure → report `BUILD_FAILED` with the failing task and the first error; do not patch the generated code to make it pass.
-5. **Clean up.** Delete the temporary product file.
-6. **Verify the report** against this checklist:
+3. **Standards.** In each destination, install pinq-doq as `.pinq-doq/tasks/integrate.md` says: add the `.pinq-doq` submodule, run `python .pinq-doq/scripts/deliver.py`, write the short `CLAUDE.md` pointer. The templates do not carry it, so a generated repo without this step has no rules.
+4. **Theme.** If the user gave a font or component styling, follow `pinq_kmp-theme-setup` in `dest_app`; the color tokens are already set by the script.
+5. **Verify.** In `dest_app`: `./gradlew :composeApp:allTests :composeApp:assembleDebug`. In `dest_backend`: `dotnet build` and `dotnet test`. A failure → report `BUILD_FAILED` with the failing task and the first error; do not patch the generated code to make it pass.
+6. **Clean up.** Delete the temporary product file.
+7. **Verify the report** against this checklist:
    - the four sections are present, in order;
    - every key appears by name only, and no value from the product file's `keys` appears anywhere in the report;
    - each build and test command is listed with its result;
    - "Your next steps" lists only items that apply to this product.
-7. **Emit** the report.
+8. **Emit** the report.
 
 ## Rules
 
@@ -112,6 +113,7 @@ The template layout, the `template.json` manifest and the product file are descr
 - Run the dry run before writing anything.
 - Report key names only. Values never appear in the report, a log line or a commit message.
 - Keep the generated projects' `.gitignore` entries for secret files.
+- Install pinq-doq in both generated projects before the first commit (Procedure step 3).
 
 ### SHOULD
 
