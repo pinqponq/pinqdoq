@@ -40,11 +40,15 @@ NULL_RETURN_MUTATOR = "NullReturnValsMutator"
 SUSPEND_STATE_MACHINE_METHOD = "invokeSuspend"
 KILLED_STATUSES = ("KILLED", "TIMED_OUT")
 SOURCE_CONDITION = re.compile(
-    r"\b(if|else|when|while|for|do|is|in|as\?|takeIf|takeUnless|check|checkNotNull|require|requireNotNull)\b"
+    r"\b(if|else|when|while|for|do|is|in|takeIf|takeUnless|check|checkNotNull|require|requireNotNull)\b|\bas\?"
     r"|->|\?:|\?\.|&&|\|\||!!|==|!=|<=|>=|\s<\s|\s>\s|!\w"
-    r"|\b(filter\w*|map\w*|flatMap\w*|forEach\w*|any|all|none|first\w*|last\w*|find\w*|single\w*|count|sumOf"
-    r"|maxBy\w*|minBy\w*|sorted\w*|groupBy|associate\w*|partition|takeWhile|dropWhile|indexOf\w*|distinctBy|repeat)\s*[({]")
-STRING_LITERAL = re.compile(r'"(?:[^"\\$]|\\.)*"')
+    r"|\b(filter\w*|map\w*|flatMap\w*|forEach\w*|onEach\w*|any|all|none|first\w*|last\w*|find\w*|single\w*|count|sumOf"
+    r"|maxBy\w*|minBy\w*|maxOf\w*|minOf\w*|sorted\w*|groupBy|associate\w*|partition|takeWhile|dropWhile|indexOf\w*"
+    r"|distinctBy|repeat|reduce\w*|fold\w*|zip\w*|use|orEmpty|isNull\w*|isNot\w*|if(Empty|Blank)|getOr\w*"
+    r"|onSuccess|onFailure|exceptionOrNull)\s*[({]")
+CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
+STRING_TEMPLATE_EXPRESSION = "${"
+STRING_LITERAL = re.compile(r'"(?:[^"\\]|\\.)*"')
 LINE_COMMENT = re.compile(r"//.*$")
 SERIALIZER_CLASS_SUFFIX = "$$serializer"
 SERIALIZER_METHOD_PREFIX = "write$Self"
@@ -155,20 +159,30 @@ def killed_suspend_returns(root):
             if m.get("status") in KILLED_STATUSES and NULL_RETURN_MUTATOR in (m.findtext("mutator") or "") and is_suspend_method(m)}
 
 
+def code_without_strings_and_comments(text):
+    return LINE_COMMENT.sub("", STRING_LITERAL.sub('""', text))
+
+
 def source_line_has_condition(source, line):
-    """True when the person-written code on the line can branch: a condition, a safe call, a comparison or an inline loop."""
+    """True when the person-written code on the line can branch: a condition, a safe call, a comparison, an inline call
+    that branches, a string template expression, or the rest of a condition the previous line started."""
     lines = source.splitlines()
     if not 0 < line <= len(lines):
         return True
-    code = LINE_COMMENT.sub("", STRING_LITERAL.sub('""', lines[line - 1]))
-    return bool(SOURCE_CONDITION.search(code))
+    text = lines[line - 1]
+    if STRING_TEMPLATE_EXPRESSION in text:
+        return True
+    previous_code = code_without_strings_and_comments(lines[line - 2]) if line > 1 else ""
+    return bool(SOURCE_CONDITION.search(code_without_strings_and_comments(text)) or CONTINUED_CONDITION.search(previous_code))
 
 
 def is_generated_conditional(m, description, composables, source):
     """A negated conditional on a line of a composable or suspend function whose source has no condition.
 
     The Compose compiler adds $changed/$default/skipping checks and the coroutine compiler adds COROUTINE_SUSPENDED and
-    label checks to such lines; a condition a person wrote always shows up in the line's source.
+    label checks to such lines. A condition a person wrote shows up on the line PIT reports, or on the line before it
+    when that line ends with `&&`, `||`, `?:` or an open `if (`/`when (`/`while (`; a condition split in another way is
+    not recognised.
     """
     if NEGATED_CONDITIONAL not in description or source is None:
         return False

@@ -65,6 +65,16 @@ fun ChatScreen(
     val names = state.items.filter { it.isActive }
     val label = state.title ?: "fallback // not a comment"
     Text(text = "a == b")
+    Text(text = "Count $count", color = if (isActive) A else B, label = "x")
+    val user = item as? User
+    val shown = state.title.orEmpty()
+    Text(text = "${if (isActive) "on" else "off"}")
+    val enabled = state.isReady &&
+        state.isEnabled
+    val visible = if (
+        state.isVisible
+    ) 1 else 0
+    Link(url = "https://$host", style = if (secure) A else B)
 }
 
 class ChatService(private val module: Module) {
@@ -98,72 +108,79 @@ def count_in(source, mutations):
         return counts, survivors
 
 
+def screen_line(text):
+    return next(number for number, line in enumerate(SCREEN_SOURCE.splitlines(), 1) if text in line)
+
+
 class GeneratedConditionalTest(unittest.TestCase):
     def test_conditionals_on_composable_lines_without_a_source_condition_are_noise(self):
         counts, survivors = count_in(SCREEN_SOURCE, [
-            conditional("ChatScreenKt", "ChatScreen", 3),
-            conditional("ChatScreenKt", "ChatScreen", 5, status="KILLED"),
-            conditional("ChatScreenKt", "ChatScreen", 8),
-            conditional("ChatScreenKt", "ChatScreen$lambda$3", 9, signature=COMPOSABLE_LAMBDA),
-            conditional("ChatScreenKt", "ChatScreen", 13),
+            conditional("ChatScreenKt", "ChatScreen", screen_line("fun ChatScreen(")),
+            conditional("ChatScreenKt", "ChatScreen", screen_line(") {"), status="KILLED"),
+            conditional("ChatScreenKt", "ChatScreen", screen_line("StateLayout(")),
+            conditional("ChatScreenKt", "ChatScreen$lambda$3", screen_line("ChatContent("), signature=COMPOSABLE_LAMBDA),
+            conditional("ChatScreenKt", "ChatScreen", screen_line('"a == b"')),
         ])
 
         self.assertEqual(5, counts["noise"])
         self.assertEqual([], survivors)
 
     def test_conditionals_on_lines_with_a_source_condition_still_count(self):
-        counts, survivors = count_in(SCREEN_SOURCE, [
-            conditional("ChatScreenKt", "ChatScreen", 7),
-            conditional("ChatScreenKt", "ChatScreen", 11),
-            conditional("ChatScreenKt", "ChatScreen", 12),
-        ])
+        lines = [screen_line(text) for text in (
+            "if (!state.isVisible)", "filter {", "?: \"fallback", "Count $count", "as? User", "orEmpty()",
+            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host")]
+        counts, survivors = count_in(SCREEN_SOURCE, [conditional("ChatScreenKt", "ChatScreen", line) for line in lines])
 
         self.assertEqual(0, counts["noise"])
-        self.assertEqual([7, 11, 12], [s["line"] for s in survivors])
+        self.assertEqual(sorted(lines), [s["line"] for s in survivors])
 
     def test_conditionals_outside_composable_and_suspend_functions_still_count(self):
-        counts, _ = count_in(SCREEN_SOURCE, [conditional("ChatService", "plain", 18, signature="()V")])
+        counts, _ = count_in(SCREEN_SOURCE, [conditional("ChatService", "plain", screen_line("module.send("), signature="()V")])
 
         self.assertEqual(0, counts["noise"])
         self.assertEqual(1, counts["SURVIVED"])
 
     def test_conditionals_in_suspend_state_machines_without_a_source_condition_are_noise(self):
+        line = screen_line("module.send(")
         counts, _ = count_in(SCREEN_SOURCE, [
-            conditional("ChatService", "createSession", 18, signature=SUSPEND),
-            conditional("ChatViewModel$open$1", "invokeSuspend", 18, signature="(Ljava/lang/Object;)Ljava/lang/Object;"),
+            conditional("ChatService", "createSession", line, signature=SUSPEND),
+            conditional("ChatViewModel$open$1", "invokeSuspend", line, signature="(Ljava/lang/Object;)Ljava/lang/Object;"),
         ])
 
         self.assertEqual(2, counts["noise"])
 
     def test_removed_calls_in_composables_still_count(self):
-        counts, _ = count_in(SCREEN_SOURCE, [mutation("ChatScreenKt", "ChatScreen", 13, description="removed call to Text",
-                                                      signature=COMPOSABLE, mutator=VOID_CALL)])
+        counts, _ = count_in(SCREEN_SOURCE, [mutation("ChatScreenKt", "ChatScreen", screen_line('"a == b"'),
+                                                      description="removed call to Text", signature=COMPOSABLE, mutator=VOID_CALL)])
 
         self.assertEqual(0, counts["noise"])
         self.assertEqual(1, counts["SURVIVED"])
 
 
 class SuspendReturnCopyTest(unittest.TestCase):
+    def setUp(self):
+        self.line = screen_line("suspend fun createSession")
+
     def test_uncovered_copies_of_a_killed_suspend_return_are_noise(self):
         counts, survivors = count_in(SCREEN_SOURCE, [
-            mutation("ChatService", "createSession", 17, status="KILLED"),
-            mutation("ChatService", "createSession", 17, status="NO_COVERAGE"),
-            mutation("ChatService", "createSession", 17, status="NO_COVERAGE"),
+            mutation("ChatService", "createSession", self.line, status="KILLED"),
+            mutation("ChatService", "createSession", self.line, status="NO_COVERAGE"),
+            mutation("ChatService", "createSession", self.line, status="NO_COVERAGE"),
         ])
 
         self.assertEqual((1, 2), (counts["KILLED"], counts["noise"]))
         self.assertEqual([], survivors)
 
     def test_uncovered_suspend_return_without_a_killed_copy_still_counts(self):
-        counts, survivors = count_in(SCREEN_SOURCE, [mutation("ChatService", "createSession", 17, status="NO_COVERAGE")])
+        counts, survivors = count_in(SCREEN_SOURCE, [mutation("ChatService", "createSession", self.line, status="NO_COVERAGE")])
 
         self.assertEqual(0, counts["noise"])
         self.assertEqual(["NO_COVERAGE"], [s["status"] for s in survivors])
 
     def test_surviving_copy_of_a_killed_suspend_return_still_counts(self):
         counts, _ = count_in(SCREEN_SOURCE, [
-            mutation("ChatService", "createSession", 17, status="KILLED"),
-            mutation("ChatService", "createSession", 17, status="SURVIVED"),
+            mutation("ChatService", "createSession", self.line, status="KILLED"),
+            mutation("ChatService", "createSession", self.line, status="SURVIVED"),
         ])
 
         self.assertEqual((0, 1), (counts["noise"], counts["SURVIVED"]))
