@@ -35,7 +35,7 @@ Project-specific device setup (test accounts, emulator snapshots, simulators, th
 
 Each machine has its own state and queue; they do not coordinate, so give each task to one machine.
 
-A `queue-only` machine can also work outside PinqPonq: with `forge: gitlab` (`--forge gitlab --gitlab-host <host>`) it opens merge requests on that GitLab server with `glab` and never merges, and with `pinqponq_steps: false` (`--without-pinqponq-steps`) it skips the pinq-doq install, the pinqloq log checks, lesson PRs and issue updates. The owner queues its tasks in chat with `scripts/chat_queue.py`. What changes for such a run is in `skill/references/outside-pinqponq.md`.
+A `queue-only` machine can also work outside PinqPonq: with `forge: gitlab` (`--forge gitlab --gitlab-host <host>`) it opens merge requests on that GitLab server with `glab` and never merges, and with `pinqponq_steps: false` (`--without-pinqponq-steps`) it skips the pinq-doq install, the pinqloq log checks, lesson PRs and issue updates. The owner queues its tasks in chat with `scripts/chat_queue.py`. The skill in `task-text-skill/` writes the task text for the owner to read in chat and queues it on request; link it with `ln -s <pinqdoq>/runner/task-text-skill ~/.claude/skills/pinqloq-task-text`. What changes for such a run is in `skill/references/outside-pinqponq.md`.
 
 ## Install on a new machine
 
