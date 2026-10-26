@@ -1,6 +1,6 @@
 # pinqloq Task Runner — implementing a task (step 5)
 
-Read this file in full right after `locks.py claim` (or `locks.py lock`) gave you a task. It is part of SKILL.md; the trust rules, Non-Goals and stop conditions there still apply.
+Read this file in full right after `locks.py claim` (or `locks.py lock`) gave you a task. It is part of SKILL.md; the trust rules, Non-Goals and stop conditions there still apply. When `runner_config.py` shows `forge: gitlab` or `pinqponq_steps: false`, or the task key starts with `local/`, also read `references/outside-pinqponq.md` in full: it replaces the steps it names.
 
 ## PR gate (check before every `gh pr create`, and before reporting a task as done)
 Open the PR only when **all** of these hold; otherwise push the branch, keep the task `in_progress` / `verification_blocked`, keep the card **In progress**, and say what is missing in the run report:

@@ -54,6 +54,10 @@ DEVICE_NOTE_TEMPLATE = (
     "--role device` give you tasks that need a device (or whose need is unknown) before any task without one. Take the "
     "device lock with `locks.py devices acquire <session> --platform free --prefer {DEVICE_PLATFORM}` when the change touches "
     "only shared code (see implementation.md), and the platform the change needs otherwise.\n")
+OUTSIDE_PINQPONQ_NOTE = (
+    "- This machine works outside PinqPonq (machine.json: forge or pinqponq_steps): after implementation.md, read "
+    "references/outside-pinqponq.md; it replaces the board, card, issue, pinqloq and gh steps it names, and the "
+    "runner never merges there.\n")
 RUNNER_FOLDER_README = """# pinqloq-runner
 
 Working folder for the pinqloq task runner routines (runner-1/2/3/4). Installed by pinqdoq
@@ -168,12 +172,17 @@ def role_flag_and_note(runner_label):
     return "", ""
 
 
-def render_routine_prompt(template_text, task_id, runner_label, session_prefix, workspace_dir):
+def machine_note(machine):
+    works_outside_pinqponq = machine["forge"] != runner_config.GITHUB_FORGE or not machine["pinqponq_steps"]
+    return OUTSIDE_PINQPONQ_NOTE if works_outside_pinqponq else ""
+
+
+def render_routine_prompt(template_text, task_id, runner_label, session_prefix, workspace_dir, note=""):
     role_flag, role_note = role_flag_and_note(runner_label)
     return (template_text.replace("{TASK_ID}", task_id)
             .replace("{RUNNER_LABEL}", runner_config.runner_display_label(runner_label))
             .replace("{ROLE_FLAG}", role_flag)
-            .replace("{ROLE_NOTE}", role_note)
+            .replace("{ROLE_NOTE}", note + role_note)
             .replace("{SESSION_PREFIX}", session_prefix).replace("{WORKSPACE_DIR}", str(workspace_dir)))
 
 
@@ -181,7 +190,8 @@ def write_routine_prompts(machine, dry_run):
     template_text = (RUNNER_DIR_IN_REPO / "templates" / "routine.md").read_text()
     routines_dir = runner_config.STATE_DIR / "routines"
     for task_id, runner_label, session_prefix in ROUTINES:
-        prompt = render_routine_prompt(template_text, task_id, runner_label, session_prefix, machine["workspace_dir"])
+        prompt = render_routine_prompt(template_text, task_id, runner_label, session_prefix, machine["workspace_dir"],
+                                       machine_note(machine))
         if not dry_run:
             routines_dir.mkdir(parents=True, exist_ok=True)
             (routines_dir / (task_id + ".md")).write_text(prompt)

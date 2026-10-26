@@ -41,6 +41,19 @@ class RoutinesTest(unittest.TestCase):
         self.assertIn("(runner-4 (no-device))", routine_prompt("runner-4"))
         self.assertIn("(runner-1 (device, android))", routine_prompt("runner-1"))
 
+    def test_github_machine_with_pinqponq_steps_gets_no_outside_note(self):
+        machine = {"forge": "github", "pinqponq_steps": True}
+        self.assertEqual("", install.machine_note(machine))
+
+    def test_gitlab_or_pinqponq_steps_off_gets_the_outside_note_once(self):
+        for machine in ({"forge": "gitlab", "pinqponq_steps": False}, {"forge": "github", "pinqponq_steps": False}):
+            with self.subTest(machine=machine):
+                task_id, label, session_prefix = install.ROUTINES[0]
+                prompt = install.render_routine_prompt(ROUTINE_TEMPLATE, task_id, label, session_prefix, "/workspace",
+                                                       install.machine_note(machine))
+                self.assertEqual(1, prompt.count("references/outside-pinqponq.md"))
+                self.assertIn("--role device", prompt)
+
     def test_every_installed_runner_has_a_configured_role(self):
         self.assertEqual({label for _, label, _ in install.ROUTINES}, set(runner_config.RUNNER_ROLES))
 
