@@ -22,7 +22,6 @@ runner/
 | `~/.claude/pinqloq-task-runner/` | `state.json` and archive, locks, runs.log, timings, run reports, board cache, media, handoffs | never |
 | `~/.claude/pinqloq-task-runner/machine.json` | `role`, `workspace_dir`, `worktrees_dir`, `runner_dir` | never |
 | `~/.claude/pinqloq-task-runner/test-accounts.json` | test account sign-in values | never |
-| macOS Keychain `pinqloq-smtp` | SMTP app password | never |
 | `~/.config/gh-pinq-ponq` | the `pinq-ponq` bot's gh login | never |
 | `~/.claude.json` (runner folder) | pinqloq MCP server and its key | never |
 | `<runner_dir>/.claude/settings.local.json` | permission mode and pinq-ponq git identity (rendered from `templates/`) | never |
@@ -46,7 +45,7 @@ python3 ~/StudioProjects/.pinqdoq-runner/runner/skill/scripts/install.py --role 
 python3 ~/.claude/skills/pinqloq-task-runner/scripts/doctor.py
 ```
 
-`doctor.py` lists what is still missing (gh login, Keychain entry, MCP key, devices) with the command for each.
+`doctor.py` lists what is still missing (gh login, MCP key, test accounts, devices) with the command for each.
 
 ## Update
 

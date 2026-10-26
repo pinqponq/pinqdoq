@@ -19,30 +19,41 @@ Clone the project repos the runner works on into `~/StudioProjects` (or the work
 ## 3. Install
 
 ```bash
-python3 ~/StudioProjects/.pinqdoq-runner/runner/skill/scripts/install.py --role <primary|queue-only> --mail-cc <team addresses>
+python3 ~/StudioProjects/.pinqdoq-runner/runner/skill/scripts/install.py --role <primary|queue-only>
 ```
 
-- `primary` on exactly one machine; every other machine is `queue-only`.
+- `primary` on exactly one machine; every other machine is `queue-only`. Always pass `--role`: without a `machine.json` the role is `primary`.
+- `--workspace <dir>` when the project repos are not in `~/StudioProjects`.
 - `--worktrees <dir>` when the worktrees should live elsewhere (e.g. an external disk); the default is `~/StudioProjects/.task-runner-worktrees`.
+- `--runner-dir <dir>` for the routines' working folder; the default is `~/StudioProjects/pinqloq-runner`.
+- `--dry-run` prints what the script would do and changes nothing.
 - On a machine that already has a hand-made copy of the runner under `~/.claude`, add `--replace`: the old files are moved to `~/.claude/pinqloq-trash/<timestamp>/`, never deleted. Do this only while no runner session is running (`locks.py status` shows no task lock).
 
-The script creates `machine.json`, links the skill and agents, writes the runner folder's `settings.local.json` and the routine prompts, then runs `doctor.py`. It never overwrites an existing `machine.json` or settings file.
+The script creates `machine.json`, links the skill and the four agents (`pin-test`, `pin-device`, `pin-review`, `pin-ui-review`), writes the runner folder's `settings.local.json` and the routine prompts, then runs `doctor.py`. It never overwrites an existing `machine.json` or settings file.
 
 ## 4. Secrets and accounts (owner)
 
 Run `python3 ~/.claude/skills/pinqloq-task-runner/scripts/doctor.py` and fix each `FAIL` line with the command it shows:
 
 - **gh as `pinq-ponq`:** `GH_CONFIG_DIR=~/.config/gh-pinq-ponq gh auth login` with the bot account, scopes `repo`, `project`, `read:org`.
-- **SMTP password:** `security add-generic-password -a <username> -s pinqloq-smtp -w` (prompts for the app password).
 - **pinqloq MCP:** in the runner folder, `claude mcp add pinqloq …` with a key from the pinqloq dashboard.
-- **Test accounts:** copy `~/.claude/pinqloq-task-runner/test-accounts.json` from the primary machine over a private channel.
-- **Devices:** create the AVDs and snapshots listed in each project's `maestro/RUNNER.md` (rindle-cmp: the signed-in `rindle-logged-in` snapshot).
+- **Test accounts:** copy `~/.claude/pinqloq-task-runner/test-accounts.json` from the primary machine over a private channel. Required on the primary machine; a `queue-only` machine only gets a warning.
+- **Devices:** create the AVDs and snapshots listed in each project's `maestro/RUNNER.md` (rindle-cmp: the signed-in `rindle-logged-in` snapshot), and install an iOS simulator runtime in Xcode > Settings > Components.
 
 Run `doctor.py` again until it prints `Ready.`
 
 ## 5. Routines
 
-In a Claude Code chat say: **create the runner routines from `~/.claude/pinqloq-task-runner/routines`**. Claude creates one scheduled task per file (task ids `pinqloq-task-runner`, `-2`, `-3`; folder: the runner folder; no schedule, started by hand). Then set each routine's permission mode to bypass in the app **(owner)**; the routine settings are the owner's, Claude does not change them.
+In a Claude Code chat say: **create the runner routines from `~/.claude/pinqloq-task-runner/routines`**. Claude creates one scheduled task per file (task ids `pinqloq-task-runner`, `-2`, `-3`, `-4`; folder: the runner folder; no schedule, started by hand). Then set each routine's permission mode to bypass in the app **(owner)**; the routine settings are the owner's, Claude does not change them.
+
+Each routine has a fixed role (`runner_config.RUNNER_ROLES`):
+
+| Routine | Role |
+|---|---|
+| runner-1 | device runner, Android first |
+| runner-2 | device runner, iOS first |
+| runner-3 | light tasks only |
+| runner-4 | tasks that need no device |
 
 ## 6. Panel
 
