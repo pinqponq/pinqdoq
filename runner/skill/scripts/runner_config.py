@@ -7,14 +7,22 @@ Two files:
 - `<skill>/config.json` (in pinqdoq, public): the team's board coordinates and settings that hold
   on every machine. No personal addresses.
 - `~/.claude/pinqloq-task-runner/machine.json` (local, never committed): this machine's role,
-  folders and the Pinq Center service token (`pinq_center`: `api_url`, `runner_token`; never printed).
+  folders, the Pinq Center service token (`pinq_center`: `api_url`, `runner_token`; never printed) and
+  where the code lives (`forge`, `gitlab_host`, `pinqponq_steps`, see below).
   `install.py` creates it; every key has a default, so a missing
-  file means "primary runner with the default folders".
+  file means "primary runner with the default folders, on GitHub, with every PinqPonq step".
 
 Roles:
 - `primary`: the full runner (board scan, proposals, comment decisions, reminders, verification).
 - `queue-only`: only works on tasks the owner queued in this machine's panel or chat. It skips all
   housekeeping, so two machines never send the same proposal or act on the same issue comment.
+
+Forge and PinqPonq steps:
+- `forge`: `github` (the default, through `gh`) or `gitlab` (through `glab`; needs `gitlab_host`, the
+  server's host name such as `gitlab.example.com`).
+- `pinqponq_steps`: `true` (the default) keeps the steps that only make sense for PinqPonq projects
+  (pinq-doq install in the repo, pinqloq log checks, lesson PRs, issue comments and assignees);
+  `false` turns them off for projects outside PinqPonq.
 """
 import json
 import os
@@ -29,13 +37,20 @@ MACHINE_CONFIG_FILE = STATE_DIR / "machine.json"
 PRIMARY_ROLE = "primary"
 QUEUE_ONLY_ROLE = "queue-only"
 ROLES = (PRIMARY_ROLE, QUEUE_ONLY_ROLE)
+GITHUB_FORGE = "github"
+GITLAB_FORGE = "gitlab"
+FORGES = (GITHUB_FORGE, GITLAB_FORGE)
 DEFAULT_MACHINE_CONFIG = {
     "role": PRIMARY_ROLE,
     "workspace_dir": "~/StudioProjects",
     "worktrees_dir": "~/StudioProjects/.task-runner-worktrees",
     "runner_dir": "~/StudioProjects/pinqloq-runner",
     "pinq_center": None,
+    "forge": GITHUB_FORGE,
+    "gitlab_host": None,
+    "pinqponq_steps": True,
 }
+HOST_NAME = re.compile(r"[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?(:[0-9]+)?")
 # Runner roles (owner, 2026-10-23). The single place that says which runner takes which tasks:
 # - "device": tasks that need an emulator or simulator, taken first (`needs_device`; unknown counts as needing one);
 #   without such a task waiting, the runner takes a task without a device instead of idling.
@@ -81,11 +96,25 @@ def read_machine_config():
     if unknown_keys:
         raise ValueError("%s has unknown keys: %s" % (MACHINE_CONFIG_FILE, ", ".join(unknown_keys)))
     machine = {**DEFAULT_MACHINE_CONFIG, **stored}
-    if machine["role"] not in ROLES:
-        raise ValueError("%s: role must be one of %s, not %r" % (MACHINE_CONFIG_FILE, ROLES, machine["role"]))
+    validate_machine_config(machine)
     for key in PATH_KEYS:
         machine[key] = Path(os.path.expanduser(machine[key]))
     return machine
+
+
+def validate_machine_config(machine):
+    """Raises ValueError for a value the runner cannot work with, so a wrong machine.json stops at the start."""
+    if machine["role"] not in ROLES:
+        raise ValueError("%s: role must be one of %s, not %r" % (MACHINE_CONFIG_FILE, ROLES, machine["role"]))
+    if machine["forge"] not in FORGES:
+        raise ValueError("%s: forge must be one of %s, not %r" % (MACHINE_CONFIG_FILE, FORGES, machine["forge"]))
+    gitlab_host = machine["gitlab_host"]
+    if machine["forge"] == GITLAB_FORGE and gitlab_host is None:
+        raise ValueError("%s: forge gitlab needs gitlab_host (e.g. gitlab.example.com)" % MACHINE_CONFIG_FILE)
+    if gitlab_host is not None and not (isinstance(gitlab_host, str) and HOST_NAME.fullmatch(gitlab_host)):
+        raise ValueError("%s: gitlab_host must be a host name without scheme or path, not %r" % (MACHINE_CONFIG_FILE, gitlab_host))
+    if not isinstance(machine["pinqponq_steps"], bool):
+        raise ValueError("%s: pinqponq_steps must be true or false, not %r" % (MACHINE_CONFIG_FILE, machine["pinqponq_steps"]))
 
 
 def transcript_dir_for(runner_dir):

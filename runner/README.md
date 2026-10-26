@@ -20,7 +20,7 @@ runner/
 | Where | What | Committed? |
 |---|---|---|
 | `~/.claude/pinqloq-task-runner/` | `state.json` and archive, locks, runs.log, timings, run reports, board cache, media, handoffs | never |
-| `~/.claude/pinqloq-task-runner/machine.json` | `role`, `workspace_dir`, `worktrees_dir`, `runner_dir` | never |
+| `~/.claude/pinqloq-task-runner/machine.json` | `role`, `workspace_dir`, `worktrees_dir`, `runner_dir`, `forge` (`github` by default), `gitlab_host`, `pinqponq_steps` (`true` by default) | never |
 | `~/.claude/pinqloq-task-runner/test-accounts.json` | test account sign-in values | never |
 | `~/.config/gh-pinq-ponq` | the `pinq-ponq` bot's gh login | never |
 | `~/.claude.json` (runner folder) | pinqloq MCP server and its key | never |

@@ -2,13 +2,14 @@
 """Install the pinqloq task runner on this machine from a pinqdoq checkout.
 
   python3 <pinqdoq>/runner/skill/scripts/install.py [--role primary|queue-only] [--workspace DIR]
-          [--worktrees DIR] [--runner-dir DIR] [--replace] [--dry-run]
+          [--worktrees DIR] [--runner-dir DIR] [--forge github|gitlab] [--gitlab-host HOST]
+          [--without-pinqponq-steps] [--replace] [--dry-run]
 
 What it does (idempotent, run it again after moving the checkout):
 1. Links ~/.claude/skills/pinqloq-task-runner and ~/.claude/agents/pin-*.md to the checkout, so `git pull` in pinqdoq updates the runner. An existing real file or folder at
    one of those places is left alone unless --replace is given; then it is moved (never deleted) to
    ~/.claude/pinqloq-trash/<timestamp>/.
-2. Creates the state folder and machine.json (role, folders). An existing machine.json is
+2. Creates the state folder and machine.json (role, folders, forge, PinqPonq steps). An existing machine.json is
    never overwritten; differing options are reported.
 3. Creates the runner folder with its README and .claude/settings.local.json (permissions + the
    pinq-ponq git/gh identity) from templates/. An existing settings file is never overwritten.
@@ -95,7 +96,8 @@ def install_link(link_path, target, replace, trash_session_dir, dry_run):
 
 def write_machine_config(arguments, dry_run):
     requested = {"role": arguments.role, "workspace_dir": arguments.workspace, "worktrees_dir": arguments.worktrees,
-                 "runner_dir": arguments.runner_dir}
+                 "runner_dir": arguments.runner_dir, "forge": arguments.forge, "gitlab_host": arguments.gitlab_host,
+                 "pinqponq_steps": False if arguments.without_pinqponq_steps else None}
     requested = {key: value for key, value in requested.items() if value is not None}
     config_file = runner_config.MACHINE_CONFIG_FILE
     if config_file.exists():
@@ -105,10 +107,11 @@ def write_machine_config(arguments, dry_run):
             return "KEPT    %s; edit it by hand to change: %s" % (config_file, json.dumps(differing, ensure_ascii=False))
         return "ok      %s" % config_file
     machine_config = {**runner_config.DEFAULT_MACHINE_CONFIG, **requested}
+    runner_config.validate_machine_config(machine_config)
     if not dry_run:
         config_file.parent.mkdir(parents=True, exist_ok=True)
         config_file.write_text(json.dumps(machine_config, indent=2, ensure_ascii=False) + "\n")
-    return "created %s (role %s)" % (config_file, machine_config["role"])
+    return "created %s (role %s, forge %s)" % (config_file, machine_config["role"], machine_config["forge"])
 
 
 def worktrees_storage_dir(worktrees_dir):
@@ -188,6 +191,10 @@ def parse_arguments():
     parser.add_argument("--workspace")
     parser.add_argument("--worktrees")
     parser.add_argument("--runner-dir")
+    parser.add_argument("--forge", choices=runner_config.FORGES)
+    parser.add_argument("--gitlab-host", help="the GitLab server's host name, needed with --forge gitlab")
+    parser.add_argument("--without-pinqponq-steps", action="store_true",
+                        help="turn off the steps that only make sense for PinqPonq projects")
     parser.add_argument("--replace", action="store_true", help="move existing real files at the link places to the trash")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
@@ -197,7 +204,11 @@ def main():
     arguments = parse_arguments()
     dry_run = arguments.dry_run
     trash_session_dir = TRASH_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
-    print(write_machine_config(arguments, dry_run))
+    try:
+        print(write_machine_config(arguments, dry_run))
+    except ValueError as error:
+        print("STOPPED %s" % error)
+        return 2
     machine = runner_config.read_machine_config()
     if not dry_run:
         runner_config.STATE_DIR.mkdir(parents=True, exist_ok=True)
