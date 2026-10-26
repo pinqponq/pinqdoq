@@ -8,6 +8,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import doctor  # noqa: E402
 import install  # noqa: E402
 import runner_config  # noqa: E402
 
@@ -59,7 +60,8 @@ class ReadMachineConfigTest(MachineConfigFileTest):
                         {"forge": "gitlab"},
                         {"forge": "gitlab", "gitlab_host": "https://gitlab.example.com"},
                         {"forge": "gitlab", "gitlab_host": "gitlab.example.com/group"},
-                        {"pinqponq_steps": "no"}]
+                        {"pinqponq_steps": "no"},
+                        {"forge": "gitlab", "gitlab_host": "gitlab.example.com", "role": "primary"}]
         for values in wrong_values:
             with self.subTest(values=values):
                 self.write_config({**TODAYS_MACHINE_CONFIG, **values})
@@ -99,6 +101,48 @@ class WriteMachineConfigTest(MachineConfigFileTest):
                                                dry_run=False)
         self.assertTrue(message.startswith("KEPT"))
         self.assertEqual(TODAYS_MACHINE_CONFIG, json.loads(self.config_file.read_text()))
+
+
+def machine_for(forge, gitlab_host=None):
+    return {"workspace_dir": Path("/workspace"), "worktrees_dir": Path("/workspace/.task-runner-worktrees"),
+            "forge": forge, "gitlab_host": gitlab_host}
+
+
+class RunnerFolderSettingsTest(unittest.TestCase):
+    def test_github_settings_are_the_template_with_the_folders_filled_in(self):
+        template_text = (install.RUNNER_DIR_IN_REPO / "templates" / "settings.local.json").read_text()
+        expected_text = (template_text.replace("{HOME}", str(Path.home())).replace("{WORKSPACE_DIR}", "/workspace")
+                         .replace("{WORKTREES_STORAGE_DIR}", "/workspace"))
+        self.assertEqual(expected_text, install.render_settings(machine_for("github")))
+
+    def test_gitlab_settings_keep_the_permissions_but_not_the_pinq_ponq_identity(self):
+        github_settings = json.loads(install.render_settings(machine_for("github")))
+        gitlab_settings = json.loads(install.render_settings(machine_for("gitlab", "gitlab.example.com")))
+        self.assertNotIn("env", gitlab_settings)
+        self.assertEqual(github_settings["permissions"], gitlab_settings["permissions"])
+
+
+class RecordingReport(doctor.Report):
+    def __init__(self):
+        super().__init__()
+        self.names = []
+
+    def check(self, passed, name, hint, required=True):
+        self.names.append(name)
+
+
+class DoctorForgeTest(unittest.TestCase):
+    def test_github_machine_needs_gh(self):
+        report = RecordingReport()
+        doctor.check_commands(report, "github")
+        self.assertIn("command gh", report.names)
+        self.assertNotIn("command glab", report.names)
+
+    def test_gitlab_machine_needs_glab(self):
+        report = RecordingReport()
+        doctor.check_commands(report, "gitlab")
+        self.assertIn("command glab", report.names)
+        self.assertNotIn("command gh", report.names)
 
 
 if __name__ == "__main__":

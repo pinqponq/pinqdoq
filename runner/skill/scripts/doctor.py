@@ -22,9 +22,12 @@ RUNNER_GITHUB_LOGIN = "pinq-ponq"
 RUNNER_GH_CONFIG_DIR = Path.home() / ".config" / "gh-pinq-ponq"
 REQUIRED_COMMANDS = {
     "git": "xcode-select --install",
-    "gh": "brew install gh",
     "python3": "xcode-select --install",
     "java": "install JDK 21 (e.g. brew install --cask temurin@21)",
+}
+FORGE_COMMANDS = {
+    runner_config.GITHUB_FORGE: {"gh": "brew install gh"},
+    runner_config.GITLAB_FORGE: {"glab": "brew install glab"},
 }
 DEVICE_COMMANDS = {
     "adb": "Android SDK platform-tools; export ANDROID_HOME=~/Library/Android/sdk in ~/.zshrc",
@@ -63,8 +66,10 @@ def run_quietly(command, environment=None):
         return subprocess.CompletedProcess(command, 1, "", str(error))
 
 
-def check_commands(report):
-    for commands, required in ((REQUIRED_COMMANDS, True), (DEVICE_COMMANDS, True), (OPTIONAL_COMMANDS, False)):
+def check_commands(report, forge):
+    command_groups = ((REQUIRED_COMMANDS, True), (FORGE_COMMANDS[forge], True), (DEVICE_COMMANDS, True),
+                      (OPTIONAL_COMMANDS, False))
+    for commands, required in command_groups:
         for command, hint in commands.items():
             report.check(find_command(command) is not None, "command %s" % command, hint, required)
 
@@ -103,6 +108,12 @@ def check_github(report):
                  "GH_CONFIG_DIR=%s gh auth refresh -s project" % RUNNER_GH_CONFIG_DIR)
 
 
+def check_gitlab(report, gitlab_host):
+    status = run_quietly([find_command("glab") or "glab", "auth", "status", "--hostname", gitlab_host])
+    report.check(status.returncode == 0, "glab login on %s" % gitlab_host,
+                 "glab auth login --hostname %s (the owner runs it with their own token)" % gitlab_host)
+
+
 def check_secrets(report, machine):
     test_accounts_file = runner_config.STATE_DIR / "test-accounts.json"
     report.check(test_accounts_file.exists(), "test-accounts.json", "copy it by hand from the primary machine (never commit it)",
@@ -127,11 +138,16 @@ def check_devices(report):
 def main():
     report = Report()
     print("pinqloq runner doctor (%s)\n" % RUNNER_DIR_IN_REPO)
-    check_commands(report)
-    check_links(report)
     machine = check_machine(report)
-    check_github(report)
-    check_secrets(report, machine)
+    forge = machine["forge"] if machine else runner_config.GITHUB_FORGE
+    check_commands(report, forge)
+    check_links(report)
+    if forge == runner_config.GITLAB_FORGE:
+        check_gitlab(report, machine["gitlab_host"])
+    else:
+        check_github(report)
+    if machine is None or machine["pinqponq_steps"]:
+        check_secrets(report, machine)
     check_devices(report)
     print("\n%s" % ("Missing pieces above; fix the FAIL lines." if report.failed else "Ready."))
     return 1 if report.failed else 0

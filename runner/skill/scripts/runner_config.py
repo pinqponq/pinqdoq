@@ -19,7 +19,8 @@ Roles:
 
 Forge and PinqPonq steps:
 - `forge`: `github` (the default, through `gh`) or `gitlab` (through `glab`; needs `gitlab_host`, the
-  server's host name such as `gitlab.example.com`).
+  server's host name such as `gitlab.example.com`, and the `queue-only` role, because the board the
+  primary role scans is a GitHub project).
 - `pinqponq_steps`: `true` (the default) keeps the steps that only make sense for PinqPonq projects
   (pinq-doq install in the repo, pinqloq log checks, lesson PRs, issue comments and assignees);
   `false` turns them off for projects outside PinqPonq.
@@ -111,6 +112,8 @@ def validate_machine_config(machine):
     gitlab_host = machine["gitlab_host"]
     if machine["forge"] == GITLAB_FORGE and gitlab_host is None:
         raise ValueError("%s: forge gitlab needs gitlab_host (e.g. gitlab.example.com)" % MACHINE_CONFIG_FILE)
+    if machine["forge"] == GITLAB_FORGE and machine["role"] != QUEUE_ONLY_ROLE:
+        raise ValueError("%s: forge gitlab needs role %s (the board is a GitHub project)" % (MACHINE_CONFIG_FILE, QUEUE_ONLY_ROLE))
     if gitlab_host is not None and not (isinstance(gitlab_host, str) and HOST_NAME.fullmatch(gitlab_host)):
         raise ValueError("%s: gitlab_host must be a host name without scheme or path, not %r" % (MACHINE_CONFIG_FILE, gitlab_host))
     if not isinstance(machine["pinqponq_steps"], bool):

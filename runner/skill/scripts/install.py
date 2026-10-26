@@ -12,7 +12,8 @@ What it does (idempotent, run it again after moving the checkout):
 2. Creates the state folder and machine.json (role, folders, forge, PinqPonq steps). An existing machine.json is
    never overwritten; differing options are reported.
 3. Creates the runner folder with its README and .claude/settings.local.json (permissions + the
-   pinq-ponq git/gh identity) from templates/. An existing settings file is never overwritten.
+   pinq-ponq git/gh identity) from templates/. A gitlab machine gets no identity settings: git and
+   glab use the machine's own login. An existing settings file is never overwritten.
 4. Writes the routine prompts to <state>/routines/ for creating the scheduled tasks.
 5. Runs doctor.py.
 
@@ -125,8 +126,12 @@ def render_settings(machine):
                     "{WORKTREES_STORAGE_DIR}": str(worktrees_storage_dir(machine["worktrees_dir"]))}
     for placeholder, value in replacements.items():
         template_text = template_text.replace(placeholder, value)
-    json.loads(template_text)
-    return template_text
+    settings = json.loads(template_text)
+    if machine["forge"] == runner_config.GITHUB_FORGE:
+        return template_text
+    # The env block points gh and git at the pinq-ponq GitHub bot; on GitLab the machine's own git login is used.
+    del settings["env"]
+    return json.dumps(settings, indent=2, ensure_ascii=False) + "\n"
 
 
 def write_runner_folder(machine, dry_run):
