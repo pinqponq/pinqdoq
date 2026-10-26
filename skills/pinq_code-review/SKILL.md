@@ -159,6 +159,7 @@ Read the files with the file-read tool. Do not reconstruct rule content from mem
 - SHOULD state the default-scope assumption in the Scope line when no scope was given.
 - SHOULD check every function the diff adds or renames for doing two jobs (common.md#Separation of Concerns & Single Responsibility): a name joining two actions with "And" (`saveAndClose`) is a **Warning**, even when the body is short.
 - SHOULD check that every production behavior the diff changes is reached by a test in the same diff or an existing test (kotlin-testing.md#What every change must test): a changed branch, a new temp file or resource without a cleanup test on success and failure, or a rewrite meant to keep the output without a test comparing it to the old output, is a **Warning** naming the untested line.
+- SHOULD check every UI file the diff moves or adds into a shared library (deveng-core-kmp or another shared repository) against kotlin-deveng-core.md#Moving UI into a shared library: each product name, product logo or product text in it (also a fixed text that names the product) is a **Blocker**, because it names the product and so is wrong for every other product; each other private layout constant, hardcoded color or fixed text is a **Warning** with its `file:line`, because the fix is to move the value to the theme or a parameter.
 
 ### SHOULD / MAY (style)
 
