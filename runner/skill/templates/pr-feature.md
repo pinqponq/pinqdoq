@@ -26,7 +26,8 @@ Closes #<n>
 - Mutation (PIT, değişen satırlar): <skor>% (<öldürülen>/<toplam>); kalan: <dosya:satır → tek satır gerekçe, yoksa "yok">
 
 ## Notlar
-<only if needed, one line each: human follow-ups, `Merge ortamı: <environment the base deploys to on push>` when the repository deploys from the base, `pinq_code-review origin/<base>...HEAD: <result>; denetlenen: <n> yorum, <m> composable`>
+<only if needed, one line each: human follow-ups, `Merge ortamı: <environment the base deploys to on push>` when the repository deploys from the base>
+pinq_code-review origin/<base>...HEAD: <result>; denetlenen: <n> yorum bloğu, <m> composable
 Otomatik merge: kapılar <✅/❌ her kapı, references/implementation.md → "Auto-merge rubric">
 Risk: <düşük | düşük değil: neden>
 

@@ -17,7 +17,7 @@ Reply in this format and nothing else (≤ 40 lines total):
 RANGE: origin/<base>...<short sha>
 DURATION: <review wall-clock time>
 COUNTS: critical <n>, major <n>, minor <n>, nit <n>
-CHECKED: comments <n> (findings <k>), composables <m> (findings <j>)
+CHECKED: comment blocks <n> (findings <k>), composables <m> (findings <j>)
 FINDINGS:            (every Critical/Major and every rule-backed Minor/Nit in the changed lines)
 - [severity] <file:line> — <problem> (rule: <rule file → section>) → fix: <one line>
 OUT OF SCOPE:        (findings outside the task's changed lines, each with its reason)
