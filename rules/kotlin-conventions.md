@@ -38,6 +38,8 @@ if (state.uiState.isProductListEmpty) { ... }
 if (state.uiState.isProductListVisible) { ... }
 ```
 
+- Progress of work that needs the network (uploads, sync, sending) has its own offline state. While the device has no connection, say that it waits for a connection, stop every spinner and moving bar for that work, and offer the retry action the screen already has. When the connection comes back, continue by itself. Read the connection from the app's existing connection monitor (search for it before deciding the app has none) in the ViewModel, and test both the offline state and the resume.
+
 ### Confirmation Dialogs
 
 - Show a confirmation dialog before every destructive or irreversible action (delete, clear, reset, etc.).
