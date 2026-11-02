@@ -57,7 +57,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 
   Correct: a retry helper takes the attempt count and the delay between attempts as parameters. It names no product. It moves to the shared library.
 
-  Wrong: an order-tracking dialog shows one product's own step texts. It takes that product's `Order` model. It needs five new parameters to hide the steps other products do not have. It stays in the product.
+  Wrong: an order-tracking dialog shows one product's own step texts. It takes that product's `Order` model. It needs five settings that only this product would change, to hide its own steps. It stays in the product.
 - Layer dependency rules:
   - Application depends only on Domain.
   - Domain must not depend on any other layer; Domain may only depend on other Domain modules.
