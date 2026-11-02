@@ -112,10 +112,10 @@ A product's look stays in the product. This section adds the UI parts to the "Sh
 - Colors, text styles, shapes, sizes and paddings come from the library's theme (`ComponentTheme` and its sub-themes) or from parameters. Each of these style parameters has a neutral default: a theme value, not the product's value.
 - Text comes from parameters. The component holds no fixed text, not even as a default.
 - No product name, product logo or product text stays inside the component. These name the product, so a shared component that contains one is wrong for every other product.
-- No product layout constant or product color stays inside the component (a private `val HeroHeight = 312.dp`, a fixed `Color(0xFFFFC964)`). Move each one to the theme or to a parameter. If the component then needs more than two new parameters, it stays in the product.
+- No product layout constant or product color stays inside the component (a private `val HeroHeight = 312.dp`, a fixed `Color(0xFFFFC964)`). Move each one to the theme or to a parameter. Each of these that the theme does not hold yet is a new parameter under the limit in `common.md`.
 - A look that only one product wants is built by that product: through its theme values, or through a slot parameter that takes the product's own composable.
 
-Example: an app's paywall header has a fixed yellow gradient, a 312 dp height and the text "<App> Premium". In the shared component the colors and the height come from the theme, the title is a required `title: String` parameter, and the app passes its own artwork through a `heroContent: @Composable () -> Unit` slot. That is two new parameters, so the header may move.
+Example: an app's paywall header has a fixed yellow gradient, a 312 dp height and the text "<App> Premium". In the shared component the colors come from the theme, the height is a new theme field with a neutral default, the title is a required `title: String` parameter, and the app passes its own artwork through a `heroContent: @Composable () -> Unit` slot. The title and the slot are content the caller passes in, so the move adds one new parameter (the height) and the header may move.
 
 Before opening the pull request, search the moved files for private layout constants, hardcoded colors (`Color(0x`, `Color.Red`) and fixed text, and list in the pull request what you found and where each value went (theme, parameter or slot).
 

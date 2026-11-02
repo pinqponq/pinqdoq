@@ -45,13 +45,19 @@ This file always loads. Stack-specific rules load automatically only when you to
 - Extract large logical blocks (retry logic, setup, try-catch) into well-named sub-functions.
 - Apply SRP without over-engineering. Do not create abstractions without real value.
 - Shared libraries (pinqnuqets, deveng-core-kmp, deveng-networking-kmp, …) hold only what any product would need on its own. When moving product code into one, keep the product's conventions (header and route names, error codes and messages, defaults, policies such as which errors count as client errors) in the product. A setting counts as a convention when only one product would change it: do not add it to keep that product's behavior; the product rebuilds the behavior on the library's extension points (its own middleware, resolver, endpoint). Technology-specific parts go to separate optional packages. Check the moved code, its comments and its docs for product names before opening the pull request.
-- **When code moves into a shared library.** A component, function or class from a product moves into a shared library only when all four of these hold:
+- **When code moves into a shared library.** A component, function or class from a product moves into a shared library only when all four of these points hold:
   - It holds no text of one product. A message, label or title that one product wrote stays in that product.
-  - It holds no identity of one product: no product name, package name, route, color or key.
+  - It holds no identity of one product: no product name, package name, route, color, API key or storage key.
   - It uses no domain model of one product.
-  - Any project can use it as it is, or one or two new parameters make it usable by any project. A value that the library's theme or options already provide is not a new parameter.
+  - Any product can use it as it is, or one or two new parameters make it usable by any product.
 
-  If it needs more than that, it stays in the product. Correct: a retry helper that takes the attempt count and the delay between attempts as parameters, and names no product, moves to the shared library. Wrong: a pairing dialog that shows one product's own texts, takes that product's `Couple` model and needs five new parameters to hide its product-only steps stays in the product.
+  If it fails any of the four points, it stays in the product.
+
+  What counts as a new parameter: a setting that exists only to change one product's look or behavior. A new theme field or a new option with a neutral default counts too. A value that the library's theme or options already provide does not count. The content a caller passes in (texts, data, callbacks, slot content) does not count either, because every caller passes its own.
+
+  Correct: a retry helper takes the attempt count and the delay between attempts as parameters. It names no product. It moves to the shared library.
+
+  Wrong: an order-tracking dialog shows one product's own step texts. It takes that product's `Order` model. It needs five new switches to hide the steps other products do not have. It stays in the product.
 - Layer dependency rules:
   - Application depends only on Domain.
   - Domain must not depend on any other layer; Domain may only depend on other Domain modules.
