@@ -53,11 +53,11 @@ This file always loads. Stack-specific rules load automatically only when you to
 
   If it fails any of the four points, it stays in the product.
 
-  What counts as a new parameter: a setting that exists only to change one product's look or behavior. A new theme field or a new option with a neutral default counts too. A value that the library's theme or options already provide does not count. The content a caller passes in (texts, data, callbacks, slot content) does not count either, because every caller passes its own.
+  What counts as a new parameter: a setting the library does not have yet, with a neutral default that other products can also set. A new theme field or a new option counts too. A setting that only one product would ever change is a product convention (see the bullet above), so it is not added at all. A value that the library's theme or options already provide does not count. The content a caller passes in (texts, data, callbacks, slot content) does not count either, because every caller passes its own.
 
   Correct: a retry helper takes the attempt count and the delay between attempts as parameters. It names no product. It moves to the shared library.
 
-  Wrong: an order-tracking dialog shows one product's own step texts. It takes that product's `Order` model. It needs five new switches to hide the steps other products do not have. It stays in the product.
+  Wrong: an order-tracking dialog shows one product's own step texts. It takes that product's `Order` model. It needs five new parameters to hide the steps other products do not have. It stays in the product.
 - Layer dependency rules:
   - Application depends only on Domain.
   - Domain must not depend on any other layer; Domain may only depend on other Domain modules.
