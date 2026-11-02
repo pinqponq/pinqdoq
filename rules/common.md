@@ -169,3 +169,14 @@ When a change moves code to a shared library or replaces a whole layer (error ha
 - These tests must pass on the old code without any of the new code, and they must still pass after the move. A test that passed before and fails after is a regression, so fix the code.
 - Before the old code is removed, list the open pull requests that change it (`gh pr list --state open` in every repo that holds it). Port what they add to the new code, or say in both pull requests which one must follow the other. Example: a bridge rewritten in Kotlin while a .NET bridge pull request added a tool; the tool was lost and nothing could publish the list.
 - A move changes no behavior, and the move does not change any expected result of these tests. If the new library behaves differently, keep the old behavior in the code that uses it (a resolver, writer, middleware or small wrapper). A behavior change that the new library makes possible is made separately after the move, with a note on what changes, why it helps and which clients it can affect.
+
+---
+
+## Local Labs and Benchmarks
+
+A lab is a database, search engine or other server started on a developer machine to try a change or measure it. Run it so the machine and the other work on it keep running.
+
+- Keep all of its data on the disk the machine's owner names for it: container volumes, the Docker VM's disk, generated data and benchmark output. Check that the disk is mounted before you start.
+- Give every container a CPU and memory limit, and size the VM so the rest of the machine keeps enough memory. Measure a small data set first and start the large one only after the small one works.
+- Stop the containers when a measurement is done. Delete the lab and its data once the results are written down, unless the owner asks to keep them.
+- Write each limit the lab needs into its compose file, so a long test run does not stop halfway. Example: `mongod` keeps a file open for every collection and index, and with Docker's default of 1,024 open files it stopped with "Too many open files" after many test databases. `ulimits: nofile: 64000` fixed it.
