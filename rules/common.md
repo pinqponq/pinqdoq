@@ -45,6 +45,13 @@ This file always loads. Stack-specific rules load automatically only when you to
 - Extract large logical blocks (retry logic, setup, try-catch) into well-named sub-functions.
 - Apply SRP without over-engineering. Do not create abstractions without real value.
 - Shared libraries (pinqnuqets, deveng-core-kmp, deveng-networking-kmp, …) hold only what any product would need on its own. When moving product code into one, keep the product's conventions (header and route names, error codes and messages, defaults, policies such as which errors count as client errors) in the product. A setting counts as a convention when only one product would change it: do not add it to keep that product's behavior; the product rebuilds the behavior on the library's extension points (its own middleware, resolver, endpoint). Technology-specific parts go to separate optional packages. Check the moved code, its comments and its docs for product names before opening the pull request.
+- **When code moves into a shared library.** A component, function or class from a product moves into a shared library only when all four of these hold:
+  - It holds no text of one product. A message, label or title that one product wrote stays in that product.
+  - It holds no identity of one product: no product name, package name, route, color or key.
+  - It uses no domain model of one product.
+  - Any project can use it as it is, or one or two new parameters make it usable by any project. A value that the library's theme or options already provide is not a new parameter.
+
+  If it needs more than that, it stays in the product. Correct: a retry helper that takes the attempt count and the delay between attempts as parameters, and names no product, moves to the shared library. Wrong: a pairing dialog that shows one product's own texts, takes that product's `Couple` model and needs five new parameters to hide its product-only steps stays in the product.
 - Layer dependency rules:
   - Application depends only on Domain.
   - Domain must not depend on any other layer; Domain may only depend on other Domain modules.
