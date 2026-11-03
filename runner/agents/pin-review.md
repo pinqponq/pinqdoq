@@ -17,6 +17,7 @@ Reply in this format and nothing else (≤ 40 lines total):
 RANGE: origin/<base>...<short sha>
 DURATION: <review wall-clock time>
 COUNTS: critical <n>, major <n>, minor <n>, nit <n>
+CHECKED: comment blocks <n> (findings <k>), composables <m> (findings <j>)
 FINDINGS:            (every Critical/Major and every rule-backed Minor/Nit in the changed lines)
 - [severity] <file:line> — <problem> (rule: <rule file → section>) → fix: <one line>
 OUT OF SCOPE:        (findings outside the task's changed lines, each with its reason)
@@ -24,3 +25,5 @@ OUT OF SCOPE:        (findings outside the task's changed lines, each with its r
 ```
 
 Write `FINDINGS: none` when nothing rule-backed is left.
+
+`CHECKED` comes from the skill's `Checked:` Summary line: the comment pass and the composable pass (skill steps 5a and 5b) run on every review, also when the diff looks clean. Their findings on changed lines go under FINDINGS as `minor`, never under OUT OF SCOPE.
