@@ -141,9 +141,9 @@ PostgresErrorCodes.ForeignKeyViolation
 
 ## Shared Packages (pinqnuqets)
 
-`pinqnuqets` holds only code that every Pinqponq ASP.NET Core API needs in the same form. A product-specific thing never goes into it.
+`pinqnuqets` holds only code that every Pinqponq ASP.NET Core API needs. A product-specific thing never goes into it. Whether code may move in at all is decided by "When code moves into a shared library" in `common.md`. The points below add what that means for a .NET package.
 
-- Test for every type, option, default, constant and message: would a product other than the one this code came from need exactly this? If the answer depends on one product, it stays in that product.
+- Test for every type, option, default, constant and message: would a product other than the one this code came from need this, as it is or with the new parameters that `common.md` allows? If the answer depends on one product, it stays in that product.
 - Product-specific means: a header, query key, route, response code, message or default taken from one product's client or contract; an option that exists for one product only; a feature that only products with one kind of client (for example a mobile app) need.
 - If you are not sure a part is shared, leave it in the product. You may instead move it into its own opt-in package as a setting with a neutral default, which means a default that was not copied from the first product. The setting is off by default.
 - Technology-specific code (PostgreSQL, MongoDB, EF Core, Vault) is fine in its own opt-in package, as long as nothing in it names a product.
