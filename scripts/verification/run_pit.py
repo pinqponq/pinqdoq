@@ -110,7 +110,8 @@ def changed_source_files(worktree, base):
 def module_kind(worktree, module_dir):
     """The module kind from its build file's plugins, its source folders and an AndroidManifest.xml in src/main.
 
-    Both are read because a convention plugin can hide the real plugin id from the build file.
+    The source folders and the manifest are read too, because a convention plugin can hide the real plugin id from the
+    build file.
     """
     module_path = os.path.join(worktree, module_dir)
     build_text = ""
@@ -129,7 +130,6 @@ def module_kind(worktree, module_dir):
 
 
 def files_in_source_sets(paths, kind, source_sets):
-    """The paths in one of the source sets whose language folder and file extension the module kind compiles."""
     selected = []
     for path in paths:
         match = SOURCE_SET_PATH.match(path)
@@ -145,7 +145,6 @@ def source_directories(worktree, module_dir, kind):
 
 
 def printed_value(gradle_output, prefix):
-    """The value of the first `<prefix>…` line pit.init.gradle printed, or None when it printed none."""
     return next((line[len(prefix):] for line in gradle_output.splitlines() if line.startswith(prefix)), None)
 
 
