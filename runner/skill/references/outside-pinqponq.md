@@ -54,5 +54,7 @@ On a `forge: gitlab` machine, do not create a `task-runner-media` branch. Upload
 ## The MR body (implementation.md step 10)
 Use the same templates (`templates/pr-bug.md`, `templates/pr-feature.md`) with these changes: no `Closes #<n>` line for a `local/…` task, no pinqloq sections (see "Devices and test accounts"), and "Notlar" ends as "Merging" says.
 
+On a `forge: gitlab` machine, write the merge request in English: its title, its description (use the template's sections with English headings) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
+
 ## After the work (implementation.md step 14, `case_update.py`)
 With `pinqponq_steps: false` there are no lesson PRs to pinqdoq and no Pinq Center updates. When a change request taught something general, write it under "İnsan gerekiyor" in the run report instead, as a suggestion for the owner.
