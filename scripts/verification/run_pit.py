@@ -3,13 +3,16 @@
 
 Usage: run_pit.py <worktree> <base-ref> [--threshold PERCENT] [--lock TASK_KEY] [--android-variant VARIANT]
 Finds every Gradle module whose production code changed, runs PIT per module against that module's changed tests and
-prints one JSON summary over all of them. The module's build file decides its type:
+prints one JSON summary over all of them. The plugins in the module's build file and its source folders decide its
+kind:
 - Kotlin Multiplatform (e.g. composeApp in an app, deveng-core in deveng-core-kmp): Kotlin files in
   src/<commonMain|desktopMain|jvmMain>/kotlin, tests in src/<commonTest|desktopTest|jvmTest>/kotlin, run on the desktop
   or first JVM target.
 - Android (an application or library module): Kotlin and Java files in src/main/<java|kotlin>, tests in
   src/test/<java|kotlin>, run on the unit test classpath of the debug variant (`--android-variant` picks another one).
-- Plain JVM: the same folders as Android, run on the classpath of the `test` task. Results are kept per module in build/pit-history, so a re-run after adding tests only re-tests
+- Plain JVM: the same folders as Android, run on the classpath of the `test` task.
+
+Results are kept per module in build/pit-history, so a re-run after adding tests only re-tests
 mutants whose class or covering tests changed (PIT's incremental analysis; scores stay identical to a full run); exit 1 when the score is below the threshold. Each run is recorded in timings.jsonl.
 """
 import argparse, collections, json, os, re, subprocess, sys, urllib.request
@@ -72,7 +75,7 @@ SOURCE_EXTENSIONS = {KOTLIN_MULTIPLATFORM_MODULE: (".kt",), ANDROID_MODULE: (".k
 TEST_FILE_SUFFIXES = ("Test.kt", "Test.java")
 SOURCE_SET_PATH = re.compile(r"^(?:(.+)/)?src/([A-Za-z]+)/(java|kotlin)/")
 BUILD_FILE_NAMES = ("build.gradle.kts", "build.gradle")
-MULTIPLATFORM_PLUGIN = re.compile(r"multiplatform", re.I)
+MULTIPLATFORM_PLUGIN = re.compile(r'kotlin\(\s*"multiplatform"\s*\)|org\.jetbrains\.kotlin\.multiplatform|\bkotlin[._-]?multiplatform\b', re.I)
 ANDROID_PLUGIN = re.compile(r"com\.android\.(application|library)|\bandroid[._-]?(application|library)\b|^\s*android\s*\{", re.I | re.M)
 ANDROID_MANIFEST = os.path.join("src", "main", "AndroidManifest.xml")
 DEFAULT_ANDROID_VARIANT = "debug"
@@ -105,7 +108,7 @@ def changed_source_files(worktree, base):
 
 
 def module_kind(worktree, module_dir):
-    """The module type from its build file's plugins and its source folders.
+    """The module kind from its build file's plugins and its source folders.
 
     Both are read because a convention plugin can hide the real plugin id from the build file.
     """
@@ -126,7 +129,7 @@ def module_kind(worktree, module_dir):
 
 
 def files_in_source_sets(paths, kind, source_sets):
-    """The paths in one of the source sets whose language folder and file extension the module type compiles."""
+    """The paths in one of the source sets whose language folder and file extension the module kind compiles."""
     selected = []
     for path in paths:
         match = SOURCE_SET_PATH.match(path)
@@ -136,7 +139,7 @@ def files_in_source_sets(paths, kind, source_sets):
     return selected
 
 
-def source_dirs(worktree, module_dir, kind):
+def source_directories(worktree, module_dir, kind):
     return [os.path.join(module_dir, "src", source_set, folder) for source_set in MAIN_SOURCE_SETS[kind]
             for folder in LANGUAGE_FOLDERS[kind] if os.path.isdir(os.path.join(worktree, module_dir, "src", source_set, folder))]
 
@@ -199,7 +202,7 @@ def run_module(worktree, module_dir, kind, android_variant, changed, tests, repo
     os.makedirs(os.path.dirname(history_file), exist_ok=True)
     jars = ":".join(os.path.join(PIT_DIR, j) for j in os.listdir(PIT_DIR) if j.endswith(".jar"))
     run = sh(["java", "-cp", f"{jars}:{classpath}", "org.pitest.mutationtest.commandline.MutationCoverageReport",
-              "--reportDir", report_dir, "--sourceDirs", ",".join(source_dirs(worktree, module_dir, kind)),
+              "--reportDir", report_dir, "--sourceDirs", ",".join(source_directories(worktree, module_dir, kind)),
               "--targetClasses", ",".join(targets), "--excludedClasses", "*Test*",
               "--targetTests", ",".join(tests), "--classPath", classpath,
               *(["--mutableCodePaths", mutable_code.replace(":", ",")] if mutable_code else []),

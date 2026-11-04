@@ -290,6 +290,18 @@ class ModuleKindTest(unittest.TestCase):
     def test_android_library_plugin_alias_is_android(self):
         self.assertEqual("android", self.kind(build_file="build.gradle.kts", build_text="plugins { alias(libs.plugins.android.library) }"))
 
+    def test_android_module_with_a_multiplatform_library_dependency_is_android(self):
+        self.assertEqual("android", self.kind(build_file="build.gradle.kts", build_text=(
+            'plugins { id("com.android.application") }\n'
+            'dependencies { implementation("com.russhwolf:multiplatform-settings:1.2.0") }\n'
+            'compose.multiplatform')))
+
+    def test_applied_kotlin_multiplatform_plugin_ids_are_kotlin_multiplatform(self):
+        for build_text in ('plugins { kotlin("multiplatform") }', "plugins { id 'org.jetbrains.kotlin.multiplatform' }",
+                           "apply plugin: 'kotlin-multiplatform'"):
+            with self.subTest(build_text=build_text):
+                self.assertEqual("kmp", self.kind(build_file="build.gradle.kts", build_text=build_text))
+
     def test_kotlin_jvm_module_is_plain_jvm(self):
         self.assertEqual("jvm", self.kind(build_file="build.gradle.kts", build_text='plugins { kotlin("jvm") }'))
 
@@ -338,13 +350,13 @@ class SourceSetSelectionTest(unittest.TestCase):
         self.assertEqual(run_pit.files_in_source_sets(self.PATHS, "android", run_pit.TEST_SOURCE_SETS["android"]),
                          run_pit.files_in_source_sets(self.PATHS, "jvm", run_pit.TEST_SOURCE_SETS["jvm"]))
 
-    def test_source_dirs_list_only_existing_folders_of_the_module_type(self):
+    def test_source_directories_list_only_existing_folders_of_the_module_kind(self):
         with tempfile.TemporaryDirectory() as worktree:
             make_module(worktree, "app", folders=("src/main/java", "src/commonMain/kotlin"))
             make_module(worktree, "shared", folders=("src/commonMain/kotlin", "src/jvmMain/kotlin", "src/main/java"))
 
-            self.assertEqual(["app/src/main/java"], run_pit.source_dirs(worktree, "app", "android"))
-            self.assertEqual(["shared/src/commonMain/kotlin", "shared/src/jvmMain/kotlin"], run_pit.source_dirs(worktree, "shared", "kmp"))
+            self.assertEqual(["app/src/main/java"], run_pit.source_directories(worktree, "app", "android"))
+            self.assertEqual(["shared/src/commonMain/kotlin", "shared/src/jvmMain/kotlin"], run_pit.source_directories(worktree, "shared", "kmp"))
 
 
 class GradleCommandTest(unittest.TestCase):

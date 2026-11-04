@@ -186,7 +186,7 @@ Build, test and mutation wrappers. The `pin-test` subagent runs them, but they n
 | Script | Purpose |
 |---|---|
 | `run_build.py` | Runs a build/test command with full output in `build/runner-logs/` and prints only status, duration, test counts, failures and compiler errors. `--heartbeat '<command>'` keeps a caller's lock fresh; `--lock <key>` alone touches the task runner's lock. |
-| `run_pit.py` | Diff-scoped PIT mutation run for Kotlin Multiplatform, Android and plain JVM Gradle modules, Kotlin and Java (JSON score and survivors on changed lines). |
+| `run_pit.py` | Diff-scoped PIT mutation run for Kotlin Multiplatform, Android and plain JVM Gradle modules: Kotlin in Kotlin Multiplatform modules, Kotlin and Java in Android and JVM modules (JSON score and survivors on changed lines). |
 | `run_stryker_js.py` | Diff-scoped StrykerJS run for TypeScript/JavaScript, same output and exit codes as `run_pit.py`. |
 | `verification_profile.py` | Prints the project's `mutation_threshold`, `baseline_branch` and `dotnet_root` (defaults merged with `verification-profile.json`). |
 | `shrink_images.py` | Small JPEG copies of screenshots for reading. |
