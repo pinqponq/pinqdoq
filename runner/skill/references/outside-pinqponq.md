@@ -56,5 +56,7 @@ Use the same templates (`templates/pr-bug.md`, `templates/pr-feature.md`) with t
 
 On a `forge: gitlab` machine, write the merge request in English: its title, its description (use the template's sections with English headings) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
 
+When the task has a ticket key (a Jira key such as `POS-17057`, from the task text or the owner), every commit subject and the merge request title start with `<key> | `, the way the repository's own commits do (`POS-17110 | Add pavo end of day menu to settings page`). Look for the key before the first commit; when the task text has none, check the repository's recent commits for the format and write the missing key under "İnsan gerekiyor" in the run report.
+
 ## After the work (implementation.md step 14, `case_update.py`)
 With `pinqponq_steps: false` there are no lesson PRs to pinqdoq and no Pinq Center updates. When a change request taught something general, write it under "İnsan gerekiyor" in the run report instead, as a suggestion for the owner.
