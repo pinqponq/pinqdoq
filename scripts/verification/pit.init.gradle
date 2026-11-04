@@ -1,5 +1,5 @@
 // Prints the JVM test runtime classpath (plus compiled outputs) of one Gradle module for run_pit.py.
-// -PpitModule names the module (default :composeApp). -PpitModuleKind says how to find its tests (default kmp):
+// -PpitModule names the module (default :composeApp). -PpitModuleKind picks the test task whose classpath is printed (default kmp):
 // - kmp: the "desktop" target when present, else the first JVM target.
 // - android: the unit test task of the -PpitAndroidVariant build variant (default debug), e.g. testDebugUnitTest.
 // - jvm: the "test" task.

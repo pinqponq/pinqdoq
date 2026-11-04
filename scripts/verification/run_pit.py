@@ -3,8 +3,8 @@
 
 Usage: run_pit.py <worktree> <base-ref> [--threshold PERCENT] [--lock TASK_KEY] [--android-variant VARIANT]
 Finds every Gradle module whose production code changed, runs PIT per module against that module's changed tests and
-prints one JSON summary over all of them. The plugins in the module's build file and its source folders decide its
-kind:
+prints one JSON summary over all of them. The plugins in the module's build file, its source folders and an
+AndroidManifest.xml in src/main decide its kind:
 - Kotlin Multiplatform (e.g. composeApp in an app, deveng-core in deveng-core-kmp): Kotlin files in
   src/<commonMain|desktopMain|jvmMain>/kotlin, tests in src/<commonTest|desktopTest|jvmTest>/kotlin, run on the desktop
   or first JVM target.
@@ -108,7 +108,7 @@ def changed_source_files(worktree, base):
 
 
 def module_kind(worktree, module_dir):
-    """The module kind from its build file's plugins and its source folders.
+    """The module kind from its build file's plugins, its source folders and an AndroidManifest.xml in src/main.
 
     Both are read because a convention plugin can hide the real plugin id from the build file.
     """
