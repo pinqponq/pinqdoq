@@ -76,6 +76,9 @@ MULTIPLATFORM_PLUGIN = re.compile(r"multiplatform", re.I)
 ANDROID_PLUGIN = re.compile(r"com\.android\.(application|library)|\bandroid[._-]?(application|library)\b|^\s*android\s*\{", re.I | re.M)
 ANDROID_MANIFEST = os.path.join("src", "main", "AndroidManifest.xml")
 DEFAULT_ANDROID_VARIANT = "debug"
+GRADLE_WRAPPER = "gradlew"
+CLASSPATH_PREFIX = "PITCP="
+MUTABLE_CODE_PREFIX = "PITCODE="
 
 
 def ensure_jars():
@@ -138,6 +141,17 @@ def source_dirs(worktree, module_dir, kind):
             for folder in LANGUAGE_FOLDERS[kind] if os.path.isdir(os.path.join(worktree, module_dir, "src", source_set, folder))]
 
 
+def printed_value(gradle_output, prefix):
+    """The value of the first `<prefix>…` line pit.init.gradle printed, or None when it printed none."""
+    return next((line[len(prefix):] for line in gradle_output.splitlines() if line.startswith(prefix)), None)
+
+
+def gradle_command(worktree):
+    """The Gradle wrapper call; a wrapper committed without the executable bit runs through `sh`."""
+    wrapper = os.path.join(worktree, GRADLE_WRAPPER)
+    return ["./" + GRADLE_WRAPPER] if os.access(wrapper, os.X_OK) else ["sh", GRADLE_WRAPPER]
+
+
 def gradle_path(module_dir):
     return ":" + module_dir.replace("/", ":") if module_dir else ":"
 
@@ -173,10 +187,11 @@ def test_classes(worktree, files):
 
 def run_module(worktree, module_dir, kind, android_variant, changed, tests, report_dir):
     """Runs PIT for one module; returns the mutations.xml path or an error text."""
-    gradle = sh(["./gradlew", "-q", "--init-script", INIT_SCRIPT, f"-PpitModule={gradle_path(module_dir)}", f"-PpitModuleKind={kind}",
+    gradle = sh(gradle_command(worktree) + ["-q", "--init-script", INIT_SCRIPT, f"-PpitModule={gradle_path(module_dir)}", f"-PpitModuleKind={kind}",
                  f"-PpitAndroidVariant={android_variant}", "--no-configuration-cache",
                  f"{gradle_path(module_dir).rstrip(':')}:printPitClasspath"], worktree)
-    classpath = next((l[len("PITCP="):] for l in gradle.stdout.splitlines() if l.startswith("PITCP=")), None)
+    classpath = printed_value(gradle.stdout, CLASSPATH_PREFIX)
+    mutable_code = printed_value(gradle.stdout, MUTABLE_CODE_PREFIX)
     if not classpath:
         return None, gradle.stdout[-2000:] + gradle.stderr[-2000:]
     targets = [".".join(package_and_class(worktree, p)) + "*" for p in changed]
@@ -187,6 +202,7 @@ def run_module(worktree, module_dir, kind, android_variant, changed, tests, repo
               "--reportDir", report_dir, "--sourceDirs", ",".join(source_dirs(worktree, module_dir, kind)),
               "--targetClasses", ",".join(targets), "--excludedClasses", "*Test*",
               "--targetTests", ",".join(tests), "--classPath", classpath,
+              *(["--mutableCodePaths", mutable_code.replace(":", ",")] if mutable_code else []),
               "--outputFormats", "XML", "--threads", "4", "--timestampedReports=false",
               "--timeoutConst", "8000",
               "--historyInputLocation", history_file, "--historyOutputLocation", history_file, "--jvmArgs", "-Xmx2g"], worktree)

@@ -26,15 +26,28 @@ allprojects {
             }
             if (!(pitModuleKind in ['android', 'jvm'])) throw new GradleException("Unknown pitModuleKind ${pitModuleKind}")
             def testTaskName = pitModuleKind == 'android' ? "test${pitAndroidVariant.capitalize()}UnitTest" : 'test'
-            def testTask = tasks.findByName(testTaskName)
-            if (testTask == null) throw new GradleException("${path} has no ${testTaskName} task for PIT")
-            // The test task's classpath is what its tests run with: compiled main and test classes, resources,
-            // dependencies and, on Android, the generated R classes and the mockable android.jar.
-            def testRuntimeClasspath = testTask.classpath
-            tasks.register('printPitClasspath') {
-                dependsOn testRuntimeClasspath
-                doLast {
-                    println 'PITCP=' + testRuntimeClasspath.files.join(':')
+            def module = project
+            // The Android plugin creates its variant tasks in its own afterEvaluate, which runs after this one.
+            gradle.projectsEvaluated {
+                def testTask = module.tasks.findByName(testTaskName)
+                if (testTask == null) throw new GradleException("${module.path} has no ${testTaskName} task for PIT")
+                // The test task's classpath is what its tests run with: compiled main and test classes, resources,
+                // dependencies and, on Android, the generated R classes and the mockable android.jar.
+                def testRuntimeClasspath = testTask.classpath
+                // On Android the test classpath holds the module's own classes only as a jar, which PIT does not
+                // mutate, so the compiler output folders are printed as the code to mutate.
+                def compileTaskNames = pitModuleKind == 'android'
+                        ? ["compile${pitAndroidVariant.capitalize()}Kotlin", "compile${pitAndroidVariant.capitalize()}JavaWithJavac"]
+                        : []
+                def mutableCode = module.files(compileTaskNames.collect { module.tasks.findByName(it) }
+                        .findAll { it != null && it.hasProperty('destinationDirectory') }
+                        .collect { it.destinationDirectory })
+                module.tasks.register('printPitClasspath') {
+                    dependsOn testRuntimeClasspath, mutableCode
+                    doLast {
+                        println 'PITCP=' + (mutableCode.files + testRuntimeClasspath.files).join(':')
+                        if (!mutableCode.isEmpty()) println 'PITCODE=' + mutableCode.files.join(':')
+                    }
                 }
             }
         }

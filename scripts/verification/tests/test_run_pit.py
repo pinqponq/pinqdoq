@@ -347,6 +347,33 @@ class SourceSetSelectionTest(unittest.TestCase):
             self.assertEqual(["shared/src/commonMain/kotlin", "shared/src/jvmMain/kotlin"], run_pit.source_dirs(worktree, "shared", "kmp"))
 
 
+class GradleCommandTest(unittest.TestCase):
+    def test_executable_wrapper_runs_directly(self):
+        with tempfile.TemporaryDirectory() as worktree:
+            Path(worktree, "gradlew").write_text("")
+            os.chmod(Path(worktree, "gradlew"), 0o755)
+
+            self.assertEqual(["./gradlew"], run_pit.gradle_command(worktree))
+
+    def test_wrapper_without_executable_bit_runs_through_sh(self):
+        with tempfile.TemporaryDirectory() as worktree:
+            Path(worktree, "gradlew").write_text("")
+            os.chmod(Path(worktree, "gradlew"), 0o644)
+
+            self.assertEqual(["sh", "gradlew"], run_pit.gradle_command(worktree))
+
+
+class PrintedValueTest(unittest.TestCase):
+    def test_reads_the_classpath_and_mutable_code_lines(self):
+        output = "Configuration on demand\nPITCP=/app/kotlin:/app/javac:/cache/junit.jar\nPITCODE=/app/kotlin:/app/javac\n"
+
+        self.assertEqual("/app/kotlin:/app/javac:/cache/junit.jar", run_pit.printed_value(output, run_pit.CLASSPATH_PREFIX))
+        self.assertEqual("/app/kotlin:/app/javac", run_pit.printed_value(output, run_pit.MUTABLE_CODE_PREFIX))
+
+    def test_missing_mutable_code_line_gives_none(self):
+        self.assertIsNone(run_pit.printed_value("PITCP=/app/classes\n", run_pit.MUTABLE_CODE_PREFIX))
+
+
 class JavaSourceTest(unittest.TestCase):
     def test_java_and_kotlin_test_files_give_their_class_names(self):
         with tempfile.TemporaryDirectory() as worktree:
