@@ -1,19 +1,40 @@
-// Prints the JVM test runtime classpath (plus compiled outputs) of one KMP module for run_pit.py.
-// The module comes from -PpitModule (default :composeApp); the JVM target is "desktop" when present, else the first JVM target.
+// Prints the JVM test runtime classpath (plus compiled outputs) of one Gradle module for run_pit.py.
+// -PpitModule names the module (default :composeApp). -PpitModuleKind says how to find its tests (default kmp):
+// - kmp: the "desktop" target when present, else the first JVM target.
+// - android: the unit test task of the -PpitAndroidVariant build variant (default debug), e.g. testDebugUnitTest.
+// - jvm: the "test" task.
 def pitModule = gradle.startParameter.projectProperties.get('pitModule') ?: ':composeApp'
+def pitModuleKind = gradle.startParameter.projectProperties.get('pitModuleKind') ?: 'kmp'
+def pitAndroidVariant = gradle.startParameter.projectProperties.get('pitAndroidVariant') ?: 'debug'
 allprojects {
     if (path == pitModule) {
         afterEvaluate {
-            def kmp = project.extensions.getByName('kotlin')
-            def jvmTarget = kmp.targets.findByName('desktop') ?: kmp.targets.find { it.platformType.name() == 'jvm' }
-            if (jvmTarget == null) throw new GradleException("${path} has no JVM target for PIT")
-            // Only file collections are captured, so the task also works where the configuration cache is on.
-            def compiledOutputs = files(jvmTarget.compilations.collect { it.output.allOutputs })
-            def testRuntimeClasspath = configurations.getByName("${jvmTarget.name}TestRuntimeClasspath")
+            if (pitModuleKind == 'kmp') {
+                def kmp = project.extensions.getByName('kotlin')
+                def jvmTarget = kmp.targets.findByName('desktop') ?: kmp.targets.find { it.platformType.name() == 'jvm' }
+                if (jvmTarget == null) throw new GradleException("${path} has no JVM target for PIT")
+                // Only file collections are captured, so the task also works where the configuration cache is on.
+                def compiledOutputs = files(jvmTarget.compilations.collect { it.output.allOutputs })
+                def testRuntimeClasspath = configurations.getByName("${jvmTarget.name}TestRuntimeClasspath")
+                tasks.register('printPitClasspath') {
+                    dependsOn "${jvmTarget.name}TestClasses"
+                    doLast {
+                        println 'PITCP=' + (compiledOutputs.files + testRuntimeClasspath.files).join(':')
+                    }
+                }
+                return
+            }
+            if (!(pitModuleKind in ['android', 'jvm'])) throw new GradleException("Unknown pitModuleKind ${pitModuleKind}")
+            def testTaskName = pitModuleKind == 'android' ? "test${pitAndroidVariant.capitalize()}UnitTest" : 'test'
+            def testTask = tasks.findByName(testTaskName)
+            if (testTask == null) throw new GradleException("${path} has no ${testTaskName} task for PIT")
+            // The test task's classpath is what its tests run with: compiled main and test classes, resources,
+            // dependencies and, on Android, the generated R classes and the mockable android.jar.
+            def testRuntimeClasspath = testTask.classpath
             tasks.register('printPitClasspath') {
-                dependsOn "${jvmTarget.name}TestClasses"
+                dependsOn testRuntimeClasspath
                 doLast {
-                    println 'PITCP=' + (compiledOutputs.files + testRuntimeClasspath.files).join(':')
+                    println 'PITCP=' + testRuntimeClasspath.files.join(':')
                 }
             }
         }

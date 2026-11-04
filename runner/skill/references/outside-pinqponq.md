@@ -37,7 +37,7 @@ With `pinqponq_steps: false`:
 - Step 3.2 applies only when the repository already has a `.pinq-doq` submodule.
 - **Rules:** read the repository's own `CLAUDE.md`, `AGENTS.md` and `.claude/rules/` in full, and follow the patterns of its existing code. The pinqdoq rules (`rules/common.md` and the stack rules in the pinqdoq checkout this skill is linked from) are general guidance only where the repository says nothing. Where the repository's code or rules do it differently, the repository wins.
 - Step 3.4 (pinq-doq skills) applies only to skills the repository has.
-- **Tests and mutation testing stay** (steps 3.5 and 3.6), with the repository's own test setup. When `run_pit.py` cannot run there (for example a module that is not a KMP module), say so in the MR's "Testler" with the error; do not skip it silently.
+- **Tests and mutation testing stay** (steps 3.5 and 3.6), with the repository's own test setup. `run_pit.py` covers Kotlin Multiplatform, Android and plain JVM Gradle modules. When it cannot run there (for example a Maven project or a module whose tests do not run on the JVM), say so in the MR's "Testler" with the error; do not skip it silently.
 - **Code review (step 3.9 and step 8):** `pin-review` cannot load `pinq_code-review` by name in such a repository. Tell it to read `skills/pinq_code-review/SKILL.md` in the pinqdoq checkout and follow it, with the repository's own rules as the rule set and the pinqdoq rules only where the repository has none. A finding must point at a repository rule, at a pinqdoq rule the repository does not contradict, or at a real defect (bug, crash, missing test for changed logic).
 
 ## Board, issue and assignee (SKILL.md steps 1–4, implementation.md steps 4 and 11)

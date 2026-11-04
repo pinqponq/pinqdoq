@@ -261,5 +261,122 @@ class UnitSuspendNullReturnTest(unittest.TestCase):
         self.assertEqual(1, counts["SURVIVED"])
 
 
+def make_module(worktree, module_dir, build_file=None, build_text="", folders=(), files=()):
+    module = Path(worktree, module_dir)
+    module.mkdir(parents=True, exist_ok=True)
+    if build_file:
+        Path(module, build_file).write_text(build_text)
+    for folder in folders:
+        Path(module, folder).mkdir(parents=True, exist_ok=True)
+    for path in files:
+        Path(module, path).parent.mkdir(parents=True, exist_ok=True)
+        Path(module, path).write_text("")
+
+
+class ModuleKindTest(unittest.TestCase):
+    def kind(self, **module):
+        with tempfile.TemporaryDirectory() as worktree:
+            make_module(worktree, "app", **module)
+            return run_pit.module_kind(worktree, "app")
+
+    def test_multiplatform_plugin_alias_is_kotlin_multiplatform(self):
+        self.assertEqual("kmp", self.kind(build_file="build.gradle.kts",
+                                          build_text="plugins {\n    alias(libs.plugins.kotlinMultiplatform)\n    alias(libs.plugins.androidApplication)\n}"))
+
+    def test_applied_android_application_plugin_is_android(self):
+        self.assertEqual("android", self.kind(build_file="build.gradle",
+                                              build_text="apply plugin: 'com.android.application'\napply plugin: 'kotlin-android'"))
+
+    def test_android_library_plugin_alias_is_android(self):
+        self.assertEqual("android", self.kind(build_file="build.gradle.kts", build_text="plugins { alias(libs.plugins.android.library) }"))
+
+    def test_kotlin_jvm_module_is_plain_jvm(self):
+        self.assertEqual("jvm", self.kind(build_file="build.gradle.kts", build_text='plugins { kotlin("jvm") }'))
+
+    def test_convention_plugin_with_multiplatform_folders_is_kotlin_multiplatform(self):
+        self.assertEqual("kmp", self.kind(build_file="build.gradle.kts", build_text='plugins { id("company.library") }',
+                                          folders=("src/commonMain/kotlin",)))
+
+    def test_module_without_build_file_and_with_android_manifest_is_android(self):
+        self.assertEqual("android", self.kind(files=("src/main/AndroidManifest.xml",)))
+
+    def test_module_without_build_file_or_android_manifest_is_plain_jvm(self):
+        self.assertEqual("jvm", self.kind(folders=("src/main/java",)))
+
+
+class SourceSetSelectionTest(unittest.TestCase):
+    PATHS = [
+        "composeApp/src/commonMain/kotlin/feature/Login.kt",
+        "composeApp/src/desktopTest/kotlin/feature/LoginTest.kt",
+        "app/src/main/java/com/example/Plate.java",
+        "app/src/main/java/com/example/Recovery.kt",
+        "app/src/main/kotlin/com/example/Format.kt",
+        "app/src/test/java/com/example/PlateTest.java",
+        "app/src/emulator/java/com/example/FakeTerminal.kt",
+        "app/src/androidTest/java/com/example/PlateUiTest.kt",
+        "app/src/main/java/com/example/notes.txt",
+        "composeApp/src/androidMain/kotlin/feature/Platform.kt",
+        "composeApp/src/commonMain/java/feature/Legacy.java",
+    ]
+
+    def test_kotlin_multiplatform_takes_only_kotlin_in_its_jvm_source_sets(self):
+        self.assertEqual(["composeApp/src/commonMain/kotlin/feature/Login.kt"],
+                         run_pit.files_in_source_sets(self.PATHS, "kmp", run_pit.MAIN_SOURCE_SETS["kmp"]))
+        self.assertEqual(["composeApp/src/desktopTest/kotlin/feature/LoginTest.kt"],
+                         run_pit.files_in_source_sets(self.PATHS, "kmp", run_pit.TEST_SOURCE_SETS["kmp"]))
+
+    def test_android_takes_java_and_kotlin_from_main_and_test(self):
+        self.assertEqual(["app/src/main/java/com/example/Plate.java", "app/src/main/java/com/example/Recovery.kt",
+                          "app/src/main/kotlin/com/example/Format.kt"],
+                         run_pit.files_in_source_sets(self.PATHS, "android", run_pit.MAIN_SOURCE_SETS["android"]))
+        self.assertEqual(["app/src/test/java/com/example/PlateTest.java"],
+                         run_pit.files_in_source_sets(self.PATHS, "android", run_pit.TEST_SOURCE_SETS["android"]))
+
+    def test_plain_jvm_takes_the_same_folders_as_android(self):
+        self.assertEqual(run_pit.files_in_source_sets(self.PATHS, "android", run_pit.MAIN_SOURCE_SETS["android"]),
+                         run_pit.files_in_source_sets(self.PATHS, "jvm", run_pit.MAIN_SOURCE_SETS["jvm"]))
+        self.assertEqual(run_pit.files_in_source_sets(self.PATHS, "android", run_pit.TEST_SOURCE_SETS["android"]),
+                         run_pit.files_in_source_sets(self.PATHS, "jvm", run_pit.TEST_SOURCE_SETS["jvm"]))
+
+    def test_source_dirs_list_only_existing_folders_of_the_module_type(self):
+        with tempfile.TemporaryDirectory() as worktree:
+            make_module(worktree, "app", folders=("src/main/java", "src/commonMain/kotlin"))
+            make_module(worktree, "shared", folders=("src/commonMain/kotlin", "src/jvmMain/kotlin", "src/main/java"))
+
+            self.assertEqual(["app/src/main/java"], run_pit.source_dirs(worktree, "app", "android"))
+            self.assertEqual(["shared/src/commonMain/kotlin", "shared/src/jvmMain/kotlin"], run_pit.source_dirs(worktree, "shared", "kmp"))
+
+
+class JavaSourceTest(unittest.TestCase):
+    def test_java_and_kotlin_test_files_give_their_class_names(self):
+        with tempfile.TemporaryDirectory() as worktree:
+            Path(worktree, "PlateTest.java").write_text("package com.example.plate;\n\npublic class PlateTest {}\n")
+            Path(worktree, "RecoveryTest.kt").write_text("package com.example.recovery\n\nclass RecoveryTest\n")
+            Path(worktree, "Plate.java").write_text("package com.example.plate;\n")
+
+            self.assertEqual(["com.example.plate.PlateTest", "com.example.recovery.RecoveryTest"],
+                             run_pit.test_classes(worktree, ["PlateTest.java", "RecoveryTest.kt", "Plate.java"]))
+
+    def test_mutations_in_a_java_file_count_on_its_changed_lines(self):
+        source = "package com.example;\n\npublic final class Plate {\n    static boolean same(String a, String b) {\n        return a.equals(b);\n    }\n}\n"
+        with tempfile.TemporaryDirectory() as worktree:
+            Path(worktree, "Plate.java").write_text(source)
+            report = Path(worktree, "mutations.xml")
+            report.write_text("<mutations>" + "".join(
+                f'<mutation detected="false" status="{status}"><sourceFile>Plate.java</sourceFile>'
+                f"<mutatedClass>com.example.Plate</mutatedClass><mutatedMethod>same</mutatedMethod>"
+                f"<methodDescription>(Ljava/lang/String;Ljava/lang/String;)Z</methodDescription><lineNumber>{line}</lineNumber>"
+                f"<mutator>org.pitest.mutationtest.engine.gregor.mutators.returns.BooleanTrueReturnValsMutator</mutator>"
+                f"<description>replaced boolean return with true for com/example/Plate::same</description></mutation>"
+                for status, line in (("KILLED", 5), ("SURVIVED", 5), ("SURVIVED", 7))) + "</mutations>")
+            counts, survivors = collections.Counter(), []
+
+            run_pit.count_mutations(worktree, str(report), {"Plate.java": {5}}, counts, survivors)
+
+        self.assertEqual(1, counts["KILLED"])
+        self.assertEqual(1, counts["SURVIVED"])
+        self.assertEqual([("Plate.java", 5)], [(survivor["file"], survivor["line"]) for survivor in survivors])
+
+
 if __name__ == "__main__":
     unittest.main()
