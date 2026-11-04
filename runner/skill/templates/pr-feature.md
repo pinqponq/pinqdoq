@@ -1,7 +1,7 @@
 Closes #<n>
 
 ## Özet
-<1–3 sentences: what the user can do now.>
+<1–3 sentences in plain words for a reader who has not seen the task: what the user can do now and which tickets it covers.>
 
 ## Değişiklikler
 - <2–5 bullets, behaviour level>
@@ -21,7 +21,8 @@ Closes #<n>
 <UI change only; omit otherwise. Paste the output of `ui_review_report.py section` from the last round.>
 
 ## Testler
-- `<TestClass>`: <what it proves, one line each>
+<result lines only, never the full test list>
+- `<TestClass>`: <what it proves, one line each, at most 5>
 - `<exact command>` → <result>
 - Mutation (PIT, değişen satırlar): <skor>% (<öldürülen>/<toplam>); kalan: <dosya:satır → tek satır gerekçe, yoksa "yok">
 
