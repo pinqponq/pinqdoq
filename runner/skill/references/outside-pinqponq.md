@@ -54,17 +54,7 @@ On a `forge: gitlab` machine, do not create a `task-runner-media` branch. Upload
 ## The MR body (implementation.md step 10)
 Use the same templates (`templates/pr-bug.md`, `templates/pr-feature.md`) with these changes: no `Closes #<n>` line for a `local/…` task, no pinqloq sections (see "Devices and test accounts"), and "Notlar" ends as "Merging" says.
 
-On a `forge: gitlab` machine, write the merge request in English: its title, its description (the six sections below, with English headings) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
-
-The general rule in implementation.md step 10 applies here too: the description is a short summary for people who decide, not a log of the work. Reviewers read it in a minute. On a `forge: gitlab` machine write only these sections, in this order, and keep each short:
-1. **Summary:** two or three sentences. What the merge request delivers and which tickets it covers.
-2. **What changes for the user:** a few plain bullets per ticket. Say what the user sees and does. Name no file, class, function or status code.
-3. **Screenshots:** the few images that show the change best, then the video links.
-4. **Open questions:** each one in a sentence or two, with the options. Put the questions the owner or product must answer first.
-5. **Not done on purpose:** one line per item, with the reason.
-6. **Verification:** the test result and whether the build passes, in at most three bullets. Name known failures that also fail on the base branch.
-
-Do not add decision tables, review-round notes, full test lists, mutation percentages or a collapsed "details" block. Those belong in the run report for the owner. Write for a reader who has not seen the task text or the chat.
+On a `forge: gitlab` machine, write the merge request in English: its title, its description (the template's sections, in the template's order, with English headings: Summary, Changes, Open questions, Not done on purpose, Screenshots and so on) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
 
 When the task has a ticket key (a Jira key such as `POS-17057`, from the task text or the owner), every commit subject and the merge request title start with `<key> | `, the way the repository's own commits do (`POS-17110 | Add pavo end of day menu to settings page`). Look for the key before the first commit; when the task text has none, check the repository's recent commits for the format and write the missing key under "İnsan gerekiyor" in the run report.
 

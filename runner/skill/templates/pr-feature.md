@@ -6,6 +6,12 @@ Closes #<n>
 ## Değişiklikler
 - <2–5 bullets, behaviour level>
 
+## Açık sorular
+<only if the owner or product must answer something, one or two sentences each with the options; omit otherwise>
+
+## Bilerek yapılmayanlar
+<only if something the task could suggest was left out, one line each with the reason; omit otherwise>
+
 ## Test videosu
 - Android: <link>
 - iOS: <link, if the change touches shared UI>

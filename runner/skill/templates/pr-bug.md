@@ -6,6 +6,12 @@ Closes #<n>
 ## Çözüm
 - <2–4 bullets, behaviour level, not a file list>
 
+## Açık sorular
+<only if the owner or product must answer something, one or two sentences each with the options; omit otherwise>
+
+## Bilerek yapılmayanlar
+<only if something the task could suggest was left out, one line each with the reason; omit otherwise>
+
 ## pinqloq: önce
 <incident time (UTC) + the query used, one table, max 5 rows>
 
