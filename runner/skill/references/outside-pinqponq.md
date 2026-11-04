@@ -54,7 +54,7 @@ On a `forge: gitlab` machine, do not create a `task-runner-media` branch. Upload
 ## The MR body (implementation.md step 10)
 Use the same templates (`templates/pr-bug.md`, `templates/pr-feature.md`) with these changes: no `Closes #<n>` line for a `local/…` task, no pinqloq sections (see "Devices and test accounts"), and "Notlar" ends as "Merging" says.
 
-On a `forge: gitlab` machine, write the merge request in English: its title, its description (use the template's sections with English headings) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
+On a `forge: gitlab` machine, write the merge request in English: its title, its description (the template's sections, in the template's order, with English headings: Summary, Changes, Open questions, Not done on purpose, Screenshots and so on) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
 
 When the task has a ticket key (a Jira key such as `POS-17057`, from the task text or the owner), every commit subject and the merge request title start with `<key> | `, the way the repository's own commits do (`POS-17110 | Add pavo end of day menu to settings page`). Look for the key before the first commit; when the task text has none, check the repository's recent commits for the format and write the missing key under "İnsan gerekiyor" in the run report.
 
