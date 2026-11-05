@@ -151,6 +151,7 @@ PostgresErrorCodes.ForeignKeyViolation
 - A pull request that adds or changes a `pinqnuqets` package lists, for each package, what the package kept, what was left in the product, and why.
 - Reviewers: a product-specific constant or default in a `pinqnuqets` change is a blocker.
 - A package that targets several frameworks is tested on every one of them before the pull request: install the runtime of each `TargetFrameworks` entry and run `dotnet test` without `-f`. A green run on the newest runtime says nothing about the oldest one; for example, a `DispatchProxy` test double over a large SDK interface fails only on .NET 8.
+- A package may compile against the lowest major of a dependency that ships one major per runtime (EF Core, ASP.NET Core) only when the tests prove it works on the higher majors. The test project of each target framework runs on the dependency major that an application on that framework uses, not on the major the package was built against. A newer major can change the types of a public method: a package built against EF Core 8 throws `TypeLoadException` from `ExecuteUpdateAsync` at run time in an application on EF Core 10. When that run fails, build that target framework against its own major (`VersionOverride` per target framework).
 
 ---
 
