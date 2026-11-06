@@ -29,6 +29,7 @@ pinq-doq/
     vault-dev-setup/            get a developer machine ready to run a project that already reads from Vault (vault_config.py check)
     r2-upload-setup/            photo and video upload through Cloudflare R2: bucket, Vault, .NET backend, KMP client, checks
     new-product/                start a new product from kmp-app-template + the backend template (via scripts/new_product.py)
+    nexus-packages/             download our Maven libraries from the company Nexus, or move a library's publishing there from Maven Central
   scripts/        → NOT copied; run in place via CLI (KMP code generators, deliver.py the copy helper, vault_config.py and storage_keys.py for Vault, new_product.py for templates)
     verification/   build, test and mutation wrappers behind the pin-test subagent (usable without the runner)
   references/     → NOT copied; read on demand by path
@@ -45,6 +46,8 @@ pinq-doq/
       e2e-playwright.md         Playwright setup for web projects: config, stored sign-in, run-flow script, examples
     templates/
       new-product-starter.md    mobile and backend templates, template.json manifest, product file
+    packages/
+      nexus.md                  where each package is published and downloaded from: Nexus repositories, accounts, Gradle and NuGet setup
     widget/
       widget-setup.md           home screen widget setup with deveng-widget + production lessons
       ios/                      Swift templates for the widget extension and the app's reload helper
@@ -78,6 +81,7 @@ You don't run a command to use a skill. After `integrate`/`update` copies them i
 | "move secrets to Vault", "read appsettings from Vault", "set up Vault configuration for this project" | `vault-config-setup` |
 | "vault hesabım var, projeyi ayağa kaldırmak istiyorum", "run this project locally", "vault login", "Vault rejected the token" | `vault-dev-setup` |
 | "add photo upload", "video upload", "R2 upload", "presign", "foto ve video yükleme" | `r2-upload-setup` |
+| "nexus'a taşı", "publish to Nexus instead of Maven Central", "Could not find global.deveng", "set up Nexus" | `nexus-packages` |
 
 The full, authoritative trigger list for each skill lives in the `description` at the top of its `SKILL.md` — that's the single source of truth, so this table stays a quick taste, not a copy to keep in sync.
 
