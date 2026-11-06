@@ -130,3 +130,5 @@ includeBuild("../deveng-core-kmp") {
     }
 }
 ```
+
+Our Maven libraries (`global.deveng:*`, `io.pinqponq:*`) are published to the company Nexus, not to Maven Central, and a project downloads them from Nexus with `exclusiveContent` in `settings.gradle.kts`. Credentials come only from the `nexusUsername` and `nexusPassword` Gradle properties (user-wide `~/.gradle/gradle.properties` or CI secrets), never from a file in the repository. Setup and snippets: `.pinq-doq/references/packages/nexus.md`; to apply them, use the `pinq_nexus-packages` skill.
