@@ -45,14 +45,15 @@ A `local/…` task has no card, no issue and no assignee, and a queue-only machi
 
 ## Devices and test accounts (implementation.md step 7)
 - Device proof stays mandatory for every change that shows on screen. The project's `maestro/RUNNER.md` names the devices, the accounts and the state to restore. A project without one: take what you need from its `CLAUDE.md`, its `maestro/` flows and the task description. When the app needs a sign-in that none of these give, set the task `needs_human` with "test hesabı yok: <repo>". Never use `~/.claude/pinqloq-task-runner/test-accounts.json` for a project outside PinqPonq: those accounts belong to PinqPonq's services.
-- **pinqloq checks do not apply** with `pinqponq_steps: false`: the projects do not send logs there. Leave out the template's pinqloq sections and write `pinqloq: bu proje pinqloq'a log göndermiyor` in "Notlar". This is not `verification_blocked`.
+- **Project notes outside the repository:** some teams do not want a `maestro/RUNNER.md` in their repository. Their device and log facts are then in `project-notes.md` in the machine's `runner_dir`, which is local and never committed. Read it before the first device action. Where it and `maestro/RUNNER.md` both cover a project, the repository file wins.
+- **pinqloq checks** apply when the project notes say that the project sends logs to pinqloq. The notes then name the pinqloq server, its collections and how to build an APK that sends the logs. Run the checks of implementation.md step 7 against that server yourself, because `pin-device` only has the `mcp__pinqloq__*` tools. Keep the template's pinqloq sections. When the notes say nothing about logs, the project does not send logs there: leave out the template's pinqloq sections and write `pinqloq: bu proje pinqloq'a log göndermiyor` in "Notlar". This is not `verification_blocked`.
 - The couple lock and the couple restore (`--couple`) are PinqPonq's; a project outside PinqPonq never needs them.
 
 ## Evidence (implementation.md step 9)
 On a `forge: gitlab` machine, do not create a `task-runner-media` branch. Upload each screenshot and video with `forge.py upload <repo_dir> <file>`; it prints the file's address in the project (`/uploads/…`). In the MR body, show screenshots as `<img alt="..." src="<address>" width="240">` side by side on one line, and videos as links.
 
 ## The MR body (implementation.md step 10)
-Use the same templates (`templates/pr-bug.md`, `templates/pr-feature.md`) with these changes: no `Closes #<n>` line for a `local/…` task, no pinqloq sections (see "Devices and test accounts"), and "Notlar" ends as "Merging" says.
+Use the same templates (`templates/pr-bug.md`, `templates/pr-feature.md`) with these changes: no `Closes #<n>` line for a `local/…` task, pinqloq sections only when "Devices and test accounts" says they apply, and "Notlar" ends as "Merging" says.
 
 On a `forge: gitlab` machine, write the merge request in English: its title, its description (the template's sections, in the template's order, with English headings: Summary, Changes, Open questions, Not done on purpose, Screenshots and so on) and the branch name. The team there does not use Turkish in merge requests (owner, 2026-11-04). Only text the app itself shows on screen stays as the app shows it, in quotes. The run report for the owner stays in Turkish.
 
