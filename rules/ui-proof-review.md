@@ -33,6 +33,7 @@ The reviewer answers every row with `ok`, `defect` or `not-shown`, and says in o
 | `PREVIEWS` | Thumbnails and previews that are blank, black, tiny or cropped so the content cannot be recognised. |
 | `TEXT_FIT` | Text that is cut off, overlaps another element or runs out of its container. |
 | `SPACING` | Spacing, corner radius and elevation that differ from the neighbouring screens or from the rest of the app. |
+| `DENSITY` | A dialog or popup that reads like a paragraph. Each one has a short title, at most one short line of text, the key facts as labelled rows, a status icon or colour, and one primary button with at most one secondary. The popups of one feature share the same layout, so they look like one family. |
 | `CONSISTENCY` | The screen looks different from the reference product or the deveng-core components it should reuse (menu, dialog, bubble, button shape and weight). |
 | `THEMES` | Light and dark mode. When the proof shows one mode only, the check is `not-shown`, and a screen that sets its own colours without tokens is a `COLOURS` defect. |
 | `TEXT_SIZE` | Small and large font. When the proof shows one size only, the check is `not-shown`. Mechanical large-font checks are in the section below. |
