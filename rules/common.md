@@ -87,7 +87,7 @@ This file always loads. Stack-specific rules load automatically only when you to
 - Never hardcode tunable or performance-sensitive values. Use named constants or config.
 - Never use inline strings or numeric codes for domain-meaningful values. Use enums or constants.
 - Never assign hardcoded numeric values to variables ending with `Id`. If a static value is needed, it should be an enum or well-named constant.
-- Before adding a request parameter, option or code path, check whether existing configuration already gives the same result (for example, a test server that writes to its own collection, queue or database name). If it does, document that setup and add no code for it.
+- When a change can be made both by adding a new request parameter, option or code path and by using the existing configuration, do not choose between them yourself. Ask the project owner, and say in the question how it works now and what the alternative is. Example: "Now each server reads its target name from configuration. The alternative is a new request parameter that selects the target. Which one?"
 
 ---
 
