@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""Diff-scoped PIT mutation run for a KMP worktree (desktop/JVM tests).
+"""Diff-scoped PIT mutation run for the JVM tests of Kotlin Multiplatform, Android and plain JVM Gradle modules.
 
-Usage: run_pit.py <worktree> <base-ref> [--threshold PERCENT] [--lock TASK_KEY]
-Finds every Gradle module whose commonMain/desktopMain/jvmMain Kotlin changed (e.g. composeApp in an app,
-deveng-core in deveng-core-kmp), runs PIT per module against that module's changed tests and prints one JSON
-summary over all of them. Results are kept per module in build/pit-history, so a re-run after adding tests only re-tests
+Usage: run_pit.py <worktree> <base-ref> [--threshold PERCENT] [--lock TASK_KEY] [--android-variant VARIANT]
+Finds every Gradle module whose production code changed, runs PIT per module against that module's changed tests and
+prints one JSON summary over all of them. The plugins in the module's build file, its source folders and an
+AndroidManifest.xml in src/main decide its kind:
+- Kotlin Multiplatform (e.g. composeApp in an app, deveng-core in deveng-core-kmp): Kotlin files in
+  src/<commonMain|desktopMain|jvmMain>/kotlin, tests in src/<commonTest|desktopTest|jvmTest>/kotlin, run on the desktop
+  or first JVM target.
+- Android (an application or library module): Kotlin and Java files in src/main/<java|kotlin>, tests in
+  src/test/<java|kotlin>, run on the unit test classpath of the debug variant (`--android-variant` picks another one).
+- Plain JVM: the same folders as Android, run on the classpath of the `test` task.
+
+Results are kept per module in build/pit-history, so a re-run after adding tests only re-tests
 mutants whose class or covering tests changed (PIT's incremental analysis; scores stay identical to a full run); exit 1 when the score is below the threshold. Each run is recorded in timings.jsonl.
 """
 import argparse, collections, json, os, re, subprocess, sys, urllib.request
@@ -57,9 +65,23 @@ STRING_LITERAL = re.compile(r'"(?:[^"\\]|\\.)*"')
 LINE_COMMENT = re.compile(r"//.*$")
 SERIALIZER_CLASS_SUFFIX = "$$serializer"
 SERIALIZER_METHOD_PREFIX = "write$Self"
-MAIN_SOURCE_SETS = ("commonMain", "desktopMain", "jvmMain")
-TEST_SOURCE_SETS = ("commonTest", "desktopTest", "jvmTest")
-SOURCE_SET_PATH = re.compile(r"^(?:(.+)/)?src/([A-Za-z]+)/kotlin/")
+KOTLIN_MULTIPLATFORM_MODULE = "kmp"
+ANDROID_MODULE = "android"
+JVM_MODULE = "jvm"
+MAIN_SOURCE_SETS = {KOTLIN_MULTIPLATFORM_MODULE: ("commonMain", "desktopMain", "jvmMain"), ANDROID_MODULE: ("main",), JVM_MODULE: ("main",)}
+TEST_SOURCE_SETS = {KOTLIN_MULTIPLATFORM_MODULE: ("commonTest", "desktopTest", "jvmTest"), ANDROID_MODULE: ("test",), JVM_MODULE: ("test",)}
+LANGUAGE_FOLDERS = {KOTLIN_MULTIPLATFORM_MODULE: ("kotlin",), ANDROID_MODULE: ("java", "kotlin"), JVM_MODULE: ("java", "kotlin")}
+SOURCE_EXTENSIONS = {KOTLIN_MULTIPLATFORM_MODULE: (".kt",), ANDROID_MODULE: (".kt", ".java"), JVM_MODULE: (".kt", ".java")}
+TEST_FILE_SUFFIXES = ("Test.kt", "Test.java")
+SOURCE_SET_PATH = re.compile(r"^(?:(.+)/)?src/([A-Za-z]+)/(java|kotlin)/")
+BUILD_FILE_NAMES = ("build.gradle.kts", "build.gradle")
+MULTIPLATFORM_PLUGIN = re.compile(r'kotlin\(\s*"multiplatform"\s*\)|org\.jetbrains\.kotlin\.multiplatform|\bkotlin[._-]?multiplatform\b', re.I)
+ANDROID_PLUGIN = re.compile(r"com\.android\.(application|library)|\bandroid[._-]?(application|library)\b|^\s*android\s*\{", re.I | re.M)
+ANDROID_MANIFEST = os.path.join("src", "main", "AndroidManifest.xml")
+DEFAULT_ANDROID_VARIANT = "debug"
+GRADLE_WRAPPER = "gradlew"
+CLASSPATH_PREFIX = "PITCP="
+MUTABLE_CODE_PREFIX = "PITCODE="
 
 
 def ensure_jars():
@@ -74,14 +96,62 @@ def sh(cmd, cwd, **kw):
     return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, **kw)
 
 
-def changed_kotlin_files(worktree, base, source_sets):
+def changed_source_files(worktree, base):
+    """Added or modified files under some module's src/<source set>/<java|kotlin>/, grouped by module folder."""
     files = sh(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"], worktree).stdout.split()
     by_module = collections.defaultdict(list)
     for path in files:
         match = SOURCE_SET_PATH.match(path)
-        if path.endswith(".kt") and match and match.group(2) in source_sets:
+        if match:
             by_module[match.group(1) or ""].append(path)
     return by_module
+
+
+def module_kind(worktree, module_dir):
+    """The module kind from its build file's plugins, its source folders and an AndroidManifest.xml in src/main.
+
+    The source folders and the manifest are read too, because a convention plugin can hide the real plugin id from the
+    build file.
+    """
+    module_path = os.path.join(worktree, module_dir)
+    build_text = ""
+    for name in BUILD_FILE_NAMES:
+        if os.path.isfile(os.path.join(module_path, name)):
+            with open(os.path.join(module_path, name)) as file:
+                build_text = file.read()
+            break
+    has_multiplatform_folder = any(os.path.isdir(os.path.join(module_path, "src", source_set))
+                                   for source_set in MAIN_SOURCE_SETS[KOTLIN_MULTIPLATFORM_MODULE])
+    if MULTIPLATFORM_PLUGIN.search(build_text) or has_multiplatform_folder:
+        return KOTLIN_MULTIPLATFORM_MODULE
+    if ANDROID_PLUGIN.search(build_text) or os.path.isfile(os.path.join(module_path, ANDROID_MANIFEST)):
+        return ANDROID_MODULE
+    return JVM_MODULE
+
+
+def files_in_source_sets(paths, kind, source_sets):
+    selected = []
+    for path in paths:
+        match = SOURCE_SET_PATH.match(path)
+        if (match and match.group(2) in source_sets and match.group(3) in LANGUAGE_FOLDERS[kind]
+                and path.endswith(SOURCE_EXTENSIONS[kind])):
+            selected.append(path)
+    return selected
+
+
+def source_directories(worktree, module_dir, kind):
+    return [os.path.join(module_dir, "src", source_set, folder) for source_set in MAIN_SOURCE_SETS[kind]
+            for folder in LANGUAGE_FOLDERS[kind] if os.path.isdir(os.path.join(worktree, module_dir, "src", source_set, folder))]
+
+
+def printed_value(gradle_output, prefix):
+    return next((line[len(prefix):] for line in gradle_output.splitlines() if line.startswith(prefix)), None)
+
+
+def gradle_command(worktree):
+    """The Gradle wrapper call; a wrapper committed without the executable bit runs through `sh`."""
+    wrapper = os.path.join(worktree, GRADLE_WRAPPER)
+    return ["./" + GRADLE_WRAPPER] if os.access(wrapper, os.X_OK) else ["sh", GRADLE_WRAPPER]
 
 
 def gradle_path(module_dir):
@@ -102,37 +172,39 @@ def changed_lines(worktree, base, files):
 
 
 def package_and_class(worktree, path):
-    text = open(os.path.join(worktree, path)).read()
+    with open(os.path.join(worktree, path)) as file:
+        text = file.read()
     package = re.search(r"^package\s+([\w.]+)", text, re.M).group(1)
-    return package, os.path.basename(path)[:-3]
+    return package, os.path.splitext(os.path.basename(path))[0]
 
 
 def test_classes(worktree, files):
     names = []
     for path in files:
-        if path.endswith("Test.kt"):
+        if path.endswith(TEST_FILE_SUFFIXES):
             package, cls = package_and_class(worktree, path)
             names.append(f"{package}.{cls}")
     return names
 
 
-def run_module(worktree, module_dir, changed, tests, report_dir):
+def run_module(worktree, module_dir, kind, android_variant, changed, tests, report_dir):
     """Runs PIT for one module; returns the mutations.xml path or an error text."""
-    gradle = sh(["./gradlew", "-q", "--init-script", INIT_SCRIPT, f"-PpitModule={gradle_path(module_dir)}", "--no-configuration-cache",
+    gradle = sh(gradle_command(worktree) + ["-q", "--init-script", INIT_SCRIPT, f"-PpitModule={gradle_path(module_dir)}", f"-PpitModuleKind={kind}",
+                 f"-PpitAndroidVariant={android_variant}", "--no-configuration-cache",
                  f"{gradle_path(module_dir).rstrip(':')}:printPitClasspath"], worktree)
-    classpath = next((l[len("PITCP="):] for l in gradle.stdout.splitlines() if l.startswith("PITCP=")), None)
+    classpath = printed_value(gradle.stdout, CLASSPATH_PREFIX)
+    mutable_code = printed_value(gradle.stdout, MUTABLE_CODE_PREFIX)
     if not classpath:
         return None, gradle.stdout[-2000:] + gradle.stderr[-2000:]
     targets = [".".join(package_and_class(worktree, p)) + "*" for p in changed]
-    source_dirs = ",".join(os.path.join(module_dir, "src", source_set, "kotlin") for source_set in MAIN_SOURCE_SETS
-                           if os.path.isdir(os.path.join(worktree, module_dir, "src", source_set, "kotlin")))
     history_file = os.path.join(worktree, "build", "pit-history", (module_dir.replace("/", "-") or "root") + ".bin")
     os.makedirs(os.path.dirname(history_file), exist_ok=True)
     jars = ":".join(os.path.join(PIT_DIR, j) for j in os.listdir(PIT_DIR) if j.endswith(".jar"))
     run = sh(["java", "-cp", f"{jars}:{classpath}", "org.pitest.mutationtest.commandline.MutationCoverageReport",
-              "--reportDir", report_dir, "--sourceDirs", source_dirs,
+              "--reportDir", report_dir, "--sourceDirs", ",".join(source_directories(worktree, module_dir, kind)),
               "--targetClasses", ",".join(targets), "--excludedClasses", "*Test*",
               "--targetTests", ",".join(tests), "--classPath", classpath,
+              *(["--mutableCodePaths", mutable_code.replace(":", ",")] if mutable_code else []),
               "--outputFormats", "XML", "--threads", "4", "--timestampedReports=false",
               "--timeoutConst", "8000",
               "--historyInputLocation", history_file, "--historyOutputLocation", history_file, "--jvmArgs", "-Xmx2g"], worktree)
@@ -285,24 +357,27 @@ def main():
     parser.add_argument("base")
     parser.add_argument("--threshold", type=float, help="defaults to the verification profile's mutation_threshold")
     parser.add_argument("--lock")
+    parser.add_argument("--android-variant", default=DEFAULT_ANDROID_VARIANT, help="Android build variant whose unit tests PIT runs")
     args = parser.parse_args()
     worktree = os.path.abspath(args.worktree)
     args.threshold = verification_profile.mutation_threshold(worktree, args.threshold)
     android_sdk.ensure_android_sdk_environment()
     ensure_jars()
 
-    production_by_module = changed_kotlin_files(worktree, args.base, MAIN_SOURCE_SETS)
-    tests_by_module = changed_kotlin_files(worktree, args.base, TEST_SOURCE_SETS)
     counts = collections.Counter()
     survivors, modules, skipped = [], [], {}
-    for module_dir, production_files in sorted(production_by_module.items()):
+    for module_dir, paths in sorted(changed_source_files(worktree, args.base).items()):
+        kind = module_kind(worktree, module_dir)
+        production_files = files_in_source_sets(paths, kind, MAIN_SOURCE_SETS[kind])
+        if not production_files:
+            continue
         changed = changed_lines(worktree, args.base, production_files)
-        tests = test_classes(worktree, tests_by_module.get(module_dir, []))
+        tests = test_classes(worktree, files_in_source_sets(paths, kind, TEST_SOURCE_SETS[kind]))
         if not changed or not tests:
             skipped[module_dir or "."] = "no changed lines" if not changed else "no changed tests"
             continue
         report_dir = os.path.join(worktree, "build", "pit-report", module_dir.replace("/", "-") or "root")
-        mutations, error = run_module(worktree, module_dir, changed, tests, report_dir)
+        mutations, error = run_module(worktree, module_dir, kind, args.android_variant, changed, tests, report_dir)
         if error:
             print(f"PIT failed for {module_dir or '.'}:", error, file=sys.stderr)
             return 2
