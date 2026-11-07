@@ -58,6 +58,9 @@ SOURCE_CONDITION = re.compile(
     r"|distinctBy|repeat|reduce|reduceOrNull|reduceIndexed|fold|foldIndexed|zip|use|orEmpty|isEmpty|isBlank|isNotEmpty"
     r"|isNotBlank|isNullOrEmpty|isNullOrBlank|ifEmpty|ifBlank|getOrElse|getOrPut|getOrDefault|getOrNull|getOrThrow"
     r"|recover|recoverCatching|mapCatching|onSuccess|onFailure|exceptionOrNull)\s*(?:<(?:[^<>]|<[^<>]*>)*>)?\s*[({]")
+# The arrow of a declared function type, as in `onFailure: (Throwable) -> Unit = {}`, is a type, not a branch. A `when`
+# branch or a lambda arrow does not follow a type annotation's colon.
+FUNCTION_TYPE_ARROW = re.compile(r":\s*(?:@\w+\s*)?(?:suspend\s*)?\([^()&|=<>!?]*\)\s*->")
 CONTINUED_CONDITION = re.compile(r"(&&|\|\||\?:)\s*$|\b(if|when|while)\b.*\(\s*$")
 STRING_TEMPLATE_EXPRESSION = "${"
 CHAR_LITERAL = re.compile(r"'(?:[^'\\]|\\.)'")
@@ -251,7 +254,8 @@ def source_line_has_condition(source, line):
     if STRING_TEMPLATE_EXPRESSION in text:
         return True
     previous_code = code_without_strings_and_comments(lines[line - 2]) if line > 1 else ""
-    return bool(SOURCE_CONDITION.search(code_without_strings_and_comments(text)) or CONTINUED_CONDITION.search(previous_code))
+    code = FUNCTION_TYPE_ARROW.sub(":", code_without_strings_and_comments(text))
+    return bool(SOURCE_CONDITION.search(code) or CONTINUED_CONDITION.search(previous_code))
 
 
 def is_generated_conditional(mutation, description, composables, source):

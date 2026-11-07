@@ -55,7 +55,10 @@ NULL_RETURN = "org.pitest.mutationtest.engine.gregor.mutators.returns.NullReturn
 SCREEN_SOURCE = """
 @Composable
 fun ChatScreen(
-    viewModel: ChatViewModel = koinViewModel()
+    viewModel: ChatViewModel = koinViewModel(),
+    onFailure: (Throwable) -> Unit = {},
+    onPick: (Int, String) -> Unit = { _, _ -> },
+    onSave: suspend () -> Unit = {},
 ) {
     val state = viewModel.getState()
     if (!state.isVisible) return
@@ -82,6 +85,10 @@ fun ChatScreen(
     val photos = items.filterIsInstance<Photo>()
     val maps = items.filterIsInstance<Map<String, Int>>()
     val parsed = result.mapCatching { it.size }
+    when (state.mode) {
+        Mode.Loading -> Spinner()
+        (Mode.Empty) -> EmptyView()
+    }
 }
 
 class ChatService(private val module: Module) {
@@ -132,19 +139,22 @@ class GeneratedConditionalTest(unittest.TestCase):
             conditional("ChatScreenKt", "ChatScreen", screen_line("StateLayout(")),
             conditional("ChatScreenKt", "ChatScreen$lambda$3", screen_line("ChatContent("), signature=COMPOSABLE_LAMBDA),
             conditional("ChatScreenKt", "ChatScreen", screen_line('"a == b"')),
+            conditional("ChatScreenKt", "ChatScreen", screen_line("onFailure: (Throwable) -> Unit")),
+            conditional("ChatScreenKt", "ChatScreen", screen_line("onSave: suspend () -> Unit")),
         ])
 
-        self.assertEqual(5, counts["noise"])
+        self.assertEqual(7, counts["noise"])
         self.assertEqual([], survivors)
 
     def test_conditionals_on_lines_with_a_source_condition_still_count(self):
         lines = [screen_line(text) for text in (
             "if (!state.isVisible)", "filter {", "?: \"fallback", "Count $count", "as? User", "orEmpty()",
-            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host", "isEmpty()", "recover {", "quote = '\"'", "!(state", "filterIsInstance<Photo", "filterIsInstance<Map", "mapCatching {")]
+            "${if (isActive)", "state.isEnabled", "        state.isVisible", "https://$host", "isEmpty()", "recover {", "quote = '\"'", "!(state", "filterIsInstance<Photo", "filterIsInstance<Map", "mapCatching {",
+            "onPick: (Int, String)", "Mode.Loading ->", "(Mode.Empty) ->")]
         counts, survivors = count_in(SCREEN_SOURCE, [conditional("ChatScreenKt", "ChatScreen", line) for line in lines])
 
         self.assertEqual(0, counts["noise"])
-        self.assertEqual(sorted(lines), [s["line"] for s in survivors])
+        self.assertEqual(sorted(lines), sorted(s["line"] for s in survivors))
 
     def test_conditionals_outside_composable_and_suspend_functions_still_count(self):
         counts, _ = count_in(SCREEN_SOURCE, [conditional("ChatService", "plain", screen_line("module.send("), signature="()V")])
